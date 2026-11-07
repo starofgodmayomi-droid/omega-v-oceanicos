@@ -24,6 +24,9 @@ type ExecutionStep = {
 type ExecutionResult = {
   status: Verdict;
   intent: string;
+  phase_t?: number | null;
+  phase_label?: 'SPROUT' | 'BLOOM' | 'PLATEAU' | 'WILT' | 'UNKNOWN' | null;
+  ease_factor?: number | null;
   response: string | null;
   evidence_hash: string | null;
   reason: string | null;
@@ -61,6 +64,18 @@ const ACTOR_TONE: Record<ExecutionStep['actor'], string> = {
 
 const STEP_REVEAL_MS = 240;
 
+/*
+ * The browser sends only `t`. The label and ease factor in the receipt are
+ * whatever the API returns for it — the client never computes them. These
+ * buttons just name the band each `t` falls in.
+ */
+const PHASE_OPTIONS = [
+  { label: 'SPROUT', t: 0.15 },
+  { label: 'BLOOM', t: 0.5 },
+  { label: 'PLATEAU', t: 0.8 },
+  { label: 'WILT', t: 0.95 },
+] as const;
+
 function clockOf(iso: string): string {
   const date = new Date(iso);
   return Number.isNaN(date.getTime()) ? '--:--:--' : date.toISOString().slice(11, 19);
@@ -74,6 +89,7 @@ function shortHash(hash: string | null): string {
 export function InvisibleComputer() {
   const [intent, setIntent] = useState('');
   const [useExternalModel, setUseExternalModel] = useState(false);
+  const [phaseT, setPhaseT] = useState<number | null>(null);
   const [running, setRunning] = useState(false);
   const [verdict, setVerdict] = useState<Verdict>('NOT_EXECUTED');
   const [result, setResult] = useState<ExecutionResult | null>(null);
@@ -119,7 +135,12 @@ export function InvisibleComputer() {
       const response = await fetch(`${API_BASE_URL}/execute`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ intent: trimmed, useExternalModel }),
+        body: JSON.stringify({
+          intent: trimmed,
+          useExternalModel,
+          // Omitted, not defaulted: an undeclared phase stays UNKNOWN.
+          ...(phaseT === null ? {} : { phase_t: phaseT }),
+        }),
       });
       const text = await response.text();
       const payload = text ? JSON.parse(text) : null;
@@ -246,6 +267,79 @@ export function InvisibleComputer() {
           {running ? 'EXECUTING' : 'EXECUTE'}
         </button>
       </div>
+      {/* The caller's position on the Arrow of Time — declared, never inferred. */}
+      <div
+        role="group"
+        aria-label="Declared phase"
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          gap: '6px',
+          marginTop: '12px',
+        }}
+      >
+        <span
+          style={{
+            fontFamily: theme.fontMono,
+            fontSize: '10px',
+            letterSpacing: '0.16em',
+            color: theme.textDim,
+          }}
+        >
+          DECLARED PHASE
+        </span>
+        {PHASE_OPTIONS.map((option) => {
+          const active = phaseT === option.t;
+          return (
+            <button
+              key={option.label}
+              type="button"
+              aria-pressed={active}
+              onClick={() => setPhaseT(option.t)}
+              disabled={running}
+              style={{
+                padding: '4px 10px',
+                borderRadius: theme.radiusPill,
+                border: `1px solid ${active ? 'rgba(245, 158, 11, 0.55)' : theme.border}`,
+                background: active ? 'rgba(245, 158, 11, 0.16)' : 'transparent',
+                color: active ? theme.accentWarm : theme.textDim,
+                fontFamily: theme.fontMono,
+                fontSize: '10px',
+                fontWeight: 700,
+                letterSpacing: '0.12em',
+                cursor: running ? 'not-allowed' : 'pointer',
+              }}
+            >
+              {option.label}
+            </button>
+          );
+        })}
+        <button
+          type="button"
+          aria-pressed={phaseT === null}
+          onClick={() => setPhaseT(null)}
+          disabled={running}
+          style={{
+            padding: '4px 10px',
+            borderRadius: theme.radiusPill,
+            border: `1px solid ${phaseT === null ? 'rgba(6, 182, 212, 0.45)' : theme.border}`,
+            background: phaseT === null ? 'rgba(6, 182, 212, 0.12)' : 'transparent',
+            color: phaseT === null ? theme.accent : theme.textDim,
+            fontFamily: theme.fontMono,
+            fontSize: '10px',
+            fontWeight: 700,
+            letterSpacing: '0.12em',
+            cursor: running ? 'not-allowed' : 'pointer',
+          }}
+        >
+          NOT DECLARED
+        </button>
+        <span style={{ fontSize: '10.5px', color: theme.textDim, lineHeight: 1.4 }}>
+          declared, not measured · allocates nothing · changes no verdict
+        </span>
+      </div>
+
       <label
         style={{
           display: 'flex',
@@ -362,7 +456,7 @@ export function InvisibleComputer() {
             <span>
               EVIDENCE · SHA-256{' '}
               <span style={{ color: theme.accentWarm, wordBreak: 'break-all' }}>
-                {result.evidence_hash ?? '—'}
+                {result.evidence_hash ?? 'none (halted before execution)'}
               </span>
             </span>
             {result.contract && (
@@ -371,6 +465,13 @@ export function InvisibleComputer() {
                 {result.contract.id.slice(0, 8)}
               </span>
             )}
+            <span data-testid="phase-receipt">
+              PHASE · {result.phase_label ?? 'UNKNOWN'} ·{' '}
+              {typeof result.ease_factor === 'number'
+                ? `ease ${result.ease_factor.toFixed(3)}`
+                : 'ease —'}{' '}
+              · not a measurement
+            </span>
             {result.engine && <span>ELION · {result.engine}</span>}
             {result.memory && <span>REMEMBERED · {result.memory.id.slice(0, 8)}</span>}
             {result.upgrade && (
