@@ -14,6 +14,7 @@ import { DivergenceAlertsPanel } from './DivergenceAlertsPanel';
 import { ValueNavigatorPanel } from './ValueNavigatorPanel';
 import { ConnectorPanel } from './ConnectorPanel';
 import { RepoAccessPanel } from './RepoAccessPanel';
+import { RealityGatePanel } from './RealityGatePanel';
 import { WholeEcosystemDashboard } from './WholeEcosystemDashboard';
 import { InvisibleComputer } from './InvisibleComputer';
 import { WaterFlowPanel } from './WaterFlowPanel';
@@ -880,6 +881,7 @@ export function App() {
         <ValueNavigatorPanel />
         <ConnectorPanel />
         <RepoAccessPanel />
+        <RealityGatePanel />
 
         <IntentFlow
           command={omegaCommand}

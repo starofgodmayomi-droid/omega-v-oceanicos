@@ -26,6 +26,7 @@ import { registerMeshValidationRoute } from './mesh-route.js';
 import { KaiMemoryStore } from './kai-memory.js';
 import { registerExecuteRoute } from './execute-route.js';
 import { FileRepoAccessStore, registerRepoAccessRoute, repoAccessKeyFrom } from './repo-access.js';
+import { registerRealityGateRoute } from './reality-gate-route.js';
 import {
   ENCRYPTION_ALGORITHM,
   appendEvent,
@@ -292,6 +293,11 @@ export function createApp(
     requireAdminAccess,
     authMode,
     defaultScope: sourceRepository,
+  });
+  registerRealityGateRoute(fastify, {
+    requireReadAccess,
+    requireAdminAccess,
+    jsonError,
   });
   registerConnectorObservationRoute(fastify, jsonError, connectorObservationStore, {
     githubFetch: options.githubFetch,

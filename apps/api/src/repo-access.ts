@@ -285,8 +285,8 @@ export class FileRepoAccessStore implements RepoAccessStore {
   }
 }
 
-type JsonError = (reply: any, status: number, error: string, extra?: Record<string, unknown>) => unknown;
-type PreHandler = (request: any, reply: any) => Promise<unknown> | void;
+export type JsonError = (reply: any, status: number, error: string, extra?: Record<string, unknown>) => unknown;
+export type PreHandler = (request: any, reply: any) => Promise<unknown> | void;
 
 export interface RepoAccessRouteOptions {
   store: RepoAccessStore;

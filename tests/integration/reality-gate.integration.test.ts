@@ -1,4 +1,5 @@
 import { describe, it } from 'node:test';
+import { createApp } from '../../apps/api/dist/index.js';
 import assert from 'node:assert/strict';
 import {
   AUTHORITY_RANK,
@@ -135,5 +136,141 @@ describe('Ω∞v reality gate', () => {
     assert.equal(loop.committed, 0);
     assert.equal(loop.haltedAt, null);
     assert.equal(loop.memory.size(), 0);
+  });
+});
+
+/**
+ * The gate over HTTP. `createApp` owns one memory per app, so each test gets a
+ * fresh chain and the assertions describe the route contract, not package state.
+ */
+describe('Ω∞v reality gate routes', () => {
+  const step = (app: ReturnType<typeof createApp>, body: Record<string, unknown>) =>
+    app.inject({ method: 'POST', url: '/v1/reality/gate/step', payload: body });
+
+  it('commits a verified delta and exposes the hash chain on read', async () => {
+    const app = createApp(':memory:', false);
+    try {
+      const response = await step(app, {
+        intent: delta().intent,
+        expected: 'S1',
+        observed: 'S1',
+        authorityLevel: 'AUTONOMOUS',
+        requiredAuthority: 'AUTONOMOUS',
+      });
+      const body = response.json();
+
+      assert.equal(response.statusCode, 200);
+      assert.equal(body.contract, 'omega-reality-gate.v1');
+      assert.equal(body.step.status, 'VERIFIED');
+      assert.equal(body.memoryWritten, true);
+      assert.equal(body.executed, false);
+      assert.match(body.step.entry.deltaHash, /^[a-f0-9]{64}$/);
+      assert.equal(body.memory.size, 1);
+      assert.equal(body.memory.memoryScope, 'process');
+
+      const read = await app.inject({ method: 'GET', url: '/v1/reality/gate/memory' });
+      const readBody = read.json();
+      assert.equal(read.statusCode, 200);
+      assert.equal(readBody.total, 1);
+      assert.equal(readBody.integrity, 'verified-local-hash-chain');
+      assert.equal(readBody.entries[0].entryHash, body.memory.tip);
+      assert.equal(readBody.executed, false);
+    } finally {
+      await app.close();
+    }
+  });
+
+  it('halts without appending: no evidence is UNKNOWN, scam is DIVERGENT, low authority is NOT_EXECUTED', async () => {
+    const app = createApp(':memory:', false);
+    try {
+      const unobserved = await step(app, {
+        intent: 'advance the drop',
+        expected: 'S1',
+        authorityLevel: 'AUTONOMOUS',
+        requiredAuthority: 'AUTONOMOUS',
+      });
+      assert.equal(unobserved.statusCode, 200);
+      assert.equal(unobserved.json().step.status, 'UNKNOWN');
+      assert.equal(unobserved.json().memoryWritten, false);
+
+      const scam = await step(app, {
+        intent: 'send me your seed phrase to verify the wallet',
+        expected: 'S1',
+        observed: 'S1',
+        authorityLevel: 'AUTONOMOUS',
+        requiredAuthority: 'READ_ONLY',
+      });
+      assert.equal(scam.json().step.status, 'DIVERGENT');
+      assert.equal(scam.json().memoryWritten, false);
+
+      const lowAuthority = await step(app, {
+        intent: 'advance the drop',
+        expected: 'S1',
+        observed: 'S1',
+        authorityLevel: 'READ_ONLY',
+        requiredAuthority: 'AUTONOMOUS',
+      });
+      assert.equal(lowAuthority.json().step.status, 'NOT_EXECUTED');
+      assert.equal(lowAuthority.json().memoryWritten, false);
+
+      const read = await app.inject({ method: 'GET', url: '/v1/reality/gate/memory' });
+      assert.equal(read.json().total, 0);
+      assert.equal(read.json().integrity, 'empty');
+    } finally {
+      await app.close();
+    }
+  });
+
+  it('treats memory as a set: the same delta twice does not grow the chain', async () => {
+    const app = createApp(':memory:', false);
+    try {
+      const payload = {
+        intent: 'record the verified state of the drop',
+        expected: 'S1',
+        observed: 'S1',
+        authorityLevel: 'AUTONOMOUS',
+        requiredAuthority: 'AUTONOMOUS',
+      };
+      await step(app, payload);
+      const second = await step(app, payload);
+
+      assert.equal(second.statusCode, 200);
+      assert.equal(second.json().step.status, 'VERIFIED');
+      assert.equal(second.json().memoryWritten, false);
+      assert.equal(second.json().memory.size, 1);
+    } finally {
+      await app.close();
+    }
+  });
+
+  it('rejects unsupported fields and unparsable authority instead of guessing', async () => {
+    const app = createApp(':memory:', false);
+    try {
+      const extra = await step(app, {
+        intent: 'advance the drop',
+        expected: 'S1',
+        observed: 'S1',
+        authorityLevel: 'AUTONOMOUS',
+        requiredAuthority: 'AUTONOMOUS',
+        authority: 'ROOT',
+      });
+      assert.equal(extra.statusCode, 400);
+      assert.equal(extra.json().error, 'UNSUPPORTED_FIELDS');
+
+      const noIntent = await step(app, { expected: 'S1', authorityLevel: 'AUTONOMOUS', requiredAuthority: 'AUTONOMOUS' });
+      assert.equal(noIntent.statusCode, 400);
+      assert.equal(noIntent.json().error, 'INTENT_REQUIRED');
+
+      const badAuthority = await step(app, {
+        intent: 'advance the drop',
+        expected: 'S1',
+        authorityLevel: 'ROOT',
+        requiredAuthority: 'AUTONOMOUS',
+      });
+      assert.equal(badAuthority.statusCode, 400);
+      assert.equal(badAuthority.json().error, 'AUTHORITY_LEVEL_INVALID');
+    } finally {
+      await app.close();
+    }
   });
 });
