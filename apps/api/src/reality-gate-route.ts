@@ -9,9 +9,11 @@
  * halts with its reason, and nothing else is executed: no repository
  * operation, no tool call, no write outside the memory chain.
  *
- * The memory is scoped to the API process (`memoryScope: 'process'`), so a
- * restart returns it to genesis. That boundary is declared in every read
- * rather than implied — memory is not proof, and this memory is not durable.
+ * Memory is durable by default (`memoryScope: 'append-only-journal'`): the
+ * chain is reloaded from its journal on boot, so a restart no longer returns
+ * it to genesis. `memoryScope: 'process'` is reported when no journal backs the
+ * chain. That boundary is declared in every read rather than implied — durable
+ * memory survives a restart, and it is still not proof of the world.
  */
 import type { FastifyInstance } from 'fastify';
 import {
@@ -32,6 +34,10 @@ export interface RealityGateRouteOptions {
   requireAdminAccess: PreHandler;
   jsonError: JsonError;
   memory?: RealityMemory;
+  /** Where the chain lives, declared in every read: `process` or a journal. */
+  memoryScope?: string;
+  /** Extra integrity gate for a persisted chain (journal readable and re-proved). */
+  verifyIntegrity?: () => boolean;
 }
 
 const MAX_FIELD_LENGTH = 400;
@@ -58,17 +64,22 @@ export function registerRealityGateRoute(fastify: FastifyInstance, options: Real
   const { requireReadAccess, requireAdminAccess, jsonError } = options;
   const memory = options.memory ?? createRealityMemory();
 
-  const snapshot = () => ({
-    tip: memory.tip(),
-    size: memory.size(),
-    integrity:
-      memory.size() === 0
-        ? ('empty' as const)
-        : memory.verifyChain()
-          ? ('verified-local-hash-chain' as const)
-          : ('degraded' as const),
-    memoryScope: 'process' as const,
-  });
+  const snapshot = () => {
+    const intact = memory.verifyChain() && (options.verifyIntegrity?.() ?? true);
+    return {
+      tip: memory.tip(),
+      size: memory.size(),
+      integrity:
+        memory.size() === 0
+          ? intact
+            ? ('empty' as const)
+            : ('degraded' as const)
+          : intact
+            ? ('verified-local-hash-chain' as const)
+            : ('degraded' as const),
+      memoryScope: options.memoryScope ?? 'process',
+    };
+  };
 
   fastify.get('/v1/reality/gate/memory', { preHandler: requireReadAccess }, async (request: any, reply) => {
     const state = snapshot();
@@ -92,6 +103,7 @@ export function registerRealityGateRoute(fastify: FastifyInstance, options: Real
         'a step appends only when V(Δ) = ⊤ (Expected ≡ Observed)',
         'halt guards run first: scam intent, no evidence, insufficient authority',
         'memory is append-only and hash-chained; it is not proof of the world',
+        'memory lives in an append-only journal, so a restart reloads the chain instead of returning it to genesis',
       ],
       executed: false,
     };

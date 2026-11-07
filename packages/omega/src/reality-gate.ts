@@ -72,6 +72,12 @@ export interface RealityStep {
 export interface RealityMemoryOptions {
   readonly now?: () => string;
   readonly genesis?: string;
+  /**
+   * An existing chain to restore before the next step appends to it, so a
+   * memory can be reloaded from durable storage. The restored links are not
+   * recomputed here: `verifyChain()` still has to prove every one of them.
+   */
+  readonly entries?: readonly RealityMemoryEntry[];
 }
 
 export interface RealityMemory {
@@ -87,6 +93,14 @@ const sha256 = (value: string): string =>
   createHash('sha256').update(value, 'utf8').digest('hex');
 
 /**
+ * One link's hash: the previous tip, the committed delta and its evidence.
+ * Exported so a durable journal can re-prove stored links without copying the
+ * formula and drifting away from it.
+ */
+export const realityEntryHash = (previousHash: string, deltaHash: string, evidenceHash: string): string =>
+  sha256(`${previousHash}\n${deltaHash}\n${evidenceHash}`);
+
+/**
  * M — the accumulated set, held as an append-only hash chain. `step` is the
  * only way to grow it, and it grows only on `V(Δ) = ⊤`.
  */
@@ -96,6 +110,14 @@ export function createRealityMemory(options: RealityMemoryOptions = {}): Reality
   const entries: RealityMemoryEntry[] = [];
   const committedHashes = new Set<string>();
   let tip = genesis;
+
+  // Restored links are appended in order, so a new delta continues the chain
+  // instead of forking it, and the set semantics (M ∪ Δ = M) survive too.
+  for (const restored of options.entries ?? []) {
+    entries.push({ ...restored });
+    committedHashes.add(restored.deltaHash);
+    tip = restored.entryHash;
+  }
 
   const halt = (
     status: Exclude<RealityGateStatus, 'VERIFIED'>,
@@ -185,7 +207,7 @@ export function createRealityMemory(options: RealityMemoryOptions = {}): Reality
       deltaHash,
       evidenceHash,
       previousHash: tip,
-      entryHash: sha256(`${tip}\n${deltaHash}\n${evidenceHash}`),
+      entryHash: realityEntryHash(tip, deltaHash, evidenceHash),
       recordedAt: now(),
     };
     entries.push(entry);
@@ -214,7 +236,7 @@ export function createRealityMemory(options: RealityMemoryOptions = {}): Reality
       let previous = genesis;
       for (const entry of entries) {
         if (entry.previousHash !== previous) return false;
-        if (entry.entryHash !== sha256(`${previous}\n${entry.deltaHash}\n${entry.evidenceHash}`)) {
+        if (entry.entryHash !== realityEntryHash(previous, entry.deltaHash, entry.evidenceHash)) {
           return false;
         }
         previous = entry.entryHash;

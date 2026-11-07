@@ -27,6 +27,7 @@ import { KaiMemoryStore } from './kai-memory.js';
 import { registerExecuteRoute } from './execute-route.js';
 import { FileRepoAccessStore, registerRepoAccessRoute, repoAccessKeyFrom } from './repo-access.js';
 import { registerRealityGateRoute } from './reality-gate-route.js';
+import { openRealityMemory } from './reality-gate-store.js';
 import {
   ENCRYPTION_ALGORITHM,
   appendEvent,
@@ -181,6 +182,11 @@ export function createApp(
   const kaiMemory = new KaiMemoryStore(kaiMemoryPath);
   const repoAccessPath = dbPath === ':memory:' ? ':memory:' : `${dbPath}.repo-access.jsonl`;
   const repoAccessStore = new FileRepoAccessStore(repoAccessPath);
+  const realityMemoryPath =
+    dbPath === ':memory:'
+      ? ':memory:'
+      : process.env.OMEGA_REALITY_MEMORY_PATH?.trim() || `${dbPath}.reality-memory.jsonl`;
+  const realityMemoryStore = openRealityMemory(realityMemoryPath);
   const repoAccessKey = () => repoAccessKeyFrom(process.env);
   const sourceRepository =
     process.env.OMEGA_SOURCE_REPOSITORY?.trim() || 'starofgodmayomi-droid/omega-v-oceanicos';
@@ -298,6 +304,9 @@ export function createApp(
     requireReadAccess,
     requireAdminAccess,
     jsonError,
+    memory: realityMemoryStore.memory,
+    memoryScope: realityMemoryStore.memoryScope,
+    verifyIntegrity: () => realityMemoryStore.verifyIntegrity(),
   });
   registerConnectorObservationRoute(fastify, jsonError, connectorObservationStore, {
     githubFetch: options.githubFetch,
