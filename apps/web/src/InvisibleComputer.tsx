@@ -32,7 +32,13 @@ type ExecutionResult = {
   reason: string | null;
   matched_patterns: string[];
   steps: ExecutionStep[];
-  contract: { id: string; authority_level: string; expected_outcome: string } | null;
+  contract: {
+    id: string;
+    authority_level: string;
+    expected_outcome: string;
+    phase_t?: number | null;
+    phase_label?: string | null;
+  } | null;
   memory: { id: string; timestamp: string } | null;
   engine: string | null;
   upgrade?: {
@@ -460,9 +466,13 @@ export function InvisibleComputer() {
               </span>
             </span>
             {result.contract && (
-              <span>
+              <span data-testid="contract-receipt">
                 CONTRACT · {result.contract.authority_level} ·{' '}
-                {result.contract.id.slice(0, 8)}
+                {result.contract.id.slice(0, 8)} · phase{' '}
+                {result.contract.phase_label ?? 'UNKNOWN'}
+                {typeof result.contract.phase_t === 'number'
+                  ? ` (t=${result.contract.phase_t})`
+                  : ''}
               </span>
             )}
             <span data-testid="phase-receipt">

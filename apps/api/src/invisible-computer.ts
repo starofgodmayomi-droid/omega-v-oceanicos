@@ -298,6 +298,22 @@ export function reconcileEvidence(input: {
  */
 export function composeLocalElionResponse(intent: string, authorityLevel: AuthorityLevel): string {
   const boundedIntent = intent.trim();
+
+  // A greeting names no intent, so the plan template would answer a question
+  // nobody asked. Answer the greeting itself — still a template, still local.
+  if (/^(hi|hello|hey|yo|greetings|good (morning|afternoon|evening))\b[\s!.?]*$/i.test(boundedIntent)) {
+    return [
+      `You said: ${boundedIntent}`,
+      '',
+      `What is observed: your greeting arrived intact; KAI Shield matched no fraud pattern and no external system was contacted at authority level ${authorityLevel}.`,
+      'What is UNKNOWN: what you want made real — a greeting names no intent.',
+      'Next finite step: state one intent, then choose whether it goes to the server-configured model.',
+      '',
+      'Evidence: local deterministic composer; this reply is derived from the text alone. It is a bounded template, not a model answer.',
+      "Ω∞v ::= VERIFY(ΔREALITY) · ATTEST, DON'T ASSERT.",
+    ].join('\n');
+  }
+
   return [
     `Intent received: ${boundedIntent}`,
     '',

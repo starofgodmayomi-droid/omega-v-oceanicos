@@ -496,6 +496,10 @@ test('phase_t reports the Arrow of Time in the response without deciding the ver
       assert.equal(body.phase_t, entry.t);
       assert.equal(body.phase_label, entry.label);
       assert.ok(Math.abs(body.ease_factor - ease(entry.t)) < 1e-12);
+      // Written with the contract, so a later read knows WHEN it ran.
+      assert.equal(body.contract.phase_t, entry.t);
+      assert.equal(body.contract.phase_label, entry.label);
+      assert.ok(Math.abs(body.contract.ease_factor - ease(entry.t)) < 1e-12);
       // The phase is declared BESIDE the cycle; OMEGA still decides on evidence.
       assert.equal(body.status, 'VERIFIED');
       assert.equal(body.evidence_hash, sha256(body.response));
@@ -579,4 +583,71 @@ test('ease(t) is monotonic over a bounded lifecycle and never leaves [0, 1]', ()
   assert.equal(phaseProjection(5).t, 1);
   assert.equal(phaseProjection(Number.NaN).label, 'UNKNOWN');
   assert.equal(phaseProjection(undefined).ease, null);
+});
+
+test('the declared phase is stored with the contract and read back by reconcile', async () => {
+  const app = createApp(':memory:', false);
+  try {
+    const executed = (
+      await app.inject({
+        method: 'POST',
+        url: '/api/execute',
+        payload: { intent: 'Explain how evidence-bound verification works', phase_t: 0.8 },
+      })
+    ).json();
+    assert.equal(executed.status, 'VERIFIED');
+    assert.equal(executed.contract.phase_label, 'PLATEAU');
+
+    // The stored contract, read back on its own after the cycle is over.
+    const detail = (
+      await app.inject({ method: 'GET', url: `/api/kai/memory/${executed.memory.id}` })
+    ).json();
+    assert.equal(detail.contract.phase_t, 0.8);
+    assert.equal(detail.contract.phase_label, 'PLATEAU');
+    assert.ok(Math.abs(detail.contract.ease_factor - ease(0.8)) < 1e-12);
+
+    // A later reconciliation reports the phase the cycle declared.
+    const reconciled = (
+      await app.inject({
+        method: 'POST',
+        url: `/api/kai/memory/${executed.memory.id}/reconcile`,
+        payload: { output: executed.response },
+      })
+    ).json();
+    assert.equal(reconciled.status, 'VERIFIED');
+    assert.equal(reconciled.phase_t, 0.8);
+    assert.equal(reconciled.phase_label, 'PLATEAU');
+
+    // A cycle that declared no phase stores null, not an invented midpoint.
+    const undeclared = (
+      await app.inject({
+        method: 'POST',
+        url: '/api/execute',
+        payload: { intent: 'Map the next finite step' },
+      })
+    ).json();
+    assert.equal(undeclared.contract.phase_t, null);
+    assert.equal(undeclared.contract.phase_label, null);
+    assert.equal(undeclared.contract.ease_factor, null);
+  } finally {
+    await app.close();
+  }
+});
+
+test('a greeting is answered as a greeting, not with the intent template', async () => {
+  const app = createApp(':memory:', false);
+  try {
+    const body = (
+      await app.inject({ method: 'POST', url: '/api/execute', payload: { intent: 'hello' } })
+    ).json();
+    assert.equal(body.status, 'VERIFIED');
+    assert.equal(body.engine, 'local-deterministic');
+    assert.match(body.response, /You said: hello/);
+    assert.match(body.response, /a greeting names no intent/i);
+    assert.doesNotMatch(body.response, /Intent received: hello/);
+    // Still a template, and it still says so.
+    assert.match(body.response, /bounded template, not a model answer/);
+  } finally {
+    await app.close();
+  }
 });

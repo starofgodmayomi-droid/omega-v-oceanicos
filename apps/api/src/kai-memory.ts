@@ -28,6 +28,10 @@ export type OmegaContract = {
   intent: string;
   authority_level: AuthorityLevel;
   expected_outcome: string;
+  /** The phase the caller declared when the cycle ran; null when none was sent. */
+  phase_t: number | null;
+  phase_label: string | null;
+  ease_factor: number | null;
 };
 
 export class KaiMemoryStore {
@@ -50,7 +54,10 @@ export class KaiMemoryStore {
         id TEXT PRIMARY KEY,
         intent TEXT NOT NULL,
         authority_level TEXT NOT NULL,
-        expected_outcome TEXT NOT NULL
+        expected_outcome TEXT NOT NULL,
+        phase_t REAL,
+        phase_label TEXT,
+        ease_factor REAL
       );
       CREATE INDEX IF NOT EXISTS "OmegaIR_Contracts_intent_idx" ON "OmegaIR_Contracts" (intent);
     `);
@@ -61,28 +68,48 @@ export class KaiMemoryStore {
     if (!memoryColumns.some((column) => column.name === 'contract_id')) {
       this.db.exec('ALTER TABLE "KaiMemory" ADD COLUMN contract_id TEXT');
     }
+    // Additive migration: contracts written before the phase was recorded keep
+    // NULL there, and a reconciliation reads that as "no phase was declared".
+    const contractColumns = this.db.prepare('PRAGMA table_info("OmegaIR_Contracts")').all() as Array<{
+      name: string;
+    }>;
+    for (const column of ['phase_t', 'phase_label', 'ease_factor'] as const) {
+      if (!contractColumns.some((existing) => existing.name === column)) {
+        const type = column === 'phase_label' ? 'TEXT' : 'REAL';
+        this.db.exec(`ALTER TABLE "OmegaIR_Contracts" ADD COLUMN ${column} ${type}`);
+      }
+    }
   }
 
   createContract(input: {
     intent: string;
     authorityLevel: AuthorityLevel;
     expectedOutcome: string;
+    phaseT?: number | null;
+    phaseLabel?: string | null;
+    easeFactor?: number | null;
   }): OmegaContract {
     const contract: OmegaContract = {
       id: randomUUID(),
       intent: input.intent,
       authority_level: input.authorityLevel,
       expected_outcome: input.expectedOutcome,
+      phase_t: input.phaseT ?? null,
+      phase_label: input.phaseLabel ?? null,
+      ease_factor: input.easeFactor ?? null,
     };
     this.db
       .prepare(
-        'INSERT INTO "OmegaIR_Contracts" (id, intent, authority_level, expected_outcome) VALUES (?, ?, ?, ?)'
+        'INSERT INTO "OmegaIR_Contracts" (id, intent, authority_level, expected_outcome, phase_t, phase_label, ease_factor) VALUES (?, ?, ?, ?, ?, ?, ?)'
       )
       .run(
         contract.id,
         contract.intent,
         contract.authority_level,
-        contract.expected_outcome
+        contract.expected_outcome,
+        contract.phase_t,
+        contract.phase_label,
+        contract.ease_factor
       );
     return contract;
   }
@@ -90,7 +117,7 @@ export class KaiMemoryStore {
   getContract(id: string): OmegaContract | null {
     const row = this.db
       .prepare(
-        'SELECT id, intent, authority_level, expected_outcome FROM "OmegaIR_Contracts" WHERE id = ?'
+        'SELECT id, intent, authority_level, expected_outcome, phase_t, phase_label, ease_factor FROM "OmegaIR_Contracts" WHERE id = ?'
       )
       .get(id) as OmegaContract | undefined;
     return row ?? null;

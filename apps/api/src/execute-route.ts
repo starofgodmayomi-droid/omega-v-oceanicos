@@ -146,6 +146,12 @@ export function registerExecuteRoute(
       intent,
       authorityLevel,
       expectedOutcome: expectedOutcomeFor(authorityLevel),
+      // The declared phase is written with the contract, so a later
+      // reconciliation can see WHEN the cycle ran, not just what it expected.
+      phaseT: phase.t,
+      // No declared phase is stored as NULL, never as the string 'UNKNOWN'.
+      phaseLabel: phase.t === null ? null : phase.label,
+      easeFactor: phase.ease,
     });
 
     // Step 2 — ELION execute: bounded answer, model or local composer.
@@ -250,6 +256,10 @@ export function registerExecuteRoute(
       memory_id: record.id,
       evidence_hash: record.evidence_hash,
       contract_id: record.contract_id,
+      // WHEN the cycle ran, read back from the stored contract.
+      phase_t: contract ? contract.phase_t : null,
+      phase_label: contract ? contract.phase_label : null,
+      ease_factor: contract ? contract.ease_factor : null,
       checks: verdict.checks,
       reason: verdict.reason,
       evaluated_at: new Date().toISOString(),
