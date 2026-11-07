@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
@@ -72,6 +73,33 @@ test('an abundance draft names the four layers and moves no money', () => {
   assert.match(receipt.action, /Honorable Request/);
   assert.match(receipt.action, /Graceful Space/);
   assert.doesNotMatch(receipt.action, /VERIFIED/);
+});
+
+function runOvoosCli(intent: string, phaseT: string) {
+  const cliPath = join(root, 'bin/oceanicos.mjs');
+  const stdout = execFileSync(process.execPath, [cliPath, 'ovoos', intent, phaseT], {
+    encoding: 'utf-8',
+    // Proves the CLI composes locally: any API call would fail against this port.
+    env: { ...process.env, OMEGA_API_URL: 'http://127.0.0.1:1' },
+  });
+  return JSON.parse(stdout);
+}
+
+test('the unified CLI composes the receipt from the same law, without the API', () => {
+  const receipt = runOvoosCli('urgent send money', '0.2');
+  assert.equal(receipt.engine, 'ΩVØØS');
+  assert.equal(receipt.status, 'DIVERGENT');
+  assert.equal(receipt.action, 'HALT ⊢ DIVERGENT');
+  assert.equal(receipt.evidence_hash, sha256Hex(receipt.action));
+  assert.equal(receipt.phase_t, 0.2);
+});
+
+test('the unified CLI keeps a local sentence UNKNOWN and clamps the phase', () => {
+  const receipt = runOvoosCli('Map a patient plan for a book stall.', '5');
+  assert.equal(receipt.status, 'UNKNOWN');
+  assert.equal(receipt.phase_t, 1);
+  assert.match(receipt.action, /^Wilt\./);
+  assert.equal(receipt.evidence_hash, sha256Hex(receipt.action));
 });
 
 test('the supplied directive is stored and the fixpoint law remains', () => {

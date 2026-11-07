@@ -13,7 +13,7 @@ const rootDir = path.resolve(__dirname, '..');
 let ObserverEngine, observePlanetaryBase;
 let verifyPlanetarySovereignty, AsymmetricValidationGuard, MultiRegionMeshConvergence;
 let PluralisticHashChain, RememberEngine;
-let executeOceanicosMaxExpansion, MiniKernel;
+let executeOceanicosMaxExpansion, MiniKernel, runEntity;
 let AttestationService;
 
 try {
@@ -33,6 +33,7 @@ try {
   const miniPkg = require(path.join(rootDir, 'packages/mini/dist/index.js'));
   executeOceanicosMaxExpansion = miniPkg.executeOceanicosMaxExpansion;
   MiniKernel = miniPkg.MiniKernel;
+  runEntity = miniPkg.runEntity;
 
   try {
     const attestPkg = require(path.join(rootDir, 'packages/attestation/dist/index.js'));
@@ -254,6 +255,22 @@ async function handleStream() {
   }
 }
 
+// ΩVØØS receipt law: the same `runEntity` the API route and the web panel use.
+// stdout is exactly the stored directive's receipt JSON — no banner, no filler,
+// no ledger write, no model call. The law never emits VERIFIED, so a DIVERGENT
+// or UNKNOWN receipt is the successful answer, not a CLI failure.
+function handleOvoos(argsAfterCommand) {
+  if (typeof runEntity !== 'function') {
+    throw new Error('@oceanicos/mini is missing runEntity; rebuild the workspace first');
+  }
+  const phaseInput = Number(argsAfterCommand[1] ?? '0');
+  const { receipt } = runEntity({
+    intent: argsAfterCommand[0] ?? '',
+    phaseT: Number.isFinite(phaseInput) ? phaseInput : 0,
+  });
+  console.log(JSON.stringify(receipt, null, 2));
+}
+
 async function handleMood() {
   printBanner();
   console.log(`\n${ANSI.bold}=== Ω∞v MAXIMUM COMPRESSION MATRIX & MOOD ===${ANSI.reset}`);
@@ -328,6 +345,7 @@ ${ANSI.bold}COMMANDS:${ANSI.reset}
   ${ANSI.green}mesh${ANSI.reset}        Simulate decentralized consensus convergence across 4 sovereign nodes
   ${ANSI.green}attest${ANSI.reset}      Generate unforgeable cryptographic attestation for verified telemetry
   ${ANSI.green}keys${ANSI.reset}        Generate an Ed25519 asymmetric keypair for fail-closed authentication
+  ${ANSI.green}ovoos${ANSI.reset}       Compose one bounded ΩVØØS receipt (local law; never VERIFIED)
   ${ANSI.green}mood${ANSI.reset}        Display Singularity compression state and Pidgin Spirit Axiom
   ${ANSI.green}stream${ANSI.reset}      Stream live block minting events via SSE from local Fastify API
   ${ANSI.green}omega${ANSI.reset}       Propose, inspect, admit, execute, and verify bounded Ω commands
@@ -357,6 +375,9 @@ switch (command) {
     break;
   case 'keys':
     await handleKeys();
+    break;
+  case 'ovoos':
+    handleOvoos(args.slice(1));
     break;
   case 'mood':
     await handleMood();
