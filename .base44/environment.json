@@ -10,7 +10,17 @@
     },
     {
       "name": "OMEGA_LLM_API_KEY",
-      "description": "Optional OpenAI-compatible model key for ELION in POST /api/execute. Without it the endpoint answers with the clearly labelled local deterministic composer.",
+      "description": "Optional OpenAI-compatible model key for ELION in POST /api/execute. Without it the endpoint answers with the clearly labelled local deterministic composer. Skipped on purpose — the local composer is the default path.",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "OMEGA_LLM_BASE_URL",
+      "description": "Optional base URL for the OpenAI-compatible model endpoint used by ELION. Unset falls back to the built-in default. Not required to boot.",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "OMEGA_LLM_MODEL",
+      "description": "Optional model name for ELION's external completion. Unset falls back to the built-in default. Not required to boot.",
       "requiredAtBoot": false
     }
   ]
