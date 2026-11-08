@@ -4,16 +4,44 @@ import userEvent from '@testing-library/user-event';
 import App from '../../App';
 import { installFetch, json } from './harness';
 
+const observedBody = {
+  success: true,
+  bodyVersion: 'omega.fullstack.body.v1',
+  status: 'VERIFIED',
+  layers: {
+    sensory: { status: 'OBSERVED' },
+    verification: { status: 'VERIFIED' },
+    memory: { status: 'INTEGRITY_VERIFIED' },
+    mesh: { status: 'CONVERGED_PASS' },
+    kernel: { status: 'READY' },
+    governance: { status: 'HUMAN_GATE_REQUIRED' },
+    interface: { status: 'READY' },
+  },
+  expansion: { bounded: true, readOnly: true, appendOnly: true },
+};
+
 describe('current OceanicOS app shell', () => {
   it('renders the whole-ecosystem surface without promoting unqueried sources to verified', async () => {
-    installFetch();
+    const user = userEvent.setup();
+    installFetch({
+      '/api/v1/ecosystem/body': () => json(observedBody),
+      '/api/v1/block/tip': () => json({ success: true, status: 'OK' }),
+    });
     render(<App />);
 
-    await userEvent.click(await screen.findByRole('button', { name: /open background full-stack/i }));
+    const frontier = await screen.findByRole('region', { name: 'Compressed whole ecosystem front view' });
+    expect(within(frontier).getByText('BODY · VERIFIED')).toBeInTheDocument();
+    expect(within(frontier).getByText('7 layers')).toBeInTheDocument();
+    expect(within(frontier).getByText('verification')).toBeInTheDocument();
+    expect(within(frontier).getByText('REST reachable · SSE pending')).toBeInTheDocument();
+    expect(within(frontier).getByText(/not an external-world scan/i)).toBeInTheDocument();
+    expect(within(frontier).getByRole('button', { name: /open background full-stack/i })).toHaveAttribute('aria-expanded', 'false');
+
+    await user.click(within(frontier).getByRole('button', { name: /open background full-stack/i }));
     const dashboard = await screen.findByRole('region', { name: 'Whole ecosystem command surface' });
     expect(within(dashboard).getByRole('img', { name: /conceptual OCEANICOS system map/i })).toBeInTheDocument();
     expect(within(dashboard).getByText(/relationships shown, not live topology/i)).toBeInTheDocument();
-    expect(within(dashboard).getByText(/0 of 5 listed signals are marked VERIFIED in this view/i)).toBeInTheDocument();
+    expect(within(dashboard).getByText(/1 of 5 listed signals are marked VERIFIED in this view/i)).toBeInTheDocument();
     expect(within(dashboard).getByText('hosted CI is not queried by this screen')).toBeInTheDocument();
     expect(within(dashboard).getByText('no external authority inferred')).toBeInTheDocument();
   });

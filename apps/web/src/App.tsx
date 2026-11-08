@@ -15,6 +15,7 @@ import { ValueNavigatorPanel } from './ValueNavigatorPanel';
 import { ConnectorPanel } from './ConnectorPanel';
 import { WholeEcosystemDashboard } from './WholeEcosystemDashboard';
 import { InvisibleComputer } from './InvisibleComputer';
+import { FrontierOverview } from './FrontierOverview';
 import { WaterFlowPanel } from './WaterFlowPanel';
 import { LifecycleFlow, deriveStageStates, type LifecycleStage } from './LifecycleFlow';
 import { GlobeViewport } from './GlobeViewport';
@@ -767,45 +768,17 @@ export function App() {
 
         <InvisibleComputer />
 
-        {/* Compressed front view: the whole body is summarized here; detailed organs stay in the background workspace. */}
-        <section
-          aria-label="Compressed whole ecosystem front view"
-          style={{
-            margin: '18px 0 24px',
-            padding: '14px 16px',
-            border: `1px solid ${theme.borderBright}`,
-            borderRadius: theme.radiusSmall,
-            background: `${theme.surfaceDeep}cc`,
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-            <div>
-              <div style={{ color: theme.accent, fontSize: '11px', letterSpacing: '0.14em', fontWeight: 700 }}>WHOLE ECOSYSTEM · COMPRESSED BODY</div>
-              <div style={{ color: theme.textMuted, fontSize: '11px', marginTop: '5px' }}>
-                Mood {moodData?.evaluation?.state ?? moodData?.status ?? 'UNKNOWN'} · {streamConnected ? 'live stream connected' : 'awaiting observation'} · {humanGateRequired ? 'human gate required' : 'authority state unknown'}
-              </div>
-            </div>
-            <button
-              type="button"
-              aria-expanded={backgroundWorkspaceOpen}
-              aria-controls="background-full-stack-workspace"
-              onClick={() => setBackgroundWorkspaceOpen((open) => !open)}
-              style={{
-                border: `1px solid ${theme.borderBright}`,
-                borderRadius: theme.radiusPill,
-                background: 'transparent',
-                color: theme.accent,
-                padding: '8px 12px',
-                fontSize: '10px',
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-                cursor: 'pointer',
-              }}
-            >
-              {backgroundWorkspaceOpen ? 'Close background workspace' : 'Open background full-stack'}
-            </button>
-          </div>
-        </section>
+        <FrontierOverview
+          body={ecosystemBody}
+          apiReachable={tipReachable}
+          streamConnected={streamConnected}
+          ledgerIntegrity={ledgerIntegrity}
+          miningActive={minerActive}
+          moodStatus={moodData?.evaluation?.state ?? moodData?.status ?? 'UNKNOWN'}
+          humanGateRequired={humanGateRequired}
+          backgroundWorkspaceOpen={backgroundWorkspaceOpen}
+          onToggleBackgroundWorkspace={() => setBackgroundWorkspaceOpen((open) => !open)}
+        />
 
         <section
           id="background-full-stack-workspace"
