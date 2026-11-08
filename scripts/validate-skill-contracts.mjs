@@ -19,6 +19,7 @@ const skills = [
   'oceanicos-verified-upgrade',
   'oceanicos-total-continuum',
   'kaixelionxomega',
+  'omnicos-singularity-eye',
 ];
 const required = [
   'POSSIBLE',

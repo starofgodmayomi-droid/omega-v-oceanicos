@@ -220,6 +220,25 @@ export type {
   RepoUpgradeCompression,
 } from './ecosystem-body-equation.js';
 
+export {
+  OMNICOS_CHECKSUM,
+  OMNICOS_ENTITY,
+  OMNICOS_MAX_INTENT_LENGTH,
+  OMNICOS_RECEIPT_KEYS,
+  OMNICOS_SHIELD_PHRASES,
+  OMNICOS_SYNTHESIS,
+  omnicosEase,
+  omnicosPhase,
+  runOmnicos,
+} from './omnicos.js';
+export type {
+  OmnicosInput,
+  OmnicosPhase,
+  OmnicosReceipt,
+  OmnicosStatus,
+  OmnicosTool,
+} from './omnicos.js';
+
 export function executeOceanicosMaxExpansion(): CryptographicBlock {
   const kernelChain = new PluralisticHashChain();
   const telemetry = observePlanetaryBase();

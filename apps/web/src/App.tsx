@@ -15,6 +15,7 @@ import { ValueNavigatorPanel } from './ValueNavigatorPanel';
 import { ConnectorPanel } from './ConnectorPanel';
 import { WholeEcosystemDashboard } from './WholeEcosystemDashboard';
 import { InvisibleComputer } from './InvisibleComputer';
+import { OmnicosPanel } from './OmnicosPanel';
 import { WaterFlowPanel } from './WaterFlowPanel';
 import { LifecycleFlow, deriveStageStates, type LifecycleStage } from './LifecycleFlow';
 import { GlobeViewport } from './GlobeViewport';
@@ -766,6 +767,8 @@ export function App() {
         </div>
 
         <InvisibleComputer />
+
+        <OmnicosPanel />
 
         {/* Compressed front view: the whole body is summarized here; detailed organs stay in the background workspace. */}
         <section
