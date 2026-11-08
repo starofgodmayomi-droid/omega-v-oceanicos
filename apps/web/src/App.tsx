@@ -19,6 +19,7 @@ import { EcosystemBodyPanel } from './EcosystemBodyPanel';
 import { PlatformDuplexPanel } from './PlatformDuplexPanel';
 import { MultidimensionalCatalogPanel } from './MultidimensionalCatalogPanel';
 import { FuturisticEcosystemChatPanel } from './FuturisticEcosystemChatPanel';
+import { VoosEntityPanel } from './VoosEntityPanel';
 import { TradingDashboard } from './TradingDashboard';
 import { WealthActionPanel } from './WealthActionPanel';
 import {
@@ -1150,6 +1151,11 @@ export function App() {
             }}
           >
             <FuturisticEcosystemChatPanel />
+
+            {/* ΩVØØS Sovereign Entity Full-Stack 3-Pane Body */}
+            <div style={{ marginTop: '24px', marginBottom: '24px' }}>
+              <VoosEntityPanel />
+            </div>
 
         {/* Mode buttons */}
         <div

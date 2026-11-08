@@ -79,6 +79,10 @@ export const API_ROUTE_INVENTORY = [
   'POST /v1/news/compress',
   'GET /v1/knowledge/envelope/schema',
   'POST /v1/knowledge/envelope/validate',
+  'GET /v1/voos/status',
+  'POST /v1/voos/execute',
+  'GET /v1/voos/ledger',
+  'GET /v1/voos/abundance-bridge',
   'GET /',
   'GET /assets/*',
 ] as const;

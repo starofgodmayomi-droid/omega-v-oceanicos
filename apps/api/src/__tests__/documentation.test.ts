@@ -75,7 +75,7 @@ describe('startup banner', () => {
     .map((file) => readFileSync(join(apiSrc, file), 'utf8'))
     .join('\n');
 
-  const registered = Array.from(sourceFiles.matchAll(/(?:app|fastify)\.(get|post)\('([^']+)'/g)).map((match) => ({
+  const registered = Array.from(source.matchAll(/(?:app|fastify)\.(get|post)\('([^']+)'/g)).map((match) => ({
     method: match[1].toUpperCase(),
     path: match[2],
   }));
