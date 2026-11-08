@@ -19,6 +19,8 @@ const skills = [
   'oceanicos-verified-upgrade',
   'oceanicos-total-continuum',
   'kaixelionxomega',
+  'omnidirectional-proactive-swarm',
+  'omega-entity-full-stack',
 ];
 const required = [
   'POSSIBLE',
@@ -55,6 +57,19 @@ const names = skills.map((skill) => {
   return source.match(/^name:\s*(.+)$/m)?.[1]?.trim();
 });
 if (new Set(names).size !== names.length) throw new Error('skill names must be unique');
+
+const swarmSkill = readFileSync(join(root, 'skills', 'omnidirectional-proactive-swarm', 'SKILL.md'), 'utf8');
+for (const boundary of [
+  '**Dry run:**',
+  '**Live run:**',
+  'A broad scan does not grant broad write access.',
+  'Do not install or download dependencies without the required approval.',
+  'Append only—never rewrite, reorder, or delete prior entries.',
+]) {
+  if (!swarmSkill.includes(boundary)) {
+    throw new Error(`omnidirectional-proactive-swarm: missing activation boundary ${boundary}`);
+  }
+}
 
 const masterPrompt = join(root, 'skills', 'oceanicos-full-stack', 'references', 'master-prompt.md');
 const sourceRegister = readFileSync(

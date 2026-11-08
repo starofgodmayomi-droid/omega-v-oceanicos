@@ -21,6 +21,34 @@
       "tests_passed": null,
       "evidence_hash": null,
       "next_delta": "Claim one domain from SWARM_PROTOCOL.md §III, branch as agent/<platform>/<task>, and append your own receipt."
+    },
+    {
+      "timestamp": "2026-11-08T17:18:40.000Z",
+      "agent_id": "manus",
+      "branch": "agent/manus/omega-entity-skill-e2e",
+      "status": "VERIFIED",
+      "files_touched": [
+        "scripts/validate-skill-contracts.mjs",
+        "skills/omnidirectional-proactive-swarm/SKILL.md",
+        "skills/omega-entity-full-stack/SKILL.md",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "aff7bf24042815fce55ea661ce3ed536c6bb6ef0ba79b1ee39b9e216fcebca6b",
+      "next_delta": "Review the isolated skill-contract change and decide whether to authorize opening a pull request."
+    },
+    {
+      "timestamp": "2026-11-08T17:42:35.000Z",
+      "agent_id": "manus",
+      "branch": "agent/manus/omega-entity-skill-e2e",
+      "status": "VERIFIED",
+      "files_touched": [
+        "skills/omega-entity-full-stack/SKILL.md",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "a1c3baf9e044cd875dd8403f1f645983359d638ecd872446718d41c33cc9a9b2",
+      "next_delta": "Review the repository skill updates and authorize whether to open a pull request."
     }
   ]
 }
