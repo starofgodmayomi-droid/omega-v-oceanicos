@@ -21,6 +21,22 @@
       "tests_passed": null,
       "evidence_hash": null,
       "next_delta": "Claim one domain from SWARM_PROTOCOL.md §III, branch as agent/<platform>/<task>, and append your own receipt."
+    },
+    {
+      "timestamp": "2026-11-08T19:30:00Z",
+      "agent_id": "grok",
+      "branch": "agent/grok/body-fixpoint-surface",
+      "status": "UNKNOWN",
+      "files_touched": [
+        "apps/web/src/App.tsx",
+        "apps/web/src/WholeEcosystemDashboard.tsx",
+        "apps/web/src/whole-ecosystem-dashboard-model.ts",
+        "apps/web/src/__tests__/whole-ecosystem-dashboard.test.ts",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "a72f815db6e70b94a2dc1be26779ab7f23cad877dfd4de7cdf3e0e18c6492905",
+      "next_delta": "After order 001 lands, route POST /api/execute through runKaixelionOmega so a local template is not remembered as VERIFIED."
     }
   ]
 }

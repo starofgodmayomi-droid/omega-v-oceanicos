@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { theme, humanStatus } from './oceanicosTheme';
-import { boundedStatus, statusCounts, STATUS_ORDER, summarizeLucidField, type RealityStatus } from './whole-ecosystem-dashboard-model';
+import { boundedStatus, statusCounts, STATUS_ORDER, summarizeLucidField, bodyFixpointSignal, type RealityStatus } from './whole-ecosystem-dashboard-model';
 import { AgentSafetyBoundaryPanel } from './AgentSafetyBoundaryPanel';
 import { WorkerCoordinationPanel } from './WorkerCoordinationPanel';
 import { SingleBodyPanel } from './SingleBodyPanel';
@@ -13,6 +13,7 @@ type Props = {
   ledgerIntegrity: { valid: boolean; height: number } | null;
   history: Array<{ evidence?: { status?: string } }>;
   ecosystemBody: any;
+  capabilityObserved: boolean;
   omegaCommand: any;
   onFocusCommand: (prompt: string) => void;
 };
@@ -109,8 +110,9 @@ function EcosystemMap() {
 
 export function WholeEcosystemDashboard(props: Props) {
   const counts = useMemo(() => statusCounts(props.history, props.realityStatus), [props.history, props.realityStatus]);
+  const fixpoint = bodyFixpointSignal(props.ecosystemBody);
   const evidence = [
-    { label: 'Implementation', status: props.ecosystemBody?.status === 'VERIFIED' ? 'VERIFIED' : 'UNKNOWN', source: 'ecosystem body endpoint' },
+    { label: 'Body fixpoint', status: fixpoint.status, source: fixpoint.source },
     { label: 'Ledger', status: props.ledgerIntegrity?.valid ? 'VERIFIED' : 'UNKNOWN', source: props.ledgerIntegrity ? `height ${props.ledgerIntegrity.height}` : 'no tip observed' },
     { label: 'Runtime stream', status: props.streamConnected ? 'VERIFIED' : 'UNKNOWN', source: props.streamConnected ? 'SSE connection observed' : 'not connected' },
     { label: 'CI', status: 'UNKNOWN', source: 'hosted CI is not queried by this screen' },
@@ -205,7 +207,7 @@ export function WholeEcosystemDashboard(props: Props) {
       <SingleBodyPanel body={props.ecosystemBody} />
 
       <AgentSafetyBoundaryPanel
-        capabilityObserved={props.ecosystemBody?.status === 'VERIFIED'}
+        capabilityObserved={props.capabilityObserved}
         policySatisfied={props.omegaCommand?.command?.policy?.satisfied === true}
         humanGateRequired={props.humanGateRequired}
         leaseObserved={Boolean(props.omegaCommand?.execution?.leaseId)}

@@ -14,6 +14,7 @@ import { DivergenceAlertsPanel } from './DivergenceAlertsPanel';
 import { ValueNavigatorPanel } from './ValueNavigatorPanel';
 import { ConnectorPanel } from './ConnectorPanel';
 import { WholeEcosystemDashboard } from './WholeEcosystemDashboard';
+import { bodyFixpointSignal } from './whole-ecosystem-dashboard-model';
 import { InvisibleComputer } from './InvisibleComputer';
 import { WaterFlowPanel } from './WaterFlowPanel';
 import { LifecycleFlow, deriveStageStates, type LifecycleStage } from './LifecycleFlow';
@@ -593,7 +594,7 @@ export function App() {
             <section className="ecosystem-body-strip" aria-label="Unified full-stack ecosystem body">
               <div className="ecosystem-body-heading">
                 <span>Ω∞v FULL-STACK BODY · {ecosystemBody.bodyVersion}</span>
-                <strong>{ecosystemBody.status}</strong>
+                <strong>{bodyFixpointSignal(ecosystemBody).status}</strong>
               </div>
               <div className="ecosystem-body-layers">
                 {Object.entries(ecosystemBody.layers ?? {}).map(([name, layer]: [string, any]) => (
@@ -602,7 +603,9 @@ export function App() {
                   </span>
                 ))}
               </div>
-              <small>{ecosystemBody.expansion?.moduleInvariant} · read-only · bounded · append-only</small>
+              <small>
+                {ecosystemBody.expansion?.moduleInvariant} · local body {ecosystemBody.status ?? 'UNKNOWN'} · {bodyFixpointSignal(ecosystemBody).source}
+              </small>
             </section>
           )}
           <EcosystemPanel />
@@ -821,6 +824,7 @@ export function App() {
             ledgerIntegrity={ledgerIntegrity}
             history={history}
             ecosystemBody={ecosystemBody}
+            capabilityObserved={kernelCapabilities !== null}
             omegaCommand={omegaCommand}
             onFocusCommand={setOmegaIntent}
           />
