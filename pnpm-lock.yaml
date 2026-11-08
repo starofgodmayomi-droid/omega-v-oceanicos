@@ -61,6 +61,9 @@ importers:
       '@oceanicos/omega':
         specifier: workspace:*
         version: link:../../packages/omega
+      '@oceanicos/omnios':
+        specifier: workspace:*
+        version: link:../../packages/omnios
       '@oceanicos/remember':
         specifier: workspace:*
         version: link:../../packages/remember
@@ -311,6 +314,22 @@ importers:
       '@oceanicos/kai':
         specifier: workspace:*
         version: link:../kai
+    devDependencies:
+      '@types/node':
+        specifier: ^26.6.4
+        version: 26.6.4
+
+  packages/omnios:
+    dependencies:
+      '@oceanicos/elion':
+        specifier: workspace:*
+        version: link:../elion
+      '@oceanicos/kai':
+        specifier: workspace:*
+        version: link:../kai
+      '@oceanicos/omega':
+        specifier: workspace:*
+        version: link:../omega
     devDependencies:
       '@types/node':
         specifier: ^26.6.4

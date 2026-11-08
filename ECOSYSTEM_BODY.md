@@ -41,6 +41,7 @@ When building or modifying code in this repo, always follow the loop:
 | Hands — execution (ELION) | `packages/elion/src/index.ts` — `executeElion`, local deterministic composer |
 | Judge — verification gate (OMEGA) | `packages/omega/src/index.ts` — `verifyOmega`, `sha256Hex` |
 | The loop route | `apps/api/src/execute-route.ts` — `POST /execute`, `POST /api/execute` |
+| Singularity Eye — one pass (THE OMNICOS) | `packages/omnios/src/index.ts` — `runOmnicosPass`, `easeProgress`, `classifyTool`; route `apps/api/src/omnios-route.ts`; doc `SINGULARITY_EYE.md` |
 | Memory & immutable ledger | `apps/api/src/kai-memory.ts` (SQLite `KaiMemory`), `packages/remember` |
 | Data contracts | `packages/types`, `packages/mini/src/single-body.ts` |
 | The Law | `CHARTER.md`, `AGENTS.md` |
@@ -48,6 +49,10 @@ When building or modifying code in this repo, always follow the loop:
 | The Rituals | `genesis.sh`, `ignite.sh`, `oceanicos-singularity.sh`, `scripts/` |
 
 `apps/api/src/invisible-computer.ts` re-exports the three actor packages, so existing API imports stay stable while each actor has its own package boundary.
+
+## THE OMNICOS (one pass, four phases)
+
+`packages/omnios` compresses the three actors into one bounded pass — PERCEIVE & ALIGN (KAI), CONNECT & GROW (ELION), SYNCHRONIZE (OMEGA), EVOLVE & REMEMBER (KAI ledger) — and answers with the eight-field receipt declared in `SINGULARITY_EYE.md`. A trap halts at the Shield and no tool is contacted; an unverifiable answer stays `UNKNOWN`; only a `VERIFIED` receipt enters the ledger. The pass composes text and appends one hash — it executes no repository operation.
 
 ## BOUNDARY
 

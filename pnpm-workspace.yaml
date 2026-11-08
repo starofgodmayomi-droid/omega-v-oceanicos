@@ -7,6 +7,7 @@ packages:
   - 'packages/kai'
   - 'packages/elion'
   - 'packages/omega'
+  - 'packages/omnios'
   - 'packages/attestation'
   - 'packages/gateway'
   - 'packages/kernel'

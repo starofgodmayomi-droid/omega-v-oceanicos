@@ -27,6 +27,7 @@ import { KaiMemoryStore } from './kai-memory.js';
 import { registerExecuteRoute } from './execute-route.js';
 import { FileRepoAccessStore, registerRepoAccessRoute, repoAccessKeyFrom } from './repo-access.js';
 import { registerRealityGateRoute } from './reality-gate-route.js';
+import { registerOmnicosRoute } from './omnios-route.js';
 import { openRealityMemory } from './reality-gate-store.js';
 import {
   ENCRYPTION_ALGORITHM,
@@ -314,6 +315,7 @@ export function createApp(
   });
   registerMeshValidationRoute(fastify, ledgerMemory, requireReadAccess, jsonError);
   registerExecuteRoute(fastify, kaiMemory, jsonError);
+  registerOmnicosRoute(fastify, { requireReadAccess, jsonError, store: kaiMemory });
 
   fastify.get('/health', async (_request, reply) => {
     let ledgerIntegrity;

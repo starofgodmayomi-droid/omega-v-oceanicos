@@ -55,6 +55,18 @@ The loop's three actors each have their own workspace package, so the repository
 - `authorityLevel` in the request body may be `AUTONOMOUS`; the endpoint still only answers (CAPABILITY != AUTHORITY), and the contract records a bounded plan.
 - Tests: `node --experimental-strip-types --test ./tests/integration/execute-route.integration.test.ts` (needs `apps/api/dist` built, like the route-contract test).
 
+## THE OMNICOS (singularity eye)
+`packages/omnios` (`@oceanicos/omnios`) composes the three actors into one bounded pass. Doc: `SINGULARITY_EYE.md`.
+
+- `runOmnicosPass({ intent, authorityLevel? })` returns `{ receipt, verification }`. The receipt is exactly eight fields: `entity`, `tool_used`, `status`, `game_detected`, `phase_t`, `evidence_hash`, `action`, `next_delta` — the zero-filler output contract, also returned verbatim by the route.
+- `phase_t` is `Ease(completed / 4)` with `Ease(t) = (1 - cos(tπ)) / 2`: `0.1464` on a Shield halt, `0.8536` when OMEGA cannot verify, `1` on a verified pass.
+- `classifyTool` picks `BROWSER | API | DB | COMMS | CODE` by first matching declared pattern and defaults to `LLM`. It is a **routing projection of the words, not proof a tool ran**; `action` states only what happened, and `evidence_hash` is `null` when no output existed.
+- HTTP (`apps/api/src/omnios-route.ts`): `POST /v1/omnios/intent` (aliases `/api/omnios/intent`, `/omnios/intent`), read access, body `{ intent, authorityLevel? }`, unknown body fields `400 UNSUPPORTED_FIELDS`, blank intent `400 INTENT_REQUIRED`, over 2000 chars `INTENT_TOO_LONG`. A `DIVERGENT` answer is HTTP 200 — a verdict, not a failure.
+- **Ledger**: only a `VERIFIED` receipt with an evidence hash is appended via `KaiMemoryStore.remember`, so `GET /api/kai/memory` shows verified passes only; `DIVERGENT` and `UNKNOWN` write nothing. The route never executes a repository operation or contacts a network tool.
+- UI: `apps/web/src/OmnicosPanel.tsx` — three panes (intent + limbs, the four-phase FSM with the Ease bar, the JSON receipt). It confirms `EVOLVE & REMEMBER` honestly by re-reading `/kai/memory` and matching the receipt's `evidence_hash`; a mismatch renders `UNRECORDED`.
+- Tests: `node --experimental-strip-types --test ./tests/integration/omnios.integration.test.ts` (needs `packages/omnios/dist` + `apps/api/dist`). It forces the fail-closed path by pointing `OMEGA_LLM_BASE_URL` at a closed port, so no provider is reached.
+- `pnpm-workspace.yaml` lists packages **explicitly**; a new package must be added there and to `apps/api/package.json`, then `pnpm install` (the setup service's `--frozen-lockfile` fails otherwise).
+
 ## Single body compression (4×4×4×4)
 `GET /v1/ecosystem/body` carries a `compression` block: the seven runtime layers projected onto four axes of four coordinates (256 cells) with a local compress→expand proof. `POST /v1/ecosystem/body/expand` takes `{ compression }` and returns the records; a tampered digest is `400 DIGEST_MISMATCH`. Contract: `packages/mini/src/single-body.ts`; doc: `docs/SINGLE-BODY-4X4X4X4.md`; UI: `apps/web/src/SingleBodyPanel.tsx`. Coordinates are a declared projection (`body.layers.v1`), not inferred truth.
 
