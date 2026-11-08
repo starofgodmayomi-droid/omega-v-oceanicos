@@ -35,8 +35,23 @@ test('a scam halts divergent before ELION and does not touch memory', async () =
   );
 });
 
+test('a full-width scam homograph halts divergent before ELION', async () => {
+  const step = await runKaixelionOmega(input({ intent: 'ｐｒｉｖａｔｅ ｋｅｙ' }));
+  assert.equal(step.status, 'DIVERGENT');
+  assert.equal(step.composed, null);
+  assert.equal(step.ledgerMutation, false);
+  assert.deepEqual(step.memory, [prior]);
+});
+
 test('a directive without autonomous authority is not executed', async () => {
   const step = await runKaixelionOmega(input({ intent: 'Deploy the production service' }));
+  assert.equal(step.status, 'NOT_EXECUTED');
+  assert.equal(step.composed, null);
+  assert.deepEqual(step.memory, [prior]);
+});
+
+test('a full-width directive is not executed', async () => {
+  const step = await runKaixelionOmega(input({ intent: 'Ｄｅｐｌｏｙ the production service' }));
   assert.equal(step.status, 'NOT_EXECUTED');
   assert.equal(step.composed, null);
   assert.deepEqual(step.memory, [prior]);
