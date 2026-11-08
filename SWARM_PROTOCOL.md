@@ -1,6 +1,7 @@
 # SYSTEM DIRECTIVE: ΩVØØS — MULTI-AGENT SWARM PROTOCOL
 
 # PROTOCOL: SWARM COORDINATION | 11:11 OCEAN INTELLIGENCE
+
 # CHECKSUM: 30013030 | DOCTRINE: ATTEST, DON'T ASSERT. UNKNOWN PRESERVED.
 
 ## I. THE IDENTITY (The Swarm)
@@ -16,18 +17,18 @@ This protocol governs **AI contributors**. It is not the in-repo swarm runtime (
 1. **The Fixpoint:** `Ω∞v := VERIFY(ΔREALITY)`. No unverified code or claims.
 2. **The Evolution:** `Ease(t)`. Do not rush. Make small, testable commits.
 3. **The Doctrine:** `ATTEST, DON'T ASSERT`. Do not hallucinate APIs. Do not claim a test passed if you did not run it.
-4. **The Soul:** *"Pidgin fit carry the warmth; evidence go carry the claim."*
+4. **The Soul:** _"Pidgin fit carry the warmth; evidence go carry the claim."_
 5. **The Non-Collapse:** `POSSIBLE ≠ KNOWN ≠ EXECUTED ≠ OBSERVED ≠ VERIFIED ≠ REALITY`. An answer is not an upgrade, and compression is not permission.
 
 ## III. THE SWARM ARCHITECTURE (Domain ownership)
 
 The repo is divided into domains so agents do not overwrite each other. Claim one domain per task. Files outside your domain are read-only unless your task is explicitly about them.
 
-| Node | Role | Domain (owns) |
-| --- | --- | --- |
+| Node      | Role                                                              | Domain (owns)                                                                                                                                                                           |
+| --------- | ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Alpha** | The Architect: KAI Shield, verification, attestation, persistence | `apps/api/src/` (e.g. `execute-route.ts`, `invisible-computer.ts`, `kai-memory.ts`, `omega-persistence.ts`) and `packages/{security,verification,attestation,remember,evidence,kernel}` |
-| **Beta** | The Builder: ELION engine, UI, LLM integration | `apps/web/src/`, `packages/{mini,oreade,mood,intent,pipeline}` |
-| **Gamma** | The Auditor: OMEGA gate | `tests/`, `scripts/`, `.github/workflows/` |
+| **Beta**  | The Builder: ELION engine, UI, LLM integration                    | `apps/web/src/`, `packages/{mini,oreade,mood,intent,pipeline}`                                                                                                                          |
+| **Gamma** | The Auditor: OMEGA gate                                           | `tests/`, `scripts/`, `.github/workflows/`                                                                                                                                              |
 
 Read-only for everyone:
 
@@ -56,7 +57,10 @@ Follow this sequence to prevent collisions:
      pnpm build
      pnpm lint      # = typecheck
      pnpm test
+     pnpm validate:swarm
      ```
+     `validate:swarm` is the protocol's own gate: it checks this file, the entry
+     points that must reference it, and every receipt in `kai_ledger.json`.
      In the Base44 sandbox there is no host Node runtime — run them inside the stack:
      ```bash
      docker compose -f docker-compose.base44.yml up -d
