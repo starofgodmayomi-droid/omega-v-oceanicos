@@ -3,7 +3,12 @@
   "checksum": "30013030",
   "doctrine": "ATTEST, DON'T ASSERT. UNKNOWN PRESERVED.",
   "append_only": true,
-  "status_values": ["VERIFIED", "DIVERGENT", "UNKNOWN", "NOT_EXECUTED"],
+  "status_values": [
+    "VERIFIED",
+    "DIVERGENT",
+    "UNKNOWN",
+    "NOT_EXECUTED"
+  ],
   "rule": "Append only. Never rewrite or delete an entry. On conflict keep both receipts, ordered by timestamp. See SWARM_PROTOCOL.md §VI.",
   "entries": [
     {
@@ -21,6 +26,20 @@
       "tests_passed": null,
       "evidence_hash": null,
       "next_delta": "Claim one domain from SWARM_PROTOCOL.md §III, branch as agent/<platform>/<task>, and append your own receipt."
+    },
+    {
+      "timestamp": "2026-11-08T16:25:08Z",
+      "agent_id": "grok",
+      "branch": "agent/alpha/gaiacos-risk-gate",
+      "status": "VERIFIED",
+      "files_touched": [
+        "apps/api/src/invisible-computer.ts",
+        "tests/integration/execute-route.integration.test.ts",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "a5676d48e95769081b956372b2834817489ae9d63bdad5b00969529ee2a4c3ea",
+      "next_delta": "Gamma reviews this PR. Do not merge from the worker. Do not widen KAI_SHIELD_PATTERNS."
     }
   ]
 }
