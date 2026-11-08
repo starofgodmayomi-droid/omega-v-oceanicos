@@ -2906,33 +2906,131 @@ body {
   line-height: 1.45;
 }
 .ovoos-manifest-section li small.ovoos-binding { color: #7f8c99; }
-.ovoos-tiers { margin-top: 12px; }
-.ovoos-tiers > span { color: #ffc800; font-size: 7.5px; letter-spacing: 0.12em; }
-.ovoos-tiers ul {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 8px;
-  margin: 7px 0 0;
-  padding: 0;
-  list-style: none;
+/* ── Hive-mind telemetry: tiers expanded into per-species live records ── */
+#ovoos-hive-mind { scroll-margin-top: 74px; }
+.hive-mind-bar {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 7px 20px;
+  border-bottom: 1px solid rgba(0, 240, 255, 0.28);
+  background: rgba(4, 9, 16, 0.96);
+  backdrop-filter: blur(10px);
+  color: var(--omega-foam-muted);
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  letter-spacing: 0.06em;
 }
-.ovoos-tiers li {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 2px 6px;
-  padding: 7px 9px;
-  border-left: 1px solid rgba(255, 200, 0, 0.35);
+.hive-mind-title {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 3px 9px;
+  border: 1px solid rgba(0, 240, 255, 0.28);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--omega-current);
+  font: inherit;
   font-size: 8px;
+  letter-spacing: 0.14em;
+  white-space: nowrap;
+  cursor: pointer;
 }
-.ovoos-tiers li b {
+.hive-mind-title em { font-style: normal; font-size: 7.5px; letter-spacing: 0.1em; }
+.hive-mind-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+  flex: 1 1 240px;
+  min-width: 0;
+}
+.hive-mind-tier { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 9px; white-space: nowrap; }
+.hive-mind-tier b {
+  color: #ffc800;
+  font-size: 7px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.hive-mind-tier span { display: inline-flex; align-items: center; gap: 4px; color: var(--omega-foam); font-size: 8px; }
+.hive-mind-tier i { width: 5px; height: 5px; border-radius: 50%; }
+.hive-mind-empty { color: var(--omega-unknown); font-size: 8px; }
+.hive-mind-fresh {
+  flex-shrink: 0;
+  color: var(--omega-unknown);
+  font-size: 7.5px;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+.ovoos-hive {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(255, 200, 0, 0.22);
+}
+.ovoos-hive-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  justify-content: space-between;
+  color: #ffc800;
+  font-size: 7.5px;
+  letter-spacing: 0.12em;
+}
+.ovoos-hive-tiers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 9px;
+  margin-top: 8px;
+}
+.ovoos-hive-tier {
+  padding: 8px 10px;
+  border-left: 1px solid rgba(255, 200, 0, 0.4);
+  background: rgba(2, 6, 23, 0.5);
+}
+.ovoos-hive-tier > b {
+  display: block;
   color: var(--omega-current);
   font-size: 7.5px;
   font-weight: 500;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
 }
-.ovoos-tiers li span { grid-column: 1 / -1; color: var(--omega-foam); }
-.ovoos-tiers li small { grid-column: 1 / -1; color: var(--omega-foam-muted); font-size: 7px; }
-.ovoos-tiers li em { grid-row: 1; grid-column: 2; font-style: normal; font-size: 7px; }
+.ovoos-hive-tier > small {
+  display: block;
+  margin-top: 2px;
+  color: var(--omega-foam-muted);
+  font-size: 7px;
+  line-height: 1.4;
+}
+.ovoos-hive-tier ul {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.ovoos-hive-tier li {
+  display: grid;
+  grid-template-columns: 6px minmax(0, 1fr) auto;
+  gap: 2px 6px;
+  align-items: baseline;
+  font-size: 8px;
+}
+.ovoos-hive-tier li i { width: 5px; height: 5px; border-radius: 50%; align-self: center; }
+.ovoos-hive-tier li span { color: var(--omega-foam); }
+.ovoos-hive-tier li em { grid-column: 3; font-style: normal; font-size: 7px; letter-spacing: 0.05em; }
+.ovoos-hive-tier li small { grid-column: 2 / -1; color: var(--omega-foam-muted); font-size: 7px; line-height: 1.45; }
+.ovoos-hive-tier li small.ovoos-hive-digest { color: #4a5a6a; letter-spacing: 0.02em; }
+.ovoos-hive-boundary { margin: 8px 0 0; color: #4a5a6a; font-size: 7px; line-height: 1.5; }
+@media (max-width: 760px) {
+  .hive-mind-bar { padding: 6px 14px; gap: 8px; }
+  .hive-mind-fresh { font-size: 7px; }
+}
 .ovoos-declared {
   margin: 12px 0 0;
   color: #4a5a6a;

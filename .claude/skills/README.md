@@ -20,6 +20,7 @@ its source.
 | `lucid-continuum` | `57a34241ff3d52ed143da49f1a9a04380743c2adf09bf9916553146915d711da` | 2026-10-16 |
 | `oceanicos-total-continuum` | `23aae4defff33f608b6ab1419a19e05b550565b8c44bc86aca3a31e24fa15086` | 2026-10-24 |
 | `kaixelionxomega` | `ab59d4fb7cd81a9ce489720f7f5044336736a913f2f706733fda24c69874679f` | 2026-10-30 |
+| `ovoos-entity-architecture` | `c5b82968eaba5bbb4131e9cbea72ea0f77495ba2e73a46b8bcc061838d6d4116` | 2026-11-08 |
 
 Verify an installed skill still matches what was recorded:
 

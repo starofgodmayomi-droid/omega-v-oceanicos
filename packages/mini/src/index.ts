@@ -182,6 +182,8 @@ export {
   OVOOS_SECTION_ORDER,
   OVOOS_SECTION_TITLE,
   OVOOS_MANIFEST_EVIDENCE_BOUNDARY,
+  OVOOS_TIER_ORDER,
+  OVOOS_HIVE_SPECIES,
   summarizeOvoosManifest,
 } from './ovoos-manifest.js';
 export type {
@@ -191,6 +193,9 @@ export type {
   OvoosManifestSignal,
   OvoosNetworkTier,
   OvoosOrganReading,
+  OvoosSpeciesDeclaration,
+  OvoosSpeciesTelemetry,
+  OvoosTierId,
 } from './ovoos-manifest.js';
 export type { TotalCompressionIssueCode, TotalCompressionPackage, TotalCompressionRequest, TotalCompressionScope, TotalCompressionValidationIssue, TotalCompressionValidationResult } from './total-compress.js';
 export {

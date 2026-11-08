@@ -58,6 +58,33 @@ invertebrates as telemetry nodes — and each tier's evidence is its own thread
 record (`kai-shield`, `mesh-convergence`, `public-interface`). A missing thread
 is `UNKNOWN`; one diverging thread pulls the whole filament to `DIVERGENT`.
 
+### Per-species telemetry (`manifest.hiveMind`)
+
+Each tier is expanded into live per-species records for the seven declared
+species — Sharks and Marlins (apex predators), Whales and Dolphins (cetaceans),
+Jellyfish, Rays and Baitballs (pelagics and invertebrates):
+
+```json
+{ "id": "whales", "name": "Whales", "tier": "cetaceans",
+  "declaredRole": "long-range acoustic relay", "bindsTo": "mesh-convergence",
+  "observed": "CONVERGED_PASS", "signals": 1, "evidence": "VERIFIED",
+  "recordDigest": "<sha256 over this record>" }
+```
+
+- `observed` is the status word the bound surface answered with on this read;
+  a surface that stayed silent is `NO_SIGNAL` and the record is `UNKNOWN`.
+- `signals` is how many tethers answered on that surface (measured).
+- `recordDigest` covers the record only — it is not a digest of a population.
+- `hiveMind.status` is the weakest species record, `observedSpecies` counts the
+  species whose surface answered, and `hiveMind.tiers` carries each tier with
+  its `species` ids.
+
+The web app pins a hive-mind bar (`apps/web/src/HiveMindBar.tsx`) under the
+ambient strip: it re-reads this block every 15 s so the per-species telemetry is
+visible at every scroll position, and it jumps to the full record table
+(`#ovoos-hive-mind`) inside the ΩVØØS panel. The panel never hides the block;
+the bar never invents a species the API did not report.
+
 `98.7%` hydrodynamic efficiency and `100%` neural synchrony are the manifest's
 **declared labels**: the payload carries `measured: false`, and the surface
 prints them as DECLARED beside the *measured* region synchrony of the read.

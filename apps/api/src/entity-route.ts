@@ -140,7 +140,11 @@ export function registerOvoosEntityRoute(fastify: FastifyInstance, deps: OvoosEn
     const summary = summarizeOvoosEntity({ compression: compressed, expansion });
     const tethers = summary.regions
       .filter((region) => region.region === 'threads' || region.region === 'glober')
-      .flatMap((region) => region.records.map((record) => ({ id: record.id, evidence: record.evidence })));
+      .flatMap((region) => region.records.map((record) => ({
+        id: record.id,
+        evidence: record.evidence,
+        status: record.status,
+      })));
     const manifest = summarizeOvoosManifest({
       verificationStatus: observation.verificationStatus,
       ledgerIntact: observation.ledgerIntact,

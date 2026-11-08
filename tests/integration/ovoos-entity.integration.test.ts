@@ -10,6 +10,7 @@ const {
   OVOOS_REGION_ORDER,
   OVOOS_MANIFEST_VERSION,
   OVOOS_SECTION_ORDER,
+  OVOOS_HIVE_SPECIES,
   compressOvoosEntity,
   expandOvoosEntity,
   summarizeOvoosEntity,
@@ -120,10 +121,10 @@ test('GET /v1/entity/ovoos compresses the runtime into five observed regions', a
 
 test('the system manifest binds every organ to one observation and never measures its declared numbers', () => {
   const threads = [
-    { id: 'kai-shield', evidence: 'SUPPORTED' },
-    { id: 'authority-gate', evidence: 'SUPPORTED' },
-    { id: 'mesh-convergence', evidence: 'VERIFIED' },
-    { id: 'public-interface', evidence: 'SUPPORTED' },
+    { id: 'kai-shield', evidence: 'SUPPORTED', status: 'BOUNDED' },
+    { id: 'authority-gate', evidence: 'SUPPORTED', status: 'HUMAN_GATE_REQUIRED' },
+    { id: 'mesh-convergence', evidence: 'VERIFIED', status: 'CONVERGED' },
+    { id: 'public-interface', evidence: 'SUPPORTED', status: 'READY' },
   ];
   const sound = summarizeOvoosManifest({
     verificationStatus: 'VERIFIED',
@@ -148,6 +149,26 @@ test('the system manifest binds every organ to one observation and never measure
   assert.equal(sound.status, 'SUPPORTED');
   assert.match(sound.evidenceBoundary, /declared labels, not measurements/);
 
+  // Hive-mind: each tier is expanded into live per-species telemetry records.
+  assert.deepEqual(
+    sound.hiveMind.species.map((entry: any) => entry.id),
+    OVOOS_HIVE_SPECIES.map((entry: any) => entry.id),
+  );
+  assert.deepEqual(
+    sound.hiveMind.tiers.map((tier: any) => tier.species),
+    [['sharks', 'marlins'], ['whales', 'dolphins'], ['jellyfish', 'rays', 'baitballs']],
+  );
+  assert.ok(sound.hiveMind.species.every((entry: any) => (
+    entry.bindsTo === sound.hiveMind.tiers.find((tier: any) => tier.id === entry.tier).bindsTo
+  )));
+  const shark = sound.hiveMind.species.find((entry: any) => entry.id === 'sharks');
+  assert.equal(shark.observed, 'BOUNDED');
+  assert.equal(shark.signals, 1);
+  assert.equal(shark.evidence, 'SUPPORTED');
+  assert.match(shark.recordDigest, /^[0-9a-f]{64}$/);
+  assert.equal(sound.hiveMind.observedSpecies, 7);
+  assert.equal(sound.hiveMind.status, 'SUPPORTED');
+
   const divergent = summarizeOvoosManifest({
     verificationStatus: 'DIVERGENT',
     ledgerIntact: false,
@@ -160,6 +181,12 @@ test('the system manifest binds every organ to one observation and never measure
   assert.equal(divergent.status, 'UNKNOWN');
   assert.equal(divergent.distributedNetwork[0].evidence, 'UNKNOWN');
   assert.equal(divergent.organs.find((organ: any) => organ.id === 'bio-regeneration-core').evidence, 'UNVERIFIED');
+  assert.equal(divergent.hiveMind.status, 'UNKNOWN');
+  assert.equal(divergent.hiveMind.observedSpecies, 0);
+  assert.ok(divergent.hiveMind.species.every((entry: any) => (
+    entry.observed === 'NO_SIGNAL' && entry.signals === 0 && entry.evidence === 'UNKNOWN'
+  )));
+  assert.ok(divergent.hiveMind.species.every((entry: any) => /^[0-9a-f]{64}$/.test(entry.recordDigest)));
 });
 
 test('GET /v1/entity/ovoos carries the system manifest bound to this runtime', async () => {
@@ -180,6 +207,19 @@ test('GET /v1/entity/ovoos carries the system manifest bound to this runtime', a
     assert.deepEqual(body.manifest.neuralSynchronyTarget, { value: '100%', measured: false });
     assert.equal(body.manifest.status, 'SUPPORTED');
     assert.ok(body.manifest.distributedNetwork.every((tier: any) => tier.evidence !== 'UNKNOWN'));
+
+    // The hive-mind is live: seven species records, each bound to its tier's surface.
+    assert.equal(body.manifest.hiveMind.tiers.length, 3);
+    assert.equal(body.manifest.hiveMind.species.length, 7);
+    assert.equal(body.manifest.hiveMind.observedSpecies, 7);
+    assert.ok(body.manifest.hiveMind.species.every((entry: any) => (
+      entry.bindsTo === body.manifest.hiveMind.tiers.find((tier: any) => tier.id === entry.tier).bindsTo
+      && entry.signals === 1
+      && typeof entry.observed === 'string' && entry.observed.length > 0
+      && entry.observed !== 'NO_SIGNAL'
+      && /^[0-9a-f]{64}$/.test(entry.recordDigest)
+    )));
+    assert.notEqual(body.manifest.hiveMind.status, 'UNKNOWN');
     assert.equal(body.ledgerMutation, false);
   } finally {
     await app.close();

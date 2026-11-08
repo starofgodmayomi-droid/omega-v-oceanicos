@@ -3,6 +3,7 @@ import { EcosystemPanel } from './EcosystemPanel';
 import { RealityPanel } from './RealityPanel';
 import { TransitionProvenancePanel } from './TransitionProvenancePanel';
 import { AmbientBar } from './AmbientBar';
+import { HiveMindBar } from './HiveMindBar';
 import { IntentFlow } from './IntentFlow';
 import { SystemControlsPanel } from './SystemControlsPanel';
 import { SystemHealthPanel } from './SystemHealthPanel';
@@ -686,6 +687,9 @@ export function App() {
         miningActive={minerActive}
       />
       </div>
+
+      {/* Hive-mind: pinned so the per-species telemetry never scrolls away. */}
+      <HiveMindBar />
 
       {/* Error toast */}
       {lastError && (

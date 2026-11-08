@@ -12,6 +12,7 @@
  * measurements, and the measured synchrony lives in `summarizeOvoosEntity`.
  * Compression is not permission and an organ is not an executed capability.
  */
+import { createHash } from 'node:crypto';
 import type { OvoosEvidence } from './ovoos-entity.js';
 
 export const OVOOS_MANIFEST_VERSION = 'oceanicos.manifest.v1';
@@ -34,6 +35,10 @@ export const OVOOS_SECTION_TITLE: Readonly<Record<OvoosManifestSection, string>>
   'hive-mind-network': 'HIVE-MIND NETWORK DEPLOYMENT',
 });
 
+export const OVOOS_TIER_ORDER = ['apex-predators', 'cetaceans', 'pelagics-invertebrates'] as const;
+
+export type OvoosTierId = (typeof OVOOS_TIER_ORDER)[number];
+
 /** One observation per region of the runtime the manifest can be bound to. */
 export interface OvoosManifestSignal {
   readonly verificationStatus: string;
@@ -42,8 +47,45 @@ export interface OvoosManifestSignal {
   readonly meshStatus: string;
   readonly remoteMutation: boolean;
   readonly evidenceHash: string | null;
-  /** Every observed tether record (KAI threads plus the rim), so a tier reports its own state. */
-  readonly tethers: readonly { readonly id: string; readonly evidence: OvoosEvidence }[];
+  /**
+   * Every observed tether record (KAI threads plus the rim), so a tier and each
+   * species under it report their own state. `status` is the word the bound
+   * surface actually answered with this read.
+   */
+  readonly tethers: readonly { readonly id: string; readonly evidence: OvoosEvidence; readonly status?: string }[];
+}
+
+/** The manifest's species, declared. Each one binds to the surface its tier binds to. */
+export interface OvoosSpeciesDeclaration {
+  readonly id: string;
+  readonly name: string;
+  readonly tier: OvoosTierId;
+  readonly declaredRole: string;
+  readonly bindsTo: string;
+}
+
+export const OVOOS_HIVE_SPECIES: readonly OvoosSpeciesDeclaration[] = Object.freeze([
+  { id: 'sharks', name: 'Sharks', tier: 'apex-predators', declaredRole: 'frontline tactical interceptor', bindsTo: 'kai-shield' },
+  { id: 'marlins', name: 'Marlins', tier: 'apex-predators', declaredRole: 'physical enforcer at the rim', bindsTo: 'kai-shield' },
+  { id: 'whales', name: 'Whales', tier: 'cetaceans', declaredRole: 'long-range acoustic relay', bindsTo: 'mesh-convergence' },
+  { id: 'dolphins', name: 'Dolphins', tier: 'cetaceans', declaredRole: 'sonar repeater', bindsTo: 'mesh-convergence' },
+  { id: 'jellyfish', name: 'Jellyfish', tier: 'pelagics-invertebrates', declaredRole: 'localised high-density telemetry node', bindsTo: 'public-interface' },
+  { id: 'rays', name: 'Rays', tier: 'pelagics-invertebrates', declaredRole: 'benthic telemetry node', bindsTo: 'public-interface' },
+  { id: 'baitballs', name: 'Baitballs', tier: 'pelagics-invertebrates', declaredRole: 'collective density signal', bindsTo: 'public-interface' },
+]);
+
+/**
+ * One live telemetry record per species: the surface it binds to, the status
+ * word that surface answered with this read, how many tethers answered, and a
+ * digest over the record itself.
+ */
+export interface OvoosSpeciesTelemetry extends OvoosSpeciesDeclaration {
+  readonly observed: string;
+  /** Tethered records the bound surface answered with on this read (measured). */
+  readonly signals: number;
+  readonly evidence: OvoosEvidence;
+  /** SHA-256 over this record only — a digest of the telemetry, not a proof of a population. */
+  readonly recordDigest: string;
 }
 
 export interface OvoosOrganReading {
@@ -60,10 +102,12 @@ export interface OvoosOrganReading {
 }
 
 export interface OvoosNetworkTier {
-  readonly id: string;
+  readonly id: OvoosTierId;
   readonly members: string;
   readonly declaredRole: string;
   readonly bindsTo: string;
+  /** The species ids this tier carries, in declaration order. */
+  readonly species: readonly string[];
   readonly evidence: OvoosEvidence;
 }
 
@@ -84,6 +128,14 @@ export interface OvoosManifestRead {
   readonly sections: readonly OvoosManifestSectionRead[];
   readonly organs: readonly OvoosOrganReading[];
   readonly distributedNetwork: readonly OvoosNetworkTier[];
+  /** The hive-mind deployed: each tier with its per-species telemetry records. */
+  readonly hiveMind: {
+    readonly status: OvoosEvidence;
+    readonly species: readonly OvoosSpeciesTelemetry[];
+    /** Species whose bound surface answered on this read (measured). */
+    readonly observedSpecies: number;
+    readonly tiers: readonly OvoosNetworkTier[];
+  };
   readonly evidenceBoundary: string;
 }
 
@@ -91,7 +143,9 @@ export const OVOOS_MANIFEST_EVIDENCE_BOUNDARY =
   'The anatomy is the supplied SYSTEM MANIFEST, declared. Each organ is bound to one observation this process made, '
   + 'and its evidence is that observation only. 98.7% hydrodynamic efficiency and 100% neural synchrony are the '
   + 'manifest\'s declared labels, not measurements. No sonar, spectrum, or telemetry number is plotted without naming '
-  + 'its source, and no organ grants deployment, mutation, or authority.';
+  + 'its source, and no organ grants deployment, mutation, or authority. A species telemetry record reports the surface '
+  + 'it binds to: its digest covers the record itself, not a population, and a species whose surface stayed silent is '
+  + 'NO_SIGNAL / UNKNOWN.';
 
 const EVIDENCE_RANK: Readonly<Record<OvoosEvidence, number>> = Object.freeze({
   VERIFIED: 0,
@@ -108,6 +162,28 @@ const tetherEvidence = (
   signal: OvoosManifestSignal,
   id: string,
 ): OvoosEvidence => signal.tethers.find((tether) => tether.id === id)?.evidence ?? 'UNKNOWN';
+
+/**
+ * One species record from the surface it binds to. Nothing is invented: the
+ * observation is the word that surface answered with, the signal count is
+ * how many tethers answered, and a surface that stayed silent is NO_SIGNAL.
+ */
+const speciesTelemetry = (
+  signal: OvoosManifestSignal,
+  declaration: OvoosSpeciesDeclaration,
+): OvoosSpeciesTelemetry => {
+  const surface = signal.tethers.filter((tether) => tether.id === declaration.bindsTo);
+  const statuses = Array.from(new Set(
+    surface.map((tether) => tether.status).filter((status): status is string => typeof status === 'string' && status.length > 0),
+  ));
+  const evidence = surface.length > 0 ? weakEvidence(surface.map((tether) => tether.evidence)) : 'UNKNOWN';
+  const observed = statuses.length > 0 ? statuses.join(' + ') : surface.length > 0 ? 'OBSERVED' : 'NO_SIGNAL';
+  const recordDigest = createHash('sha256')
+    .update([declaration.id, declaration.tier, declaration.bindsTo, observed, String(surface.length), evidence].join('|'))
+    .digest('hex');
+
+  return Object.freeze({ ...declaration, observed, signals: surface.length, evidence, recordDigest });
+};
 
 const weakEvidence = (evidence: readonly OvoosEvidence[]): OvoosEvidence =>
   evidence.reduce<OvoosEvidence>(
@@ -230,6 +306,7 @@ export function summarizeOvoosManifest(signal: OvoosManifestSignal): OvoosManife
       members: 'Sharks · Marlins',
       declaredRole: 'frontline tactical intercept units and physical enforcers',
       bindsTo: 'kai-shield',
+      species: OVOOS_HIVE_SPECIES.filter((entry) => entry.tier === 'apex-predators').map((entry) => entry.id),
       evidence: tetherEvidence(signal, 'kai-shield'),
     },
     {
@@ -237,6 +314,7 @@ export function summarizeOvoosManifest(signal: OvoosManifestSignal): OvoosManife
       members: 'Whales · Dolphins',
       declaredRole: 'long-range acoustic relays and sonar repeaters',
       bindsTo: 'mesh-convergence',
+      species: OVOOS_HIVE_SPECIES.filter((entry) => entry.tier === 'cetaceans').map((entry) => entry.id),
       evidence: tetherEvidence(signal, 'mesh-convergence'),
     },
     {
@@ -244,9 +322,12 @@ export function summarizeOvoosManifest(signal: OvoosManifestSignal): OvoosManife
       members: 'Jellyfish · Rays · Baitballs',
       declaredRole: 'localised high-density telemetry nodes',
       bindsTo: 'public-interface',
+      species: OVOOS_HIVE_SPECIES.filter((entry) => entry.tier === 'pelagics-invertebrates').map((entry) => entry.id),
       evidence: tetherEvidence(signal, 'public-interface'),
     },
   ];
+
+  const species = OVOOS_HIVE_SPECIES.map((declaration) => speciesTelemetry(signal, declaration));
 
   const sections: OvoosManifestSectionRead[] = OVOOS_SECTION_ORDER.map((section) => Object.freeze({
     section,
@@ -264,6 +345,12 @@ export function summarizeOvoosManifest(signal: OvoosManifestSignal): OvoosManife
     sections: Object.freeze(sections),
     organs: Object.freeze(organs),
     distributedNetwork: Object.freeze(distributedNetwork),
+    hiveMind: Object.freeze({
+      status: weakEvidence(species.map((record) => record.evidence)),
+      species: Object.freeze(species),
+      observedSpecies: species.filter((record) => record.signals > 0).length,
+      tiers: Object.freeze(distributedNetwork),
+    }),
     evidenceBoundary: OVOOS_MANIFEST_EVIDENCE_BOUNDARY,
   });
 }

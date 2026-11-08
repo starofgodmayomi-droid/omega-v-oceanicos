@@ -56,7 +56,27 @@ type ManifestTier = {
   members: string;
   declaredRole: string;
   bindsTo: string;
+  species?: string[];
   evidence: string;
+};
+
+type SpeciesTelemetry = {
+  id: string;
+  name: string;
+  tier: string;
+  declaredRole: string;
+  bindsTo: string;
+  observed: string;
+  signals: number;
+  evidence: string;
+  recordDigest: string;
+};
+
+type HiveMindRead = {
+  status: string;
+  species: SpeciesTelemetry[];
+  observedSpecies: number;
+  tiers: ManifestTier[];
 };
 
 type ManifestRead = {
@@ -69,6 +89,7 @@ type ManifestRead = {
   sections: { section: string; title: string; organs: ManifestOrgan[] }[];
   organs: ManifestOrgan[];
   distributedNetwork: ManifestTier[];
+  hiveMind?: HiveMindRead;
   evidenceBoundary: string;
 };
 
@@ -469,18 +490,41 @@ export function OvoosEntityPanel() {
             </article>
           ))}
         </div>
-        <div className="ovoos-tiers" aria-label="Distributed sensory network">
-          <span>NEURAL VECTOR FILAMENTS · DISTRIBUTED SENSORY NETWORK</span>
-          <ul>
-            {(entity?.manifest?.distributedNetwork ?? []).map((tier) => (
-              <li key={tier.id}>
+        <div className="ovoos-hive" id="ovoos-hive-mind" aria-label="Hive-mind live species telemetry">
+          <header className="ovoos-hive-head">
+            <span>HIVE-MIND NETWORK DEPLOYMENT · LIVE SPECIES TELEMETRY</span>
+            <span style={{ color: EVIDENCE_COLOR[entity?.manifest?.hiveMind?.status ?? 'UNKNOWN'] ?? SLATE }}>
+              {entity?.manifest?.hiveMind?.status ?? 'UNKNOWN'} · {entity?.manifest?.hiveMind?.observedSpecies ?? 0}/
+              {entity?.manifest?.hiveMind?.species.length ?? 0} SPECIES ANSWERING
+            </span>
+          </header>
+          <div className="ovoos-hive-tiers">
+            {(entity?.manifest?.hiveMind?.tiers ?? entity?.manifest?.distributedNetwork ?? []).map((tier) => (
+              <article key={tier.id} className="ovoos-hive-tier">
                 <b>{tier.id.replace(/-/g, ' ').toUpperCase()}</b>
-                <span>{tier.members}</span>
-                <small>{tier.declaredRole} · ↳ {tier.bindsTo}</small>
-                <em style={{ color: EVIDENCE_COLOR[tier.evidence] ?? SLATE }}>{tier.evidence}</em>
-              </li>
+                <small>{tier.members} · {tier.declaredRole} · ↳ {tier.bindsTo}</small>
+                <ul>
+                  {(entity?.manifest?.hiveMind?.species ?? [])
+                    .filter((record) => record.tier === tier.id)
+                    .map((record) => (
+                      <li key={record.id}>
+                        <i style={{ background: EVIDENCE_COLOR[record.evidence] ?? SLATE }} />
+                        <span>{record.name}</span>
+                        <em style={{ color: EVIDENCE_COLOR[record.evidence] ?? SLATE }}>{record.evidence}</em>
+                        <small className="ovoos-hive-surface">
+                          ↳ {record.bindsTo} · {record.observed} · {record.signals} signal{record.signals === 1 ? '' : 's'}
+                        </small>
+                        <small className="ovoos-hive-digest">sha256 {record.recordDigest.slice(0, 12)}…</small>
+                      </li>
+                    ))}
+                </ul>
+              </article>
             ))}
-          </ul>
+          </div>
+          <p className="ovoos-hive-boundary">
+            Each record reports the surface it binds to; its digest covers the record, not a population. A silent
+            surface is NO_SIGNAL / UNKNOWN.
+          </p>
         </div>
         <p className="ovoos-declared">
           DECLARED · HYDRODYNAMIC EFFICIENCY {entity?.manifest?.hydrodynamicEfficiency.value ?? '—'} · NEURAL SYNCHRONY
