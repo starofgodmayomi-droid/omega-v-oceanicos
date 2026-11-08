@@ -63,6 +63,7 @@ and what remains only a proposal or local evidence state.
 - 🌌 **[Oceanicos Max-Space Full Stack](skills/oceanicos-max-space-full-stack/SKILL.md)** — dimensional state space as bounded coordinates, clocks, and arrays
 - ⬆️ **[Oceanicos Verified Upgrade](skills/oceanicos-verified-upgrade/SKILL.md)** — repair and upgrade only through an observed, reversible pipeline
 - 💠 **[Ω∞v OS](skills/omega-v-os/SKILL.md)** — the ƆCEANiC_OS sequence as a finite kernel
+- 🦑 **[ΩVØØS Entity Architecture](skills/ovoos-entity-architecture/SKILL.md)** — the cybernetic squid, OMEGA gate, KAI threads, Glober, and VØ as one compress/expand/upgrade skill
 - 🔁 **[Lucid Continuum](skills/lucid-continuum/SKILL.md)** — handoff across passes without invented memory
 - 🔁 **[Oceanicos Total Continuum](skills/oceanicos-total-continuum/SKILL.md)** — one finite pass inside this public repository, then only an observed handoff
 - 🌐 **[Full-stack reality-access handoff](docs/upgrades/FULL_STACK_REALITY_ACCESS_2026-09-28.md)** — connector taxonomy without implicit ownership or authority

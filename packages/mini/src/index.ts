@@ -145,6 +145,36 @@ export type {
   SingleBodyRoundTrip,
   SingleBodySpace,
 } from './single-body.js';
+export {
+  compressOvoosEntity,
+  expandOvoosEntity,
+  summarizeOvoosEntity,
+  verifyOvoosRoundTrip,
+  OVOOS_CAPACITY,
+  OVOOS_ENTITY_CONTRACT,
+  OVOOS_ENTITY_NAME,
+  OVOOS_EVIDENCE_BOUNDARY,
+  OVOOS_EVIDENCE_ORDER,
+  OVOOS_NODE_TOPOLOGY,
+  OVOOS_REGION_CAPACITY,
+  OVOOS_REGION_MEANING,
+  OVOOS_REGION_ORDER,
+} from './ovoos-entity.js';
+export type {
+  CompressedOvoosEntity,
+  OvoosCompression,
+  OvoosEntitySummary,
+  OvoosEvidence,
+  OvoosExpansion,
+  OvoosIssue,
+  OvoosIssueCode,
+  OvoosRegion,
+  OvoosRegionCell,
+  OvoosRegionCellEntry,
+  OvoosRegionRecord,
+  OvoosRegionView,
+  OvoosRoundTrip,
+} from './ovoos-entity.js';
 export type { TotalCompressionIssueCode, TotalCompressionPackage, TotalCompressionRequest, TotalCompressionScope, TotalCompressionValidationIssue, TotalCompressionValidationResult } from './total-compress.js';
 export {
   MAX_NEXT_CANDIDATES,

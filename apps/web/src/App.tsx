@@ -15,6 +15,7 @@ import { ValueNavigatorPanel } from './ValueNavigatorPanel';
 import { ConnectorPanel } from './ConnectorPanel';
 import { WholeEcosystemDashboard } from './WholeEcosystemDashboard';
 import { InvisibleComputer } from './InvisibleComputer';
+import { OvoosEntityPanel } from './OvoosEntityPanel';
 import { WaterFlowPanel } from './WaterFlowPanel';
 import { LifecycleFlow, deriveStageStates, type LifecycleStage } from './LifecycleFlow';
 import { GlobeViewport } from './GlobeViewport';
@@ -806,6 +807,9 @@ export function App() {
             </button>
           </div>
         </section>
+
+        {/* ΩVØØS entity: the supplied visual architecture, bound to observed runtime evidence. */}
+        <OvoosEntityPanel />
 
         <section
           id="background-full-stack-workspace"

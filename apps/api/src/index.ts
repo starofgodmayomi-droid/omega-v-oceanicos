@@ -19,6 +19,7 @@ import { registerEcosystemRoute } from './ecosystem-route.js';
 import { registerNavigatorEvidenceRoute } from './navigator-route.js';
 import { registerRealityRoute } from './reality-route.js';
 import { registerDependencyRoute } from './dependency-route.js';
+import { registerOvoosEntityRoute } from './entity-route.js';
 import { registerValueNavigatorRoute } from './value-navigator-route.js';
 import { registerConnectorObservationRoute, type ConnectorAdmissionEvidenceResolver } from './connector-observation-route.js';
 import { OmegaCommandStore, OmegaIdempotencyConflictError, registerOmegaRoutes } from './omega.js';
@@ -276,6 +277,32 @@ export function createApp(
   });
   registerMeshValidationRoute(fastify, ledgerMemory, requireReadAccess, jsonError);
   registerExecuteRoute(fastify, kaiMemory, jsonError);
+  registerOvoosEntityRoute(fastify, {
+    requireReadAccess,
+    observe: async () => {
+      const telemetry = ObserverEngine.generateTelemetry();
+      const mesh = MultiRegionMeshConvergence.simulateConvergence(telemetry);
+      const receipt = await declarativeVerification.evaluateObservation({
+        id: telemetry.uuid,
+        timestamp: telemetry.timestamp,
+        subject: 'omega-v-oceanicos',
+        payload: telemetry,
+        confidence: 1,
+        provenanceSignature: 'local://observer-runtime',
+      });
+      const capability = platformKernel.getCapabilitySnapshot();
+      return {
+        verificationStatus: receipt.status,
+        ledgerIntact: ledgerMemory.verifyIntegrity(),
+        quorumReached: mesh.quorumReached,
+        meshStatus: mesh.effectiveStatus,
+        humanGateRequired: capability.humanAuthorizationRequired,
+        persistenceMode: persistenceEnabled ? 'file' as const : 'memory' as const,
+        remoteMutation: capability.capabilities.remoteMutation,
+        arbitraryShellExecution: capability.capabilities.arbitraryShellExecution,
+      };
+    },
+  });
 
   fastify.get('/health', async (_request, reply) => {
     let ledgerIntegrity;
