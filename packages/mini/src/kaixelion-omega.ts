@@ -136,6 +136,7 @@ function compose(intent: string): string {
 export async function runKaixelionOmega(input: KaixelionInput): Promise<KaixelionResult> {
   const memory = Array.isArray(input.memory) ? input.memory : [];
   const intent = typeof input.intent === 'string' ? input.intent.trim() : '';
+  const observedIntent = intent.normalize('NFKC');
   const observed = typeof input.observed === 'string' ? input.observed : '';
   const shapeInvalid =
     (input.authority !== 'READ_ONLY' && input.authority !== 'AUTONOMOUS') ||
@@ -168,7 +169,7 @@ export async function runKaixelionOmega(input: KaixelionInput): Promise<Kaixelio
 
   const matchedLabels: string[] = [];
   for (const entry of SHIELD) {
-    if (entry.pattern.test(intent) && !matchedLabels.includes(entry.label))
+    if (entry.pattern.test(observedIntent) && !matchedLabels.includes(entry.label))
       matchedLabels.push(entry.label);
   }
   if (matchedLabels.length > 0) {
@@ -190,7 +191,7 @@ export async function runKaixelionOmega(input: KaixelionInput): Promise<Kaixelio
     );
   }
 
-  const required = DIRECTIVE.test(intent) ? 'AUTONOMOUS' : 'READ_ONLY';
+  const required = DIRECTIVE.test(observedIntent) ? 'AUTONOMOUS' : 'READ_ONLY';
   if (required === 'AUTONOMOUS' && input.authority !== 'AUTONOMOUS') {
     return halted(
       'NOT_EXECUTED',
