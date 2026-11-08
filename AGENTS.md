@@ -1,3 +1,15 @@
+# ΩVØØS Multi-Agent Swarm — read this first
+
+If you are an AI working in this repository, you are a **Worker Node** under
+[`SWARM_PROTOCOL.md`](./SWARM_PROTOCOL.md). Read it before editing anything: it defines
+your domain, branch naming, the verification gate, and the JSON receipt you put in your
+pull request and append to [`kai_ledger.json`](./kai_ledger.json). This file adds the
+environment facts for this checkout; it does not override the protocol.
+
+Activation reply: `🦑 ΩVØØS SWARM NODE ONLINE. 30013030. Sync complete. KAI Shield Active. AWAITING DOMAIN ASSIGNMENT.`
+
+---
+
 # Base44 Dev Environment — Ω∞v Oceanicos
 
 ## Stack
@@ -79,6 +91,7 @@ All secrets (signing key, tokens) are local dev values in `.env.base44-defaults`
 - `docker compose -f docker-compose.base44.yml ps` → api healthy, web healthy.
 - Full build: `docker compose -f docker-compose.base44.yml exec -T api sh -c 'corepack enable && pnpm build'` → every workspace package builds.
 - Relevant tests: `docker compose -f docker-compose.base44.yml exec -T api sh -c 'node --experimental-strip-types --test-concurrency=1 --test ./tests/integration/web-api-proxy.integration.test.ts'`.
+- Swarm protocol + ledger contract: `pnpm validate:swarm` → `validated N swarm ledger receipt(s) and the ΩVØØS protocol contract`. Enforced in `verify.yml`; it checks the receipt schema, the `agent/<platform>/<task>` branch rule, append order, and that `VERIFIED` never appears without a test pass and a 64-hex evidence hash.
 
 ## Start-failure investigation (2026-10-28)
 `main` was at `1dc8e69b` (PR #536, "do not verify reality from a caller-supplied echo", all CI checks green) when a preview start was reported as failing; this branch already contains that commit, so nothing had to be brought in. A clean `docker compose -f docker-compose.base44.yml down` + `up -d` starts the stack here — `setup` exits 0, `api` turns healthy, `web` serves port 3000 — and the container event history shows no failed attempt, so the reported start failure could not be reproduced in this sandbox. What the running logs did show was the `/api` proxy defect documented above (the WORKERS panel's request returned 502 through Vite); that is fixed, and both the monorepo build and the proxy contract test pass.

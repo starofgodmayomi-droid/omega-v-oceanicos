@@ -383,6 +383,10 @@ describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
     assert.strictEqual(data.brand, 'Oceanicos Ω∞');
     assert.strictEqual(data.contract, 'Ω∞v totality / attest-dont-assert');
     assert.ok(data.ledger && typeof data.ledger.ready === 'boolean');
+    assert.ok(data.ledger.integrity && typeof data.ledger.integrity.valid === 'boolean');
+    assert.ok(data.evaluation && typeof data.evaluation.state === 'string');
+    assert.ok(typeof data.evaluation.uncertainty === 'number');
+    assert.match(data.evidenceBoundary, /not truth, authority, consent, or deployment health/);
     assert.ok(typeof data.evaluatedAt === 'string');
   });
 

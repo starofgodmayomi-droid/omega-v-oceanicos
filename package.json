@@ -13,6 +13,7 @@
     "validate:ci": "node scripts/validate-ci-contract.mjs",
     "validate:skills": "node scripts/validate-skill-contracts.mjs",
     "validate:docs": "node scripts/validate-readme-contract.mjs",
+    "validate:swarm": "node scripts/validate-swarm-ledger.mjs",
     "lint": "pnpm typecheck",
     "type-check": "pnpm typecheck",
     "verify": "pnpm build && node --input-type=module -e \"const { executeOceanicosMaxExpansion } = await import('./packages/mini/dist/index.js'); executeOceanicosMaxExpansion();\"",

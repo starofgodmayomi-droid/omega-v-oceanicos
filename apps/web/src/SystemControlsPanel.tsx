@@ -216,10 +216,10 @@ export function SystemControlsPanel(props: SystemControlsPanelProps) {
       {props.moodData && (
         <div style={cardStyle}>
           <div style={{ ...cardTitleStyle, color: theme.accentWarm }}>
-            Mood · {props.moodData.singularityState}
+            Mood · {props.moodData.evaluation?.state ?? props.moodData.singularityState ?? props.moodData.status}
           </div>
           <div style={{ fontSize: '12px', color: theme.textMuted, marginBottom: '8px' }}>
-            Reality: {props.moodData.reality} · Wave {props.moodData.waveIndex}
+            Ledger: {props.moodData.ledger?.integrity?.valid ? 'integrity valid' : 'evidence unavailable or divergent'} · Evidence: {props.moodData.evaluation?.evidenceQuality ?? 'unknown'}
           </div>
           <div
             style={{
@@ -232,7 +232,10 @@ export function SystemControlsPanel(props: SystemControlsPanelProps) {
               color: theme.text,
             }}
           >
-            "{props.moodData.pidginSpirit}"
+            "{props.moodData.evaluation?.description ?? props.moodData.pidginSpirit ?? 'Mood is context, not evidence or authority.'}"
+          </div>
+          <div style={{ fontSize: '10px', color: theme.textDim, marginTop: '8px' }}>
+            {props.moodData.evidenceBoundary ?? 'Mood is context, not evidence, authority, or consent.'}
           </div>
         </div>
       )}

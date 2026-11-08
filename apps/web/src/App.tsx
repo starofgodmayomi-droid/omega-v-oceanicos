@@ -13,6 +13,7 @@ import { MoodCodexPanel } from './MoodCodexPanel';
 import { DivergenceAlertsPanel } from './DivergenceAlertsPanel';
 import { ValueNavigatorPanel } from './ValueNavigatorPanel';
 import { VoosPanel } from './VoosPanel';
+import { DeusReceiptCard } from './DeusReceiptCard';
 import type { VoosReceipt } from './voos-receipt';
 import { ConnectorPanel } from './ConnectorPanel';
 import { WholeEcosystemDashboard } from './WholeEcosystemDashboard';
@@ -104,6 +105,7 @@ export function App() {
 
   const [openStageId, setOpenStageId] = useState<string | null>(null);
   const [globeMax, setGlobeMax] = useState(false);
+  const [backgroundWorkspaceOpen, setBackgroundWorkspaceOpen] = useState(false);
   const [tipReachable, setTipReachable] = useState<boolean | null>(null);
   const [tipRouteStatus, setTipRouteStatus] = useState<string | null>(null);
 
@@ -484,6 +486,17 @@ export function App() {
     setOmegaIntent('');
   };
 
+  // The front prompt creates the bounded command; its full receipt lives in the
+  // background workspace, so this makes the created command reachable in one move.
+  const revealOmegaReceipt = () => {
+    setBackgroundWorkspaceOpen(true);
+    requestAnimationFrame(() => {
+      document
+        .getElementById('background-full-stack-workspace')
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
+
   const simulationMode = kernelCapabilities?.execution === 'SIMULATION';
   const humanGateRequired = kernelCapabilities?.humanAuthorizationRequired ?? true;
 
@@ -758,19 +771,66 @@ export function App() {
 
         <InvisibleComputer />
 
-        <WholeEcosystemDashboard
-          streamConnected={streamConnected}
-          simulationMode={simulationMode}
-          humanGateRequired={humanGateRequired}
-          realityStatus={tip?.evidence?.status}
-          ledgerIntegrity={ledgerIntegrity}
-          history={history}
-          ecosystemBody={ecosystemBody}
-          omegaCommand={omegaCommand}
-          onFocusCommand={setOmegaIntent}
-          deusReceipt={voosReceipt}
-        />
-        <WaterFlowPanel />
+        {/* Compressed front view: the whole body is summarized here; detailed organs stay in the background workspace. */}
+        <section
+          aria-label="Compressed whole ecosystem front view"
+          style={{
+            margin: '18px 0 24px',
+            padding: '14px 16px',
+            border: `1px solid ${theme.borderBright}`,
+            borderRadius: theme.radiusSmall,
+            background: `${theme.surfaceDeep}cc`,
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <div>
+              <div style={{ color: theme.accent, fontSize: '11px', letterSpacing: '0.14em', fontWeight: 700 }}>WHOLE ECOSYSTEM · COMPRESSED BODY</div>
+              <div style={{ color: theme.textMuted, fontSize: '11px', marginTop: '5px' }}>
+                Mood {moodData?.evaluation?.state ?? moodData?.status ?? 'UNKNOWN'} · {streamConnected ? 'live stream connected' : 'awaiting observation'} · {humanGateRequired ? 'human gate required' : 'authority state unknown'}
+              </div>
+            </div>
+            <button
+              type="button"
+              aria-expanded={backgroundWorkspaceOpen}
+              aria-controls="background-full-stack-workspace"
+              onClick={() => setBackgroundWorkspaceOpen((open) => !open)}
+              style={{
+                border: `1px solid ${theme.borderBright}`,
+                borderRadius: theme.radiusPill,
+                background: 'transparent',
+                color: theme.accent,
+                padding: '8px 12px',
+                fontSize: '10px',
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+              }}
+            >
+              {backgroundWorkspaceOpen ? 'Close background workspace' : 'Open background full-stack'}
+            </button>
+          </div>
+          {voosReceipt ? <DeusReceiptCard receipt={voosReceipt} /> : null}
+        </section>
+
+        <section
+          id="background-full-stack-workspace"
+          aria-label="Background full-stack workspace"
+          aria-hidden={!backgroundWorkspaceOpen}
+          style={{ display: backgroundWorkspaceOpen ? 'block' : 'none' }}
+        >
+          <WholeEcosystemDashboard
+            streamConnected={streamConnected}
+            simulationMode={simulationMode}
+            humanGateRequired={humanGateRequired}
+            realityStatus={tip?.evidence?.status}
+            ledgerIntegrity={ledgerIntegrity}
+            history={history}
+            ecosystemBody={ecosystemBody}
+            omegaCommand={omegaCommand}
+            onFocusCommand={setOmegaIntent}
+          />
+          <WaterFlowPanel />
+        </section>
 
         {/* Prompt */}
         <h1
@@ -837,6 +897,68 @@ export function App() {
           </button>
         </div>
 
+        {/* Front-facing receipt: the created command must be visible where it was asked for. */}
+        {omegaCommand?.command && (
+          <div
+            role="status"
+            aria-label="Command receipt"
+            style={{
+              marginTop: '14px',
+              padding: '12px 16px',
+              display: 'flex',
+              gap: '12px',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              background: theme.surface,
+              border: `1px solid ${theme.borderBright}`,
+              borderRadius: theme.radiusSmall,
+            }}
+          >
+            <div style={{ minWidth: 0 }}>
+              <div
+                style={{
+                  fontSize: '10px',
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
+                  color: theme.textMuted,
+                }}
+              >
+                Command {omegaCommand.command.status} · not executed
+              </div>
+              <div
+                style={{
+                  marginTop: '4px',
+                  fontFamily: theme.fontMono,
+                  fontSize: '12px',
+                  color: theme.text,
+                  overflowWrap: 'anywhere',
+                }}
+              >
+                {omegaCommand.command.commandId}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={revealOmegaReceipt}
+              style={{
+                padding: '8px 16px',
+                borderRadius: theme.radiusPill,
+                border: `1px solid ${theme.borderBright}`,
+                background: 'transparent',
+                color: theme.accent,
+                fontFamily: theme.fontSans,
+                fontSize: '11px',
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+              }}
+            >
+              Review &amp; authorize
+            </button>
+          </div>
+        )}
+
         {/* Mode buttons */}
         <div
           style={{
@@ -876,37 +998,44 @@ export function App() {
           ))}
         </div>
 
-        {/* Intent flow card */}
-        <OreadConsole />
-        <MoodCodexPanel />
-        <DivergenceAlertsPanel />
-        <ValueNavigatorPanel />
-        <VoosPanel receipt={voosReceipt} onReceipt={setVoosReceipt} />
-        <ConnectorPanel />
+        <section
+          aria-label="Background working mood and backend full-stack organs"
+          aria-hidden={!backgroundWorkspaceOpen}
+          style={{ display: backgroundWorkspaceOpen ? 'block' : 'none' }}
+        >
+          <OreadConsole />
+          <MoodCodexPanel />
+          <DivergenceAlertsPanel />
+          <ValueNavigatorPanel />
+          <VoosPanel receipt={voosReceipt} onReceipt={setVoosReceipt} />
+          <ConnectorPanel />
 
-        <IntentFlow
-          command={omegaCommand}
-          loading={omegaLoading}
-          onApprove={approveOmegaCommand}
-          onExecute={executeOmegaCommand}
-          onObserve={observeOmegaReality}
-          observedState={omegaObservedState}
-          onObservedStateChange={setOmegaObservedState}
-          onViewEvidence={() => setOpenStageId('evidence')}
-          onViewTimeline={() => setOpenStageId('remember')}
-          onDismiss={dismissCommand}
-          simulationMode={simulationMode}
-          humanGateRequired={humanGateRequired}
-        />
+          <IntentFlow
+            command={omegaCommand}
+            loading={omegaLoading}
+            onApprove={approveOmegaCommand}
+            onExecute={executeOmegaCommand}
+            onObserve={observeOmegaReality}
+            observedState={omegaObservedState}
+            onObservedStateChange={setOmegaObservedState}
+            onViewEvidence={() => setOpenStageId('evidence')}
+            onViewTimeline={() => setOpenStageId('remember')}
+            onDismiss={dismissCommand}
+            simulationMode={simulationMode}
+            humanGateRequired={humanGateRequired}
+          />
+        </section>
       </main>
 
       {/* Mirror-water lifecycle flow */}
       <div
+        aria-hidden={!backgroundWorkspaceOpen}
         style={{
           maxWidth: '720px',
           width: '100%',
           margin: '0 auto',
           padding: '8px 24px 60px',
+          display: backgroundWorkspaceOpen ? 'block' : 'none',
         }}
       >
         <LifecycleFlow
