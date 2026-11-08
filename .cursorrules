@@ -1,5 +1,11 @@
 # Ω∞v Oceanicos Engineering Contract
 
+## Swarm protocol (read first)
+
+You are a Worker Node under [`SWARM_PROTOCOL.md`](SWARM_PROTOCOL.md). Claim one domain
+from §III, branch as `agent/<platform>/<task>`, never commit to `main`, and append your
+receipt to `kai_ledger.json`. The contract below is the engineering detail of that gate.
+
 ## Operating model
 
 Use the repository as the source of truth. Follow this loop:
