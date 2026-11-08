@@ -96,4 +96,19 @@ describe('bounded autopilot mood contract', () => {
     expect(proposeMoodCodex(createMoodContext({ intent: 'improve the workflow' })).decision).toBe('REVIEW');
     expect(proposeMoodCodex(createMoodContext({ intent: 'deploy to production now', status: 'USER_STATED' })).decision).toBe('DENY');
   });
+
+  it('denies a full-width unsafe Codex homograph and keeps the source intent', () => {
+    const raw = 'ｄｅｐｌｏｙ　ｔｏ　ｐｒｏｄｕｃｔｉｏｎ';
+    const codex = proposeMoodCodex(createMoodContext({
+      intent: raw,
+      status: 'USER_STATED',
+    }));
+
+    expect(raw.normalize('NFKC')).toBe('deploy to production');
+    expect(codex.decision).toBe('DENY');
+    expect(codex.autopilotLevel).toBe(0);
+    expect(codex.authority).toBe('UNCHANGED');
+    expect(codex.execution).toBe('NOT_EXECUTED');
+    expect(codex.intent).toBe(raw);
+  });
 });
