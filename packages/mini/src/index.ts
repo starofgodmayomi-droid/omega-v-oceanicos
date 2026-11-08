@@ -175,6 +175,23 @@ export type {
   OvoosRegionView,
   OvoosRoundTrip,
 } from './ovoos-entity.js';
+export {
+  OVOOS_MANIFEST_VERSION,
+  OVOOS_SPECIES,
+  OVOOS_HABITAT,
+  OVOOS_SECTION_ORDER,
+  OVOOS_SECTION_TITLE,
+  OVOOS_MANIFEST_EVIDENCE_BOUNDARY,
+  summarizeOvoosManifest,
+} from './ovoos-manifest.js';
+export type {
+  OvoosManifestRead,
+  OvoosManifestSection,
+  OvoosManifestSectionRead,
+  OvoosManifestSignal,
+  OvoosNetworkTier,
+  OvoosOrganReading,
+} from './ovoos-manifest.js';
 export type { TotalCompressionIssueCode, TotalCompressionPackage, TotalCompressionRequest, TotalCompressionScope, TotalCompressionValidationIssue, TotalCompressionValidationResult } from './total-compress.js';
 export {
   MAX_NEXT_CANDIDATES,

@@ -32,6 +32,37 @@ The topology is a **STAR**: center, ring, threads, rim, and the water around it.
 The sharks are not feared and not befriended; they are observed and cut off when
 they bite (`DIVERGENT`).
 
+## The system manifest (anatomy → evidence)
+
+The supplied SYSTEM MANIFEST adds the anatomy of the leviathan. It rides as the
+`manifest` block of `GET /v1/entity/ovoos`, and every organ is bound to one
+observation this process can make — never to the prose.
+
+| Section | Organ | Bound to |
+| --- | --- | --- |
+| central-neural-matrix | Integrated hybrid CNS | `declarative-verification` receipt |
+| central-neural-matrix | Sensory compression (sonar / hyperspectral / vortex) | SHA-256 evidence digest |
+| central-neural-matrix | Field network | `mesh-convergence` quorum |
+| apex-hydrodynamic-body | Hydrodynamic chassis | one process commands the star |
+| apex-hydrodynamic-body | Camouflage integument | no remote mutation surface |
+| apex-hydrodynamic-body | Bio-regeneration core | append-only ledger integrity |
+| multispectral-sensory-suite | 4D acoustic sonar array | the echo returned as a digest |
+| multispectral-sensory-suite | Hyperspectral vision | digest + ledger spectra |
+| multispectral-sensory-suite | Lateral line | `mesh-convergence` readout |
+| hive-mind-network | Neural vector filaments | the weakest observed KAI thread |
+| hive-mind-network | Distributed sensory network | threads observed + quorum |
+
+The hive-mind deployment keeps the manifest's three tiers as **declared roles** —
+apex predators as interceptors, cetaceans as acoustic relays, pelagics and
+invertebrates as telemetry nodes — and each tier's evidence is its own thread
+record (`kai-shield`, `mesh-convergence`, `public-interface`). A missing thread
+is `UNKNOWN`; one diverging thread pulls the whole filament to `DIVERGENT`.
+
+`98.7%` hydrodynamic efficiency and `100%` neural synchrony are the manifest's
+**declared labels**: the payload carries `measured: false`, and the surface
+prints them as DECLARED beside the *measured* region synchrony of the read.
+Reporting either as a measurement is the failure this section exists to prevent.
+
 ## The finite payload
 
 The image's own block is the shape this skill returns. Every field is either
@@ -105,6 +136,9 @@ human grants it.
 
 - Contract: `packages/mini/src/ovoos-entity.ts` (`compressOvoosEntity`,
   `expandOvoosEntity`, `verifyOvoosRoundTrip`, `summarizeOvoosEntity`).
+- Manifest anatomy: `packages/mini/src/ovoos-manifest.ts`
+  (`summarizeOvoosManifest`) — the eleven organs and three hive-mind tiers,
+  each bound to one observed runtime surface.
 - Runtime: `GET /v1/entity/ovoos`, `POST /v1/entity/ovoos/expand`
   (`apps/api/src/entity-route.ts`).
 - Surface: `apps/web/src/OvoosEntityPanel.tsx` renders the star, the OMEGA ring

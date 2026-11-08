@@ -13,6 +13,7 @@ import {
   compressOvoosEntity,
   expandOvoosEntity,
   summarizeOvoosEntity,
+  summarizeOvoosManifest,
   verifyOvoosRoundTrip,
 } from '@oceanicos/mini';
 import type { OvoosRegionRecord } from '@oceanicos/mini';
@@ -137,11 +138,24 @@ export function registerOvoosEntityRoute(fastify: FastifyInstance, deps: OvoosEn
     const expansion = compressed ? expandOvoosEntity(compressed) : null;
     const roundTrip = verifyOvoosRoundTrip(records);
     const summary = summarizeOvoosEntity({ compression: compressed, expansion });
+    const tethers = summary.regions
+      .filter((region) => region.region === 'threads' || region.region === 'glober')
+      .flatMap((region) => region.records.map((record) => ({ id: record.id, evidence: record.evidence })));
+    const manifest = summarizeOvoosManifest({
+      verificationStatus: observation.verificationStatus,
+      ledgerIntact: observation.ledgerIntact,
+      quorumReached: observation.quorumReached,
+      meshStatus: observation.meshStatus,
+      remoteMutation: observation.remoteMutation,
+      evidenceHash: summary.evidenceHash,
+      tethers,
+    });
 
     return {
       success: compression.status === 'COMPRESSED',
       evaluatedAt,
       ...summary,
+      manifest,
       observation,
       compression: compressed ?? { status: 'INVALID', issues: compression.issues },
       expansion: expansion

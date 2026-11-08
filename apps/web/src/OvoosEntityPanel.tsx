@@ -41,6 +41,37 @@ type RegionRecord = {
 
 type Region = { region: string; meaning: string; status: string; records: RegionRecord[] };
 
+type ManifestOrgan = {
+  id: string;
+  section: string;
+  name: string;
+  declared: string;
+  bindsTo: string;
+  observed: string;
+  evidence: string;
+};
+
+type ManifestTier = {
+  id: string;
+  members: string;
+  declaredRole: string;
+  bindsTo: string;
+  evidence: string;
+};
+
+type ManifestRead = {
+  version: string;
+  species: string;
+  status: string;
+  habitat: string;
+  hydrodynamicEfficiency: { value: string; measured: boolean };
+  neuralSynchronyTarget: { value: string; measured: boolean };
+  sections: { section: string; title: string; organs: ManifestOrgan[] }[];
+  organs: ManifestOrgan[];
+  distributedNetwork: ManifestTier[];
+  evidenceBoundary: string;
+};
+
 type EntityRead = {
   success: boolean;
   evaluatedAt?: string;
@@ -58,6 +89,7 @@ type EntityRead = {
   regions: Region[];
   upgrade: { execution: string; candidate: { action: string; digest: string } | null };
   evidenceBoundary: string;
+  manifest?: ManifestRead;
   compression?: { count?: number; filled?: number; digest?: string; regions?: unknown[] };
   expansion?: { status: string; records: RegionRecord[]; digestMatches: boolean } | null;
 };
@@ -411,6 +443,50 @@ export function OvoosEntityPanel() {
         {!entity?.regions?.length && !loading && (
           <p className="ovoos-note">The API has not answered with an entity yet.</p>
         )}
+      </div>
+
+      <div className="ovoos-manifest" aria-label="System manifest anatomy">
+        <header className="ovoos-manifest-head">
+          <span>SYSTEM MANIFEST · {entity?.manifest?.version ?? 'oceanicos.manifest.v1'}</span>
+          <span style={{ color: EVIDENCE_COLOR[entity?.manifest?.status ?? 'UNKNOWN'] ?? SLATE }}>
+            {entity?.manifest?.status ?? 'UNKNOWN'}
+          </span>
+        </header>
+        <div className="ovoos-manifest-grid">
+          {(entity?.manifest?.sections ?? []).map((section) => (
+            <article key={section.section} className="ovoos-manifest-section">
+              <b>{section.title}</b>
+              <ul>
+                {section.organs.map((organ) => (
+                  <li key={organ.id}>
+                    <span>{organ.name}</span>
+                    <em style={{ color: EVIDENCE_COLOR[organ.evidence] ?? SLATE }}>{organ.evidence}</em>
+                    <small>{organ.declared}</small>
+                    <small className="ovoos-binding">↳ {organ.bindsTo} · {organ.observed}</small>
+                  </li>
+                ))}
+              </ul>
+            </article>
+          ))}
+        </div>
+        <div className="ovoos-tiers" aria-label="Distributed sensory network">
+          <span>NEURAL VECTOR FILAMENTS · DISTRIBUTED SENSORY NETWORK</span>
+          <ul>
+            {(entity?.manifest?.distributedNetwork ?? []).map((tier) => (
+              <li key={tier.id}>
+                <b>{tier.id.replace(/-/g, ' ').toUpperCase()}</b>
+                <span>{tier.members}</span>
+                <small>{tier.declaredRole} · ↳ {tier.bindsTo}</small>
+                <em style={{ color: EVIDENCE_COLOR[tier.evidence] ?? SLATE }}>{tier.evidence}</em>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <p className="ovoos-declared">
+          DECLARED · HYDRODYNAMIC EFFICIENCY {entity?.manifest?.hydrodynamicEfficiency.value ?? '—'} · NEURAL SYNCHRONY
+          TARGET {entity?.manifest?.neuralSynchronyTarget.value ?? '—'}
+          {entity ? ` · MEASURED THIS READ ${entity.synchrony}%` : ''}
+        </p>
       </div>
 
       <footer className="ovoos-footer">
