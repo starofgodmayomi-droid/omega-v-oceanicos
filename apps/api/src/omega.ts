@@ -411,12 +411,16 @@ export function registerOmegaRoutes(
 
   fastify.get('/v1/omega/commands', {
     config: { rateLimit: { max: 60, timeWindow: '1 minute' } },
-  }, async () => {
+  }, async (request) => {
+    const query = (request.query ?? {}) as { limit?: string };
+    const parsed = typeof query.limit === 'string' ? Number.parseInt(query.limit, 10) : Number.NaN;
+    const limit = Number.isFinite(parsed) ? Math.min(Math.max(parsed, 1), 50) : null;
     const commands = store.listCommands();
+    const listed = limit === null ? commands : commands.slice(0, limit);
     return {
       success: true,
-      count: commands.length,
-      commands: commands.map((c) => ({
+      count: listed.length,
+      commands: listed.map((c) => ({
         commandId: c.commandId,
         intent: c.intent,
         requestedBy: c.requestedBy,

@@ -96,6 +96,10 @@ export function IntentFlow({
 
   return (
     <div
+      id="intent-flow"
+      tabIndex={-1}
+      role="region"
+      aria-label="Bounded command next step"
       className="omega-fade-in"
       style={{
         marginTop: '24px',

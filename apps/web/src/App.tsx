@@ -20,6 +20,7 @@ import { LifecycleFlow, deriveStageStates, type LifecycleStage } from './Lifecyc
 import { GlobeViewport } from './GlobeViewport';
 import { bindGlobeEvidence } from './globe-shell';
 import { omegaApprovalRequest } from './omega-approval-request';
+import { commandReceipt, isResumableCommandStatus } from './command-receipt';
 import {
   theme,
   statusColor,
@@ -288,6 +289,9 @@ export function App() {
         }),
       });
       setOmegaCommand(data);
+      // The receipt carries the intent it created, so the prompt does not need
+      // to keep the same text and invite a duplicate submission.
+      setOmegaIntent('');
     } catch (err: any) {
       setLastError(err.message);
     } finally {
@@ -352,6 +356,36 @@ export function App() {
       setOmegaLoading(false);
     }
   };
+
+  // Remember/Replay: the server keeps bounded commands, so a reload must not
+  // silently drop one that still has a next step. Only resumable statuses come
+  // back; reconciled or denied history stays in the background records.
+  useEffect(() => {
+    let active = true;
+    const resumePendingCommand = async () => {
+      try {
+        const list = await apiRequest<any>('/v1/omega/commands?limit=20');
+        const commands = Array.isArray(list?.commands) ? list.commands : [];
+        // Newest first: resume the newest command that still has a next step,
+        // not simply the newest record (which may be finished history).
+        const pending = commands.find(
+          (candidate: { commandId?: unknown; status?: unknown }) =>
+            typeof candidate?.commandId === 'string' && isResumableCommandStatus(candidate.status)
+        );
+        if (!pending) return;
+        const detail = await apiRequest<any>(
+          `/v1/omega/commands/${encodeURIComponent(pending.commandId)}`
+        );
+        if (active) setOmegaCommand(detail);
+      } catch {
+        /* replay is ambient — the front must boot without a stored command */
+      }
+    };
+    void resumePendingCommand();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const generateServerKeys = async () => {
     try {
@@ -482,19 +516,21 @@ export function App() {
     setOmegaIntent('');
   };
 
-  // The front prompt creates the bounded command; its full receipt lives in the
-  // background workspace, so this makes the created command reachable in one move.
+  // The front prompt creates the bounded command; the next step lives in the
+  // background workspace, so send the reader to that card rather than the top
+  // of the workspace. Focus follows the scroll for keyboard users.
   const revealOmegaReceipt = () => {
     setBackgroundWorkspaceOpen(true);
     requestAnimationFrame(() => {
-      document
-        .getElementById('background-full-stack-workspace')
-        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const flow = document.getElementById('intent-flow');
+      flow?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      flow?.focus({ preventScroll: true });
     });
   };
 
   const simulationMode = kernelCapabilities?.execution === 'SIMULATION';
   const humanGateRequired = kernelCapabilities?.humanAuthorizationRequired ?? true;
+  const omegaReceipt = omegaCommand?.command ? commandReceipt(omegaCommand) : null;
 
   const stageStates = deriveStageStates(omegaCommand);
 
@@ -919,14 +955,30 @@ export function App() {
                   color: theme.textMuted,
                 }}
               >
-                Command {omegaCommand.command.status} · not executed
+                Command {omegaReceipt?.state}
               </div>
+              {typeof omegaCommand.command.intent === 'string' &&
+                omegaCommand.command.intent.trim() && (
+                  <div
+                    title={omegaCommand.command.intent}
+                    style={{
+                      marginTop: '4px',
+                      fontSize: '13px',
+                      color: theme.text,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {omegaCommand.command.intent}
+                  </div>
+                )}
               <div
                 style={{
                   marginTop: '4px',
                   fontFamily: theme.fontMono,
-                  fontSize: '12px',
-                  color: theme.text,
+                  fontSize: '11px',
+                  color: theme.textMuted,
                   overflowWrap: 'anywhere',
                 }}
               >
@@ -949,7 +1001,7 @@ export function App() {
                 cursor: 'pointer',
               }}
             >
-              Review &amp; authorize
+              {omegaReceipt?.action}
             </button>
           </div>
         )}

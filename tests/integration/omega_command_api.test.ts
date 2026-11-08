@@ -445,6 +445,15 @@ describe('Ω∞v command API vertical slice', () => {
     assert.equal(body.boundary.reconciliation.status, 'NOT_EXECUTED');
   });
 
+  it('bounds a listed command read with an explicit limit', async () => {
+    const limited = await app.inject({ method: 'GET', url: '/v1/omega/commands?limit=1' });
+    assert.equal(limited.statusCode, 200);
+    const body = limited.json();
+    assert.equal(body.success, true);
+    assert.equal(body.count, 1);
+    assert.equal(body.commands.length, 1);
+  });
+
   it('rate-limits repeated command-store reads', async () => {
     let response;
     for (let attempt = 0; attempt < 61; attempt += 1) {

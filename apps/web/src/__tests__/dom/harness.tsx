@@ -217,6 +217,7 @@ export function installFetch(overrides: RouteOverrides = {}): jest.Mock {
         },
       }),
     '/api/state': () => json(stateBody),
+    '/api/v1/omega/commands?limit=20': () => json({ success: true, count: 0, commands: [] }),
     '/api/v1/omega/connectors/observations': () =>
       json({
         success: true,
