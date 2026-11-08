@@ -77,3 +77,9 @@ Detail: [docs/ECOSYSTEM-BODY-EQUATION.md](docs/ECOSYSTEM-BODY-EQUATION.md).
 On 2026-11-06 the human supplied one system directive and asked for it to be saved as `ECOSYSTEM_BODY.md`. The bytes are stored verbatim at [ΩVØØS/CORE/ECOSYSTEM_BODY.md](ΩVØØS/CORE/ECOSYSTEM_BODY.md). That file is the supplied prompt. It does not replace the fixpoint in this file.
 
 `30013030` is still a symbol. This repository does not verify it. Reading the prompt does not put a runtime online. [ΩVØØS/backend_magic.ts](ΩVØØS/backend_magic.ts) returns the prompt's receipt shape and fails closed: a self-hash of a local sentence stays `UNKNOWN`, not `VERIFIED`. The function does not write a ledger.
+
+### OMNICOS DIRECTIVE (2026-11-08)
+
+On 2026-11-08 the human supplied one further system directive, THE OMNICOS (OCEANICOS, GAIACOS, COSMICOS). The bytes are stored verbatim at [OMNICOS/CORE/OMNICOS.md](OMNICOS/CORE/OMNICOS.md). It is an evolution of the stored ΩVØØS prompt, not a replacement of the fixpoint in this file.
+
+The declared body tree in that prompt is not created as a second implementation. The executable KAI → ELION → OMEGA → KAI loop already lives in `apps/api`, with its memory in SQLite. [OMNICOS/singularity_eye.ts](OMNICOS/singularity_eye.ts) returns the prompt's receipt contract and fails closed: no Glober tool is called, `tool_used` is always `CODE`, a self-hash of a local sentence stays `UNKNOWN`, and a shield match is `DIVERGENT` with `game_detected: true`. The function writes no ledger. Capability is not authority, and a connected tool is not a connected observation.

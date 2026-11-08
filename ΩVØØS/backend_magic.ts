@@ -42,7 +42,7 @@ export type LedgerRow = {
   authorized: boolean;
 };
 
-const SHIELD_PHRASES = ['urgent', 'send money', 'guaranteed', 'private key'] as const;
+export const SHIELD_PHRASES = ['urgent', 'send money', 'guaranteed', 'private key'] as const;
 
 const ABUNDANCE =
   /\b(invest|investment|donate|donation|grant|funding|sponsor|partnership|abundance)\b/i;
