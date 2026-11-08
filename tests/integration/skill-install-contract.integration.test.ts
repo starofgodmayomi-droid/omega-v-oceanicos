@@ -16,6 +16,7 @@ const loadable = [
   'lucid-continuum',
   'oceanicos-total-continuum',
   'kaixelionxomega',
+  'omega-entity-full-stack',
 ] as const;
 
 test('published Oceanicos skill contracts validate', () => {
@@ -23,7 +24,7 @@ test('published Oceanicos skill contracts validate', () => {
     cwd: root,
     encoding: 'utf8',
   });
-  assert.match(output, /validated 15 Oceanicos skill contracts/);
+  assert.match(output, /validated 16 Oceanicos skill contracts/);
 });
 
 test('CI runs the skill contract check', () => {

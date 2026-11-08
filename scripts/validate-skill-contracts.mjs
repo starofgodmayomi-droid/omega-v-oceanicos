@@ -19,6 +19,7 @@ const skills = [
   'oceanicos-verified-upgrade',
   'oceanicos-total-continuum',
   'kaixelionxomega',
+  'omega-entity-full-stack',
 ];
 const required = [
   'POSSIBLE',
