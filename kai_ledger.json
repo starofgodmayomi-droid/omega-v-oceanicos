@@ -1,0 +1,26 @@
+{
+  "protocol": "ΩVØØS-SWARM/1",
+  "checksum": "30013030",
+  "doctrine": "ATTEST, DON'T ASSERT. UNKNOWN PRESERVED.",
+  "append_only": true,
+  "status_values": ["VERIFIED", "DIVERGENT", "UNKNOWN", "NOT_EXECUTED"],
+  "rule": "Append only. Never rewrite or delete an entry. On conflict keep both receipts, ordered by timestamp. See SWARM_PROTOCOL.md §VI.",
+  "entries": [
+    {
+      "timestamp": "2026-11-08T16:03:00Z",
+      "agent_id": "base44",
+      "branch": "swarm-protocol-setup",
+      "status": "UNKNOWN",
+      "files_touched": [
+        "SWARM_PROTOCOL.md",
+        "kai_ledger.json",
+        "AGENTS.md",
+        ".cursorrules",
+        "CLAUDE.md"
+      ],
+      "tests_passed": null,
+      "evidence_hash": null,
+      "next_delta": "Claim one domain from SWARM_PROTOCOL.md §III, branch as agent/<platform>/<task>, and append your own receipt."
+    }
+  ]
+}

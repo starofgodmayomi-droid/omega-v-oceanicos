@@ -25,6 +25,23 @@ evidence.
 If you could not run something, say so. An honest gap is more useful than a
 sentence that implies coverage you do not have. -->
 
+## Swarm receipt
+
+<!-- Agent nodes (SWARM_PROTOCOL.md §VI): paste the JSON receipt here and append
+the same object to `kai_ledger.json`. Human-only PRs: delete this section. -->
+
+```json
+{
+  "agent_id": "<platform>",
+  "branch": "<branch>",
+  "status": "<VERIFIED/DIVERGENT/UNKNOWN/NOT_EXECUTED>",
+  "files_touched": ["<path>"],
+  "tests_passed": true,
+  "evidence_hash": "<sha256>",
+  "next_delta": "<what the next agent should do>"
+}
+```
+
 ## Security
 
 <!-- Does this touch signing, verification, persistence, tokens, or the

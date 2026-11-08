@@ -80,6 +80,11 @@ jobs:
       - name: Validate README ecosystem alignment
         run: pnpm validate:docs
 
+      # The swarm ledger is the cross-agent record. A missing check here is how
+      # an unverified receipt becomes an accepted claim.
+      - name: Validate swarm ledger
+        run: pnpm validate:swarm
+
       # Runs on every matrix version. ESLint 10 calls util.styleText, added in
       # Node 20.12, and the matrix floor is 22.x — so there is no version here
       # it cannot execute on.
@@ -175,6 +180,11 @@ jobs:
 
       - name: Validate README ecosystem alignment
         run: pnpm validate:docs
+
+      # The swarm ledger is the cross-agent record. A missing check here is how
+      # an unverified receipt becomes an accepted claim.
+      - name: Validate swarm ledger
+        run: pnpm validate:swarm
 
       - name: Run type checking
         run: pnpm --recursive run build
