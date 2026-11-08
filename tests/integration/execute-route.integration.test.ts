@@ -361,6 +361,30 @@ test('authority below the required level halts NOT_EXECUTED and remembers nothin
   }
 });
 
+test('a full-width directive halts NOT_EXECUTED and remembers nothing', async () => {
+  const app = createApp(':memory:', false);
+  try {
+    const denied = await app.inject({
+      method: 'POST',
+      url: '/api/execute',
+      payload: { intent: 'Ｄｅｐｌｏｙ the production service' },
+    });
+    const body = denied.json();
+
+    assert.equal(denied.statusCode, 200);
+    assert.equal(body.status, 'NOT_EXECUTED');
+    assert.equal(body.response, null);
+    assert.equal(body.evidence_hash, null);
+    assert.equal(body.memory, null);
+    assert.deepEqual(body.authority, { granted: 'READ_ONLY', required: 'AUTONOMOUS' });
+
+    const memory = await app.inject({ method: 'GET', url: '/api/kai/memory' });
+    assert.equal(memory.json().total, 0);
+  } finally {
+    await app.close();
+  }
+});
+
 test('a remembered verdict is bound to its contract and reconciles after the fact', async () => {
   const app = createApp(':memory:', false);
   try {
@@ -436,6 +460,15 @@ test('OMEGA collapses an empty or overclaiming output to UNKNOWN', () => {
   });
   assert.equal(fabricated.status, 'UNKNOWN');
   assert.match(String(fabricated.reason), /NO_FABRICATED_COMPLETION/);
+
+  const fullwidth = 'Ｉ ｈａｖｅ ｄｅｐｌｏｙｅｄ the service and this sentence is long enough.';
+  const folded = verifyOmega({
+    output: fullwidth,
+    evidenceHash: sha256(fullwidth),
+    authorityLevel: 'AUTONOMOUS',
+  });
+  assert.equal(folded.status, 'UNKNOWN');
+  assert.match(String(folded.reason), /NO_FABRICATED_COMPLETION/);
 });
 
 test('the KAI/ELION persona keeps its non-collapse rules', () => {
