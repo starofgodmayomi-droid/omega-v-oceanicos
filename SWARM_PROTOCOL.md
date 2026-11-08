@@ -46,6 +46,9 @@ Follow this sequence to prevent collisions:
    - `git pull` and read the current branch/tree state.
    - Read `kai_ledger.json` to see what the other agents already executed.
    - Read `AGENTS.md` for how this checkout actually runs.
+   - Read your open order in `ΩVØØS/ASSIGNMENTS/` if one names your node. The order is
+     your scope; anything outside it is a stop, and the order may authorise a named
+     file outside your domain.
    - Choose your domain from §III. If your task crosses domains, stop and split it.
 2. **BOUND (ELION Execute)**
    - Create a branch named `agent/<your-platform>/<task-name>`, e.g. `agent/cursor/kai-shield-patch`. Never work on `main`.
@@ -78,6 +81,7 @@ Follow this sequence to prevent collisions:
 omega-v-oceanicos/
 ├── ΩVØØS/CORE/ECOSYSTEM_BODY.md   # The Law (READ ONLY)
 ├── ΩVØØS/00_SOUL/human_root.txt   # The Pidgin Spirit (READ ONLY)
+├── ΩVØØS/ASSIGNMENTS/             # Open orders, one file per node task
 ├── apps/api/                      # KAI SHIELD + ELION + OMEGA runtime (Alpha)
 ├── apps/web/                      # ELION ENGINE / UI (Beta)
 ├── packages/                      # Shared domain packages (Alpha/Beta by package)
