@@ -165,7 +165,10 @@ export function proposeMoodAdaptation(
  */
 export function proposeMoodCodex(context: MoodContext, now = new Date()): MoodCodexProposal {
   const intent = context.intent.trim() || 'improve the next bounded interaction';
-  const unsafe = /delete|destroy|credential|payment|deploy to production|irreversible/i.test(intent);
+  // NFKC so a compatibility homograph cannot carry an unsafe intent past the deny
+  // check. The returned intent stays the trimmed source; ASCII is unchanged.
+  const observedIntent = intent.normalize('NFKC');
+  const unsafe = /delete|destroy|credential|payment|deploy to production|irreversible/i.test(observedIntent);
   const decision: MoodCodexDecision = unsafe ? 'DENY' : context.uncertainty > 0.5 || context.status === 'UNKNOWN' ? 'REVIEW' : 'PROPOSE';
   const steps: MoodCodexStep[] = [
     { order: 1, action: 'DISTINGUISH', instruction: 'Separate the user-stated mood, measured signals, assumptions, and desired outcome.', expectedObservation: 'A context record labels each item by source and uncertainty.' },
