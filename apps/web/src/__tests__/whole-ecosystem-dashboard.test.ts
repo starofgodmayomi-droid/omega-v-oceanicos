@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { boundedStatus, statusCounts, summarizeLucidField } from '../whole-ecosystem-dashboard-model.ts';
+import { boundedStatus, bodyFixpointSignal, statusCounts, summarizeLucidField } from '../whole-ecosystem-dashboard-model.ts';
 
 test('unknown values never become verified dashboard status', () => {
   assert.equal(boundedStatus('healthy'), 'UNKNOWN');
@@ -43,6 +43,25 @@ test('Lucid field summary is limited to supplied signals and preserves non-verif
     { label: 'CI', status: 'UNKNOWN' },
     { label: 'Ledger', status: 'DIVERGENT' },
   ]);
+});
+
+test('a local body status is not a capability snapshot or a ledger write', () => {
+  assert.deepEqual(
+    bodyFixpointSignal({ status: 'VERIFIED', fixpoint: { status: 'VERIFIED', ledgerMutation: false } }),
+    { status: 'VERIFIED', source: 'local fixpoint; ledgerMutation is false' },
+  );
+  assert.equal(
+    bodyFixpointSignal({ status: 'VERIFIED' }).status,
+    'UNKNOWN',
+  );
+  assert.equal(
+    bodyFixpointSignal({ status: 'VERIFIED', fixpoint: { status: 'VERIFIED', ledgerMutation: true } }).status,
+    'UNKNOWN',
+  );
+  assert.equal(
+    bodyFixpointSignal({ fixpoint: { status: 'NOT_EXECUTED', ledgerMutation: false } }).status,
+    'NOT_EXECUTED',
+  );
 });
 
 test('Lucid field summary labels an empty view instead of implying completeness', () => {

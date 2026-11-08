@@ -52,3 +52,25 @@ export function summarizeLucidField(signals: readonly LucidFieldSignal[]): Lucid
 
   return { total, verifiedCount, unresolved, summaryText };
 }
+
+/**
+ * The body endpoint's fixpoint is a local gate. A body status of VERIFIED is
+ * not a capability snapshot and not a ledger write.
+ */
+export function bodyFixpointSignal(body: unknown): { status: RealityStatus; source: string } {
+  if (!body || typeof body !== 'object') {
+    return { status: 'UNKNOWN', source: 'fixpoint not observed on the body response' };
+  }
+  const fixpoint = (body as { fixpoint?: unknown }).fixpoint;
+  if (!fixpoint || typeof fixpoint !== 'object') {
+    return { status: 'UNKNOWN', source: 'fixpoint not observed on the body response' };
+  }
+  const record = fixpoint as { status?: unknown; ledgerMutation?: unknown };
+  if (record.ledgerMutation !== false) {
+    return { status: 'UNKNOWN', source: 'body response did not attest ledgerMutation false' };
+  }
+  return {
+    status: boundedStatus(record.status),
+    source: 'local fixpoint; ledgerMutation is false',
+  };
+}
