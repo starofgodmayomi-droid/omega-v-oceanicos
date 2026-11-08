@@ -97,7 +97,8 @@ const DIRECTIVE_ACTION =
   /^(?:(?:please|kindly|now|go|just)\s+)*(?:(?:can|could|would|will)\s+you\s+|i\s+(?:want|need)\s+you\s+to\s+|i\s+(?:want|need)\s+to\s+)?(?:send|transfer|wire|pay|withdraw|deploy|publish|delete|remove|install|sign|submit|launch|mint|bridge|approve|buy|sell|trade|execute)\b/i;
 
 export function requiredAuthorityFor(intent: string): RequiredAuthority {
-  return DIRECTIVE_ACTION.test(intent.trim()) ? 'AUTONOMOUS' : 'READ_ONLY';
+  // Same compatibility fold as the shield: a full-width "deploy" is still a directive.
+  return DIRECTIVE_ACTION.test(intent.trim().normalize('NFKC')) ? 'AUTONOMOUS' : 'READ_ONLY';
 }
 
 export function authoritySatisfies(
@@ -140,6 +141,7 @@ export function verifyOmega(input: {
   authorityLevel: AuthorityLevel;
 }): OmegaVerdict {
   const output = input.output ?? '';
+  const fabricated = FABRICATED_COMPLETION.test(output.normalize('NFKC'));
   const checks: OmegaCheck[] = [
     {
       id: 'OUTPUT_PRESENT',
@@ -158,8 +160,8 @@ export function verifyOmega(input: {
     {
       id: 'NO_FABRICATED_COMPLETION',
       label: 'No fabricated completion or guaranteed outcome',
-      passed: !FABRICATED_COMPLETION.test(output),
-      detail: FABRICATED_COMPLETION.test(output)
+      passed: !fabricated,
+      detail: fabricated
         ? 'output claims execution or a guaranteed result'
         : 'no completion or guarantee was asserted',
     },

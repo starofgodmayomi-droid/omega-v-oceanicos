@@ -21,6 +21,20 @@
       "tests_passed": null,
       "evidence_hash": null,
       "next_delta": "Claim one domain from SWARM_PROTOCOL.md §III, branch as agent/<platform>/<task>, and append your own receipt."
+    },
+    {
+      "timestamp": "2026-11-08T16:32:00Z",
+      "agent_id": "grok",
+      "branch": "agent/grok/directive-omega-nfkc",
+      "status": "VERIFIED",
+      "files_touched": [
+        "apps/api/src/invisible-computer.ts",
+        "tests/integration/execute-route.integration.test.ts",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "3fdc99ffc8e5baaa4ec0e289f25e5c30b8d03531f9920cf85ca673167b024ef8",
+      "next_delta": "Fold the same NFKC check through the KAI cycle in packages/mini. Do not merge from the worker."
     }
   ]
 }
