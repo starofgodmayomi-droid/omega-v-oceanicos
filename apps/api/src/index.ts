@@ -26,6 +26,7 @@ import { registerMeshValidationRoute } from './mesh-route.js';
 import { KaiMemoryStore } from './kai-memory.js';
 import { registerExecuteRoute } from './execute-route.js';
 import { scanIntent } from './invisible-computer.js';
+import { simulateScene } from './scene.js';
 import {
   ENCRYPTION_ALGORITHM,
   appendEvent,
@@ -337,6 +338,18 @@ export function createApp(
   });
 
   fastify.get('/v1/kernel/capabilities', async () => ({ success: true, capability: platformKernel.getCapabilitySnapshot(), evaluatedAt: new Date().toISOString() }));
+  fastify.post('/scene/simulate', async (request: any, reply) => {
+    try {
+      const body = request.body && typeof request.body === 'object' && !Array.isArray(request.body)
+        ? request.body
+        : {};
+      return { success: true, data: simulateScene(body) };
+    } catch (error) {
+      return jsonError(reply, 400, 'SCENE_INVALID', {
+        message: error instanceof Error ? error.message : 'scene input is invalid',
+      });
+    }
+  });
   fastify.get('/v1/ecosystem/body', async () => {
     const evaluatedAt = new Date().toISOString();
     const telemetry = ObserverEngine.generateTelemetry();
