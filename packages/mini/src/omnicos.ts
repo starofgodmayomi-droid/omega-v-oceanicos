@@ -1,20 +1,23 @@
 import { createHash } from 'node:crypto';
+import type { OmegaConnectorDeclaration } from './connector-admission.js';
 
 /**
  * THE OMNICOS — the stored directive at OMNICOS/CORE/OMNICOS.md as one
  * bounded receipt function.
  *
- * The directive names five Glober tools (browser, API, local code, LLM,
- * database). This module calls none of them. It composes one local sentence
- * and hashes the bytes it just wrote, so the digest matches by construction.
+ * Two layers. `runOmnicos` is the local law: it calls no Glober tool, composes
+ * one local sentence and hashes the bytes it wrote, so the digest matches by
+ * construction. A self-hash is never VERIFIED, so that function returns
+ * DIVERGENT or UNKNOWN only.
  *
- * The repository law forbids calling that match VERIFIED. This function
- * therefore returns DIVERGENT or UNKNOWN only. VERIFIED stays in the status
- * type because the stored contract names it; this function does not emit it.
- *
- * `tool_used` is CODE on every path: the only tool this process runs is local
- * code. A tool the intent merely names is not observed and is not reported as
- * used. The function writes no ledger, calls no model, and moves no money.
+ * `observeOmnicos` (in `./omnicos-observe.ts`) is the one connected Glober
+ * limb: when the intent names a public GitHub repository, it runs the declared
+ * `github-public-repository` adapter through the admitted-connector gate — one
+ * HTTPS GET to api.github.com, no credential, no redirect, 64 KiB and 5 s
+ * caps, one attempt. `tool_used` is API only after that call was actually
+ * attempted, and `VERIFIED` is emitted only when the bytes GitHub returned
+ * match the observation the intent asked for. Nothing else is reachable: no
+ * write, no message, no payment, no model, no ledger row.
  */
 
 export const OMNICOS_ENTITY = 'THE_OMNICOS' as const;
@@ -138,5 +141,62 @@ export function runOmnicos(input: OmnicosInput): OmnicosReceipt {
     evidence_hash: digestOf(action),
     action,
     next_delta: next,
+  };
+}
+
+/** The single Glober limb this repository actually connects. */
+export const OMNICOS_OBSERVATION_TOOL = 'github-public-repository' as const;
+export const OMNICOS_OBSERVATION_TIMEOUT_MS = 5000;
+export const OMNICOS_OBSERVATION_POLICY = 'policy:omnicos-glober-public-read.v1';
+
+/** `github owner/repo`, `github.com/owner/repo`, `github:owner/repo`. */
+const GITHUB_TARGET =
+  /\bgithub(?:\.com)?\s*[:/]?\s*([A-Za-z0-9][A-Za-z0-9_.-]*)\/([A-Za-z0-9][A-Za-z0-9_.-]*)/i;
+
+export interface OmnicosObservationTarget {
+  readonly owner: string;
+  readonly repo: string;
+}
+
+function trimDots(value: string): string {
+  return value.replace(/\.+$/, '');
+}
+
+/**
+ * Read one public repository identity out of the intent, or nothing. This is
+ * the only shape that reaches the network: everything else stays local code.
+ */
+export function parseGithubObservationTarget(intent: string): OmnicosObservationTarget | null {
+  if (typeof intent !== 'string') return null;
+  const match = GITHUB_TARGET.exec(intent);
+  if (!match) return null;
+  const owner = trimDots(match[1] ?? '');
+  const repo = trimDots(match[2] ?? '');
+  if (!owner || !repo) return null;
+  return { owner, repo };
+}
+
+/**
+ * The declaration the connector gate admits: read-only, one attempt, bounded
+ * time, no credential, no redirect. The expected observation is the identity
+ * the caller asked to see, so the expectation comes from the intent and the
+ * observation comes from GitHub's bytes.
+ */
+export function omnicosGithubConnector(target: OmnicosObservationTarget): OmegaConnectorDeclaration {
+  const fullName = `${target.owner}/${target.repo}`;
+  return {
+    id: 'github.read-public-repository-metadata',
+    version: '1.0.0',
+    system: 'github',
+    capability: 'read public repository metadata',
+    authRef: 'none:public-unauthenticated',
+    scope: [`repo:${fullName}`],
+    mode: 'read-only',
+    policyRefs: [OMNICOS_OBSERVATION_POLICY],
+    stopCondition: 'one bounded public metadata read; no write, no credential, no redirect',
+    expectedObservation: `github:${fullName}:metadata`,
+    timeoutMs: OMNICOS_OBSERVATION_TIMEOUT_MS,
+    maxAttempts: 1,
+    rollbackSupported: false,
   };
 }

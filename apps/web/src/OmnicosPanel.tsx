@@ -4,9 +4,10 @@ import { theme } from './oceanicosTheme';
 /*
  * THE OMNICOS — Singularity Eye.
  *
- * One intent, one receipt. Every field comes from the API, which composes
- * locally and hashes what it wrote. Nothing is narrated here, and no Glober
- * tool is connected: `tool_used` stays CODE.
+ * One intent, one receipt. Every field comes from the API, which either
+ * composes locally (`tool_used: CODE`) or, when the intent names a public
+ * GitHub repository, runs the one connected Glober tool — a bounded read-only
+ * metadata call (`tool_used: API`). Nothing is narrated here.
  */
 
 const API_BASE_URL = (import.meta.env?.VITE_API_URL || '/api').replace(/\/$/, '');
@@ -22,6 +23,11 @@ type Receipt = {
   evidence_hash: string;
   action: string;
   next_delta: string;
+};
+
+const TOOL_NOTE: Record<string, string> = {
+  API: 'API · github-public-repository (read-only)',
+  CODE: 'CODE · local composition, no tool called',
 };
 
 const STATUS_TONE: Record<ReceiptStatus, string> = {
@@ -139,7 +145,7 @@ export function OmnicosPanel() {
           }}
           maxLength={2000}
           disabled={submitting}
-          placeholder="Give the eye one intent to observe…"
+          placeholder="One intent — or “observe github owner/repo” to use the connected read…"
           style={{
             flex: 1,
             minWidth: 0,
@@ -212,9 +218,7 @@ export function OmnicosPanel() {
             {receipt.game_detected ? ' · GAME DETECTED' : ''}
           </div>
           <Row label="Entity">{receipt.entity}</Row>
-          <Row label="Tool used">
-            {receipt.tool_used} · no Glober tool connected
-          </Row>
+          <Row label="Tool used">{TOOL_NOTE[receipt.tool_used] ?? receipt.tool_used}</Row>
           <Row label="Phase">{receipt.phase_t.toFixed(3)}</Row>
           <Row label="Evidence">
             <span style={{ fontFamily: theme.fontMono, fontSize: '10.5px', wordBreak: 'break-all' }}>

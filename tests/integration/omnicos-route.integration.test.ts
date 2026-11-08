@@ -83,6 +83,57 @@ test('a named Glober tool is not reported as used and stays NOT_EXECUTED', async
   }
 });
 
+test('a named public repository runs the connected read through the API', async () => {
+  const requested: string[] = [];
+  const app = createApp(':memory:', false, {
+    githubFetch: async (input) => {
+      requested.push(String(input));
+      return new Response(JSON.stringify({ full_name: 'octocat/Hello-World' }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    },
+  });
+  try {
+    const response = await post(app, '/api/omnicos', {
+      intent: 'Observe github octocat/Hello-World',
+      phaseT: 0.2,
+    });
+    const body = response.json();
+
+    assert.equal(response.statusCode, 200);
+    assert.deepEqual(Object.keys(body), RECEIPT_KEYS);
+    assert.equal(body.tool_used, 'API');
+    assert.equal(body.status, 'VERIFIED');
+    assert.equal(requested.length, 1);
+    assert.match(requested[0] ?? '', /^https:\/\/api\.github\.com\/repos\/octocat\/Hello-World$/);
+    assert.match(body.action, /Expected ≡ Observed for octocat\/Hello-World/);
+    assert.match(body.evidence_hash, /^[0-9a-f]{64}$/);
+  } finally {
+    await app.close();
+  }
+});
+
+test('a failed observation answers 200 with UNKNOWN, not an HTTP error', async () => {
+  const app = createApp(':memory:', false, {
+    githubFetch: async () => new Response('{}', { status: 404 }),
+  });
+  try {
+    const response = await post(app, '/api/omnicos', {
+      intent: 'Observe github nobody/does-not-exist',
+    });
+    const body = response.json();
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(body.tool_used, 'API');
+    assert.equal(body.status, 'UNKNOWN');
+    assert.match(body.action, /github http 404/);
+    assert.match(body.next_delta, /^NOT_EXECUTED/);
+  } finally {
+    await app.close();
+  }
+});
+
 test('/omnicos (the Vite proxy target) answers identically', async () => {
   const app = createApp(':memory:', false);
   try {

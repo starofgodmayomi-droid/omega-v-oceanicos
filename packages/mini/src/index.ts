@@ -224,20 +224,28 @@ export {
   OMNICOS_CHECKSUM,
   OMNICOS_ENTITY,
   OMNICOS_MAX_INTENT_LENGTH,
+  OMNICOS_OBSERVATION_POLICY,
+  OMNICOS_OBSERVATION_TIMEOUT_MS,
+  OMNICOS_OBSERVATION_TOOL,
   OMNICOS_RECEIPT_KEYS,
   OMNICOS_SHIELD_PHRASES,
   OMNICOS_SYNTHESIS,
   omnicosEase,
+  omnicosGithubConnector,
   omnicosPhase,
+  parseGithubObservationTarget,
   runOmnicos,
 } from './omnicos.js';
 export type {
   OmnicosInput,
+  OmnicosObservationTarget,
   OmnicosPhase,
   OmnicosReceipt,
   OmnicosStatus,
   OmnicosTool,
 } from './omnicos.js';
+export { observeOmnicos } from './omnicos-observe.js';
+export type { OmnicosObserveOptions } from './omnicos-observe.js';
 
 export function executeOceanicosMaxExpansion(): CryptographicBlock {
   const kernelChain = new PluralisticHashChain();

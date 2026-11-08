@@ -29,6 +29,7 @@
     "src/github-public-repository.ts",
     "src/total-compress.ts",
     "src/single-body.ts",
-    "src/omnicos.ts"
+    "src/omnicos.ts",
+    "src/omnicos-observe.ts"
   ]
 }

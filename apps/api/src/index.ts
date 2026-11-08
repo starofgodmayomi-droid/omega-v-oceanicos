@@ -277,7 +277,7 @@ export function createApp(
   });
   registerMeshValidationRoute(fastify, ledgerMemory, requireReadAccess, jsonError);
   registerExecuteRoute(fastify, kaiMemory, jsonError);
-  registerOmnicosRoute(fastify, jsonError);
+  registerOmnicosRoute(fastify, jsonError, { fetchImpl: options.githubFetch });
 
   fastify.get('/health', async (_request, reply) => {
     let ledgerIntegrity;
