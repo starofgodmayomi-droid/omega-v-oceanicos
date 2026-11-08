@@ -155,6 +155,30 @@ test('KAI Shield halts a fraud pattern with DIVERGENT and remembers nothing', as
   }
 });
 
+test('KAI Shield halts a full-width fraud intent with DIVERGENT and remembers nothing', async () => {
+  const app = createApp(':memory:', false);
+  try {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/execute',
+      payload: { intent: 'ｕｒｇｅｎｔ' },
+    });
+    const body = response.json();
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(body.status, 'DIVERGENT');
+    assert.equal(body.reason, 'KAI Shield blocked this intent.');
+    assert.equal(body.response, null);
+    assert.equal(body.evidence_hash, null);
+    assert.equal(body.memory, null);
+
+    const memory = await app.inject({ method: 'GET', url: '/api/kai/memory' });
+    assert.equal(memory.json().total, 0);
+  } finally {
+    await app.close();
+  }
+});
+
 test('therapeutic transition blocks known patterns before creating a command', async () => {
   const app = createApp(':memory:', false);
   try {
