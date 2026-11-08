@@ -482,6 +482,17 @@ export function App() {
     setOmegaIntent('');
   };
 
+  // The front prompt creates the bounded command; its full receipt lives in the
+  // background workspace, so this makes the created command reachable in one move.
+  const revealOmegaReceipt = () => {
+    setBackgroundWorkspaceOpen(true);
+    requestAnimationFrame(() => {
+      document
+        .getElementById('background-full-stack-workspace')
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
+
   const simulationMode = kernelCapabilities?.execution === 'SIMULATION';
   const humanGateRequired = kernelCapabilities?.humanAuthorizationRequired ?? true;
 
@@ -880,6 +891,68 @@ export function App() {
             →
           </button>
         </div>
+
+        {/* Front-facing receipt: the created command must be visible where it was asked for. */}
+        {omegaCommand?.command && (
+          <div
+            role="status"
+            aria-label="Command receipt"
+            style={{
+              marginTop: '14px',
+              padding: '12px 16px',
+              display: 'flex',
+              gap: '12px',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              background: theme.surface,
+              border: `1px solid ${theme.borderBright}`,
+              borderRadius: theme.radiusSmall,
+            }}
+          >
+            <div style={{ minWidth: 0 }}>
+              <div
+                style={{
+                  fontSize: '10px',
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
+                  color: theme.textMuted,
+                }}
+              >
+                Command {omegaCommand.command.status} · not executed
+              </div>
+              <div
+                style={{
+                  marginTop: '4px',
+                  fontFamily: theme.fontMono,
+                  fontSize: '12px',
+                  color: theme.text,
+                  overflowWrap: 'anywhere',
+                }}
+              >
+                {omegaCommand.command.commandId}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={revealOmegaReceipt}
+              style={{
+                padding: '8px 16px',
+                borderRadius: theme.radiusPill,
+                border: `1px solid ${theme.borderBright}`,
+                background: 'transparent',
+                color: theme.accent,
+                fontFamily: theme.fontSans,
+                fontSize: '11px',
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+              }}
+            >
+              Review &amp; authorize
+            </button>
+          </div>
+        )}
 
         {/* Mode buttons */}
         <div
