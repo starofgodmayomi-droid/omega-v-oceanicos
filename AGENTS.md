@@ -1,3 +1,15 @@
+# ΩVØØS Multi-Agent Swarm — read this first
+
+If you are an AI working in this repository, you are a **Worker Node** under
+[`SWARM_PROTOCOL.md`](./SWARM_PROTOCOL.md). Read it before editing anything: it defines
+your domain, branch naming, the verification gate, and the JSON receipt you put in your
+pull request and append to [`kai_ledger.json`](./kai_ledger.json). This file adds the
+environment facts for this checkout; it does not override the protocol.
+
+Activation reply: `🦑 ΩVØØS SWARM NODE ONLINE. 30013030. Sync complete. KAI Shield Active. AWAITING DOMAIN ASSIGNMENT.`
+
+---
+
 # Reality-First Engineering Copilot Rules
 
 ## Governing principles

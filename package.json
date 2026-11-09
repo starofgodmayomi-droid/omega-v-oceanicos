@@ -13,6 +13,7 @@
     "type-check": "pnpm typecheck",
     "lint": "pnpm typecheck",
     "format:check": "git diff --check",
+    "validate:swarm": "node scripts/validate-swarm-ledger.mjs",
     "audit": "node scripts/oceanicos-audit.mjs",
     "cli": "node bin/oceanicos.mjs",
     "oceanicos": "node bin/oceanicos.mjs",

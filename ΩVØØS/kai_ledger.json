@@ -124,5 +124,23 @@
     "evidence_hash": "7a0242672ff8d5c6f23718188ee2492a8ff6d1e132e6546c0dae442a7202c85f",
     "reason": "Trap detected: intent matched forbidden pattern \"urgent\"",
     "authorized": false
+  },
+  {
+    "timestamp": "2026-11-09T04:29:42.558175+00:00",
+    "intent": "Verify local SQLite persistence invariants",
+    "phase_t": 0.5,
+    "status": "VERIFIED",
+    "evidence_hash": "3e85e3f908686c2a7dd6cd1cf99c08bd274708d828a6baee1fe6cbf1d7218c43",
+    "reason": "Sovereign execution verified via OMEGA hash equality",
+    "authorized": true
+  },
+  {
+    "timestamp": "2026-11-09T04:30:24.294407+00:00",
+    "intent": "entity body\n",
+    "phase_t": 0.5,
+    "status": "VERIFIED",
+    "evidence_hash": "b810c0dcc392a9a6ecb8a7575e50464b3af0fcaddcb0162b285c0f2400a44900",
+    "reason": "Sovereign execution verified via OMEGA hash equality",
+    "authorized": true
   }
 ]
