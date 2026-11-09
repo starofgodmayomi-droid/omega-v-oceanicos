@@ -145,9 +145,25 @@ async function runCycle(cycleNum = 1) {
   const cycleRun = spawnSync('node', ['bin/oceanicos.mjs', 'cycle'], { encoding: 'utf8' });
   const blockIndex = cycleRun.stdout.match(/Index\s*:\s*#([0-9]+)/)?.[1] || '4102';
   const blockHash = cycleRun.stdout.match(/Hash\s*:\s*([0-9a-f]+)/)?.[1] || '00...';
+
+  let liveApiSynced = false;
+  if (apiHealthy) {
+    try {
+      const syncRes = await fetch('http://localhost:5000/v1/cycle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      if (syncRes.ok) liveApiSynced = true;
+    } catch {}
+  }
+
   if (!isJson) {
     console.log(`  • Block Minted          : #${blockIndex}`);
     console.log(`  • PoW Hash              : ${blockHash}`);
+    if (apiHealthy) {
+      console.log(`  • Live API Broadcast    : ${liveApiSynced ? '✓ SYNCHRONIZED (:5000)' : '○ SKIPPED'}`);
+    }
     console.log('\n[4/4] 🚀 FORWARD: Computing Optimal Finite Next Transition Δ*...');
   }
 
