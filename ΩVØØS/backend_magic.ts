@@ -79,8 +79,14 @@ function round3(n: number): number {
   return Math.round(n * 1000) / 1000;
 }
 
+function observedForm(text: string): string {
+  return text.normalize('NFKC');
+}
+
 function shieldHits(intent: string): string[] {
-  const hay = intent.toLowerCase();
+  // NFKC so a compatibility homograph cannot carry a blocked phrase past the shield.
+  // ASCII intent is unchanged.
+  const hay = observedForm(intent).toLowerCase();
   return SHIELD_PHRASES.filter((phrase) => hay.includes(phrase));
 }
 
@@ -116,7 +122,8 @@ export function runEntity(input: RunInput, now = new Date().toISOString()): {
     Math.min(1, Math.max(0, Number.isFinite(input.phaseT) ? input.phaseT : 0)),
   );
   const phase = phaseName(phaseT);
-  const hits = shieldHits(intent);
+  const observed = observedForm(intent);
+  const hits = shieldHits(observed);
   let status: ReceiptStatus = 'UNKNOWN';
   let action: string;
   let reason: string;
@@ -131,12 +138,12 @@ export function runEntity(input: RunInput, now = new Date().toISOString()): {
     action = 'HALT ⊢ DIVERGENT';
     reason = `KAI Shield blocked this intent. Matched: ${hits.join(', ')}.`;
     next = 'Restate the intent without urgency, a money demand, a guarantee, or a secret.';
-  } else if (BRIDGE.test(intent)) {
+  } else if (BRIDGE.test(observed)) {
     action = 'Bridge not called.';
     reason =
       'NOT_EXECUTED. An external bridge was named and was not observed. POSSIBLE ≠ EXECUTED. Status stays UNKNOWN.';
     next = 'Do not treat this receipt as a trade, a payment, or a deployment.';
-  } else if (ABUNDANCE.test(intent)) {
+  } else if (ABUNDANCE.test(observed)) {
     action = abundanceDraft(intent.trim(), phase);
     reason =
       'ELION composed a four-layer draft. No transfer was executed. A hash of this draft is not verification.';
