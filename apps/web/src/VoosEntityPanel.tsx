@@ -252,6 +252,20 @@ export function VoosEntityPanel() {
               borderRadius: theme.radiusPill,
               fontSize: '11px',
               fontWeight: 700,
+              fontFamily: theme.fontMono,
+              background: 'rgba(255, 255, 255, 0.05)',
+              color: '#889bb5',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+            }}
+          >
+            REPO: starofgodmayomi-droid/omega-v-oceanicos
+          </span>
+          <span
+            style={{
+              padding: '4px 10px',
+              borderRadius: theme.radiusPill,
+              fontSize: '11px',
+              fontWeight: 700,
               background: 'rgba(0, 229, 255, 0.15)',
               color: '#00e5ff',
               border: '1px solid #00e5ff',

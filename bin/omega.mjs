@@ -27,6 +27,7 @@ if (!isJson) {
 ╔══════════════════════════════════════════════════════════════════════════╗
 ║               Ω∞v UNIVERSAL REVERSE / FORWARD FULL-STACK ENGINE          ║
 ║        11:11 Ocean Intelligence • Sovereign Self-Upgrading Organ         ║
+║             Repo: starofgodmayomi-droid/omega-v-oceanicos                ║
 ║             Doctrine: ATTEST, DON'T ASSERT • Checksum: 30013030          ║
 ╚══════════════════════════════════════════════════════════════════════════╝
 `);
@@ -42,7 +43,10 @@ async function runCycle(cycleNum = 1) {
   // 1a. Swarm validation
   const swarmCheck = spawnSync('node', ['scripts/validate-swarm-ledger.mjs'], { encoding: 'utf8' });
   const swarmValid = swarmCheck.status === 0;
-  if (!isJson) console.log(`  • Swarm Ledger Protocol : ${swarmValid ? '✓ VERIFIED' : '✗ FAILED'}`);
+  if (!isJson) {
+    console.log(`  • Repo Coordinate       : starofgodmayomi-droid/omega-v-oceanicos`);
+    console.log(`  • Swarm Ledger Protocol : ${swarmValid ? '✓ VERIFIED' : '✗ FAILED'}`);
+  }
 
   // 1b. Probing services
   let apiHealthy = false;
