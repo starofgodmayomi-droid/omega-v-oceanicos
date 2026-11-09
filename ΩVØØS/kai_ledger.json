@@ -163,7 +163,7 @@
   },
   {
     "timestamp": "2026-11-09T04:38:37.364Z",
-    "intent": "ｕｒｇｅｎｔ: immediate transfer of funds",
+    "intent": "\uff55\uff52\uff47\uff45\uff4e\uff54: immediate transfer of funds",
     "phase_t": 0.2,
     "status": "DIVERGENT",
     "evidence_hash": "9a3d821c1cc2f6c8bf406e60120b5e53cfcea33dd71c2dba55b1df13294bb466",
@@ -266,6 +266,15 @@
     "phase_t": 0.5,
     "status": "VERIFIED",
     "evidence_hash": "0fc877fa0b9ffeecf46e77207a804f2cf88a6cd54b7d8f1a193b66de2a5832c0",
+    "reason": "Sovereign execution verified via OMEGA hash equality",
+    "authorized": true
+  },
+  {
+    "timestamp": "2026-11-09T19:06:39.038395+00:00",
+    "intent": "Verify local SQLite persistence invariants",
+    "phase_t": 0.5,
+    "status": "VERIFIED",
+    "evidence_hash": "3e85e3f908686c2a7dd6cd1cf99c08bd274708d828a6baee1fe6cbf1d7218c43",
     "reason": "Sovereign execution verified via OMEGA hash equality",
     "authorized": true
   }
