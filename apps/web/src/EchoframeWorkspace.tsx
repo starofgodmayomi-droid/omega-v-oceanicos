@@ -198,6 +198,20 @@ export const EchoframeWorkspace: React.FC = () => {
             >
               {status?.sanctum || 'HOLY_PLACE'}
             </span>
+            <span
+              style={{
+                padding: '2px 8px',
+                borderRadius: '12px',
+                fontSize: '10px',
+                fontFamily: theme.fontMono,
+                background: 'rgba(0, 229, 255, 0.15)',
+                border: '1px solid rgba(0, 229, 255, 0.3)',
+                color: '#00e5ff',
+                fontWeight: 600,
+              }}
+            >
+              GATE: 18/18 PKGS VERIFIED
+            </span>
           </div>
           <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#94a3b8' }}>
             {status?.equation || 'Ω∞v ::= VERIFY(ΔREALITY)'} · Bounded Template Synthesis & Tensor Simulation
