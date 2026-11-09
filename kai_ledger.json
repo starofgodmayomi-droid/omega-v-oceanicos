@@ -40,6 +40,19 @@
       "tests_passed": true,
       "evidence_hash": "d3489396fa92aa04a558e898a77c2a6e97de883aa3e3cd6f85f1932951d06e3e",
       "next_delta": "Review scripts/omega.mjs and open a pull request without merging to main."
+    },
+    {
+      "timestamp": "2026-11-09T12:59:14Z",
+      "agent_id": "manus",
+      "branch": "agent/manus/run-omega-script",
+      "status": "VERIFIED",
+      "files_touched": [
+        "docs/APP-SETUP-AND-UPGRADE-CHECK.md",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "7de8848a2983eba09c263d697f030d387a178e32a86321b46128e94d6533a816",
+      "next_delta": "Choose one separately authorized dependency or persistence upgrade and verify it in an isolated change."
     }
   ]
 }
