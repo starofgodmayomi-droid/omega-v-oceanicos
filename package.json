@@ -30,6 +30,7 @@
     "totality": "bash scripts/oceanicos-totality.sh",
     "compress:repo": "node --experimental-strip-types scripts/compress-repo-equation.ts",
     "verify:full": "pnpm run totality",
+    "gate:full": "pnpm build && pnpm lint && pnpm test && pnpm validate:swarm",
     "smoke:api": "pnpm build && node scripts/smoke-api.cjs",
     "smoke:staging": "node scripts/staging-omega-smoke.mjs",
     "test:packages": "pnpm run test:worker",
