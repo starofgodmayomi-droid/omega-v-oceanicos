@@ -11,7 +11,14 @@ import { join } from 'node:path';
  */
 describe('web/API contract', () => {
   const root = process.cwd();
-  const client = readFileSync(join(root, 'apps/web/src/App.tsx'), 'utf8');
+  const webSrcDir = join(root, 'apps/web/src');
+  const clientCode: string[] = [];
+  for (const entry of readdirSync(webSrcDir, { withFileTypes: true })) {
+    if (entry.isFile() && (entry.name.endsWith('.tsx') || entry.name.endsWith('.ts'))) {
+      clientCode.push(readFileSync(join(webSrcDir, entry.name), 'utf8'));
+    }
+  }
+  const client = clientCode.join('\n');
   const server = readFileSync(join(root, 'apps/api/src/index.ts'), 'utf8');
   const viteConfig = readFileSync(join(root, 'apps/web/vite.config.ts'), 'utf8');
 
