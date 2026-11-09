@@ -40,6 +40,18 @@ const PRESET_CONCEPTS = [
   'Zero-Hallucination Cognitive Proof Mesh',
 ];
 
+const API_BASE_URL = (
+  import.meta.env.VITE_API_URL ||
+  (typeof window !== 'undefined' && window.location.port !== '5000'
+    ? `http://${window.location.hostname}:5000`
+    : '')
+).replace(/\/$/, '');
+
+function apiUrl(path: string): string {
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  return `${API_BASE_URL}${path}`;
+}
+
 export const EchoframeWorkspace: React.FC = () => {
   const [status, setStatus] = useState<any>(null);
   const [templates, setTemplates] = useState<EchoframeTemplate[]>([]);
@@ -56,7 +68,7 @@ export const EchoframeWorkspace: React.FC = () => {
 
   const fetchStatus = useCallback(async () => {
     try {
-      const res = await fetch('/v1/echoframe');
+      const res = await fetch(apiUrl('/v1/echoframe'));
       if (res.ok) {
         const data = await res.json();
         setStatus(data);
@@ -68,7 +80,7 @@ export const EchoframeWorkspace: React.FC = () => {
 
   const fetchTemplates = useCallback(async () => {
     try {
-      const res = await fetch('/v1/echoframe/templates');
+      const res = await fetch(apiUrl('/v1/echoframe/templates'));
       if (res.ok) {
         const data = await res.json();
         if (data.templates) {
@@ -88,7 +100,7 @@ export const EchoframeWorkspace: React.FC = () => {
   const handleGenerate = async () => {
     setGenerating(true);
     try {
-      const res = await fetch('/v1/echoframe/generate', {
+      const res = await fetch(apiUrl('/v1/echoframe/generate'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: selectedType, name: componentName }),
@@ -109,7 +121,7 @@ export const EchoframeWorkspace: React.FC = () => {
   const handleSimulate = async () => {
     setSimulating(true);
     try {
-      const res = await fetch('/v1/echoframe/simulate', {
+      const res = await fetch(apiUrl('/v1/echoframe/simulate'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ concept }),
