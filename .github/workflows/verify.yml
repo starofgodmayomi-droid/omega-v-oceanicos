@@ -49,6 +49,11 @@ jobs:
       - name: 4. Install Dependencies
         run: pnpm install --frozen-lockfile
 
+      # The swarm ledger is the cross-agent record. A missing check here is how
+      # an unverified receipt becomes an accepted claim.
+      - name: 4a. Validate Swarm Ledger
+        run: pnpm validate:swarm
+
       - name: 5. TypeScript Typecheck
         run: pnpm run typecheck
 
