@@ -35,6 +35,18 @@
       "tests_passed": true,
       "evidence_hash": "68cfa61b93ff203ac2efa584d1bf3776264dc11a2bdd896e9dcf05ca3bf1820a",
       "next_delta": "Review scripts/omega.mjs against SWARM_PROTOCOL.md §IV before any merge."
+    },
+    {
+      "timestamp": "2026-11-09T13:10:54Z",
+      "agent_id": "base44",
+      "branch": "agent/base44/run-omega-script",
+      "status": "VERIFIED",
+      "files_touched": [
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "68cfa61b93ff203ac2efa584d1bf3776264dc11a2bdd896e9dcf05ca3bf1820a",
+      "next_delta": "Choose one run-omega-script branch to merge; keep both base44 and manus receipts."
     }
   ]
 }
