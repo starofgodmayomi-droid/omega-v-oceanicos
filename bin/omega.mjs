@@ -22,6 +22,7 @@ const isContinuous = args.includes('--continuous') || args.includes('-c');
 const isForwardOnly = args.includes('--forward');
 const isReverseOnly = args.includes('--reverse');
 const isJson = args.includes('--json');
+const isAll = args.includes('--all') || args.includes('--full');
 
 if (isHelp) {
   console.log(`
@@ -37,6 +38,7 @@ Usage:
   pnpm run omega [options]
 
 Options:
+  --all, --full      Full sovereign gate (monorepo typecheck + build + 4-phase continuum)
   --continuous, -c   Run continuous self-upgrading loop (10s intervals)
   --json             Emit machine-readable §VI JSON receipt for swarm ledger
   --forward          Forward engineering mode (unit tests & 38-path contract)
@@ -67,6 +69,24 @@ async function runCycle(cycleNum = 1) {
   const t0 = Date.now();
   if (!isJson) {
     console.log(`\n=== ⚡ CYCLE ${cycleNum}: REVERSE ⇄ FORWARD CONTINUUM ===`);
+  }
+
+  // Phase 0 (if --all or --full): Recursive Typecheck & Build
+  let typecheckPassed = true;
+  let buildPassed = true;
+  if (isAll) {
+    if (!isJson) console.log('\n[0/4] 🏗️ MONOREPO: Running Full Typecheck & Build Gates...');
+    const pnpmCmd = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
+    const tcRun = spawnSync(pnpmCmd, ['--recursive', 'run', 'typecheck'], { encoding: 'utf8' });
+    typecheckPassed = tcRun.status === 0;
+    if (!isJson) console.log(`  • Recursive Typecheck  : ${typecheckPassed ? '✓ 18/18 PASS' : '✗ FAILED'}`);
+
+    const buildRun = spawnSync(pnpmCmd, ['--recursive', 'run', 'build'], { encoding: 'utf8' });
+    buildPassed = buildRun.status === 0;
+    if (!isJson) console.log(`  • Monorepo Build       : ${buildPassed ? '✓ ALL PACKAGES COMPILED' : '✗ FAILED'}`);
+  }
+
+  if (!isJson) {
     console.log('\n[1/4] 🔍 REVERSE: Observing Live Tri-Surface & Invariants...');
   }
   
@@ -153,6 +173,8 @@ async function runCycle(cycleNum = 1) {
     blockHash,
     unitPassed,
     contractPassed,
+    typecheckPassed,
+    buildPassed,
     durationSec: dt,
   };
 }
@@ -174,7 +196,12 @@ async function main() {
         .split('\n')
         .filter(Boolean);
     }
-    const allPassed = Boolean(initial.unitPassed && initial.contractPassed && initial.swarmValid);
+    const allPassed = Boolean(
+      initial.unitPassed &&
+      initial.contractPassed &&
+      initial.swarmValid &&
+      (isAll ? (initial.typecheckPassed && initial.buildPassed) : true)
+    );
     const diff = spawnSync('git', ['diff', 'HEAD~1..HEAD'], { encoding: 'utf8' }).stdout;
     const evidenceHash = createHash('sha256').update(diff || 'omega-v-verified').digest('hex');
 
