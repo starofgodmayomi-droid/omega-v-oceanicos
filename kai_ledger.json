@@ -40,6 +40,18 @@
       "tests_passed": true,
       "evidence_hash": "a5676d48e95769081b956372b2834817489ae9d63bdad5b00969529ee2a4c3ea",
       "next_delta": "Gamma reviews this PR. Do not merge from the worker. Do not widen KAI_SHIELD_PATTERNS."
+    },
+    {
+      "timestamp": "2026-11-09T21:31:53Z",
+      "agent_id": "manus",
+      "branch": "agent/alpha/gaiacos-risk-gate",
+      "status": "DIVERGENT",
+      "files_touched": [
+        "kai_ledger.json"
+      ],
+      "tests_passed": null,
+      "evidence_hash": null,
+      "next_delta": "Reconcile the recorded functional-diff hash a5676d48e95769081b956372b2834817489ae9d63bdad5b00969529ee2a4c3ea with the locally recomputed hash 2c0002c5feb5b4f9fc9054b7bf85300d15719be10c2fb24582fd6f561ef15395; establish a reproducible color-independent hash scope."
     }
   ]
 }
