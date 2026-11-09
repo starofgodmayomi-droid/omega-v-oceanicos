@@ -45,6 +45,28 @@ export function VoosEntityPanel() {
   const [copiedHash, setCopiedHash] = useState<string | null>(null);
   const [connected, setConnected] = useState<boolean>(false);
   const [autoRefresh, setAutoRefresh] = useState<boolean>(true);
+  const [cycleLoading, setCycleLoading] = useState(false);
+  const [lastCycleResult, setLastCycleResult] = useState<any>(null);
+
+  const handleSyncCycle = async () => {
+    setCycleLoading(true);
+    try {
+      const res = await fetch(apiUrl('/v1/cycle'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setLastCycleResult(data);
+        fetchStatusAndLedger();
+      }
+    } catch (err: any) {
+      console.warn('Cycle sync failed', err);
+    } finally {
+      setCycleLoading(false);
+    }
+  };
 
   const easeT = (1 - Math.cos(tValue * Math.PI)) / 2;
 
@@ -237,8 +259,60 @@ export function VoosEntityPanel() {
           >
             WATER FLOWING
           </span>
+
+          <button
+            type="button"
+            onClick={handleSyncCycle}
+            disabled={cycleLoading}
+            style={{
+              padding: '5px 12px',
+              borderRadius: theme.radiusPill,
+              fontSize: '11px',
+              fontWeight: 700,
+              fontFamily: theme.fontMono,
+              background: cycleLoading
+                ? 'rgba(0, 229, 255, 0.3)'
+                : 'linear-gradient(135deg, rgba(0, 229, 255, 0.2) 0%, rgba(105, 231, 185, 0.2) 100%)',
+              color: '#00e5ff',
+              border: '1px solid #00e5ff',
+              cursor: cycleLoading ? 'wait' : 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            {cycleLoading ? '⚡ SYNCING CYCLE...' : '⚡ SYNC CONSENSUS CYCLE'}
+          </button>
         </div>
       </div>
+
+      {/* Minted Consensus Block Notification */}
+      {lastCycleResult?.block && (
+        <div
+          style={{
+            marginBottom: '16px',
+            padding: '12px 16px',
+            background: 'rgba(0, 229, 255, 0.08)',
+            border: '1px solid rgba(0, 229, 255, 0.35)',
+            borderRadius: theme.radiusSmall,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '12px',
+            fontSize: '12px',
+            fontFamily: theme.fontMono,
+          }}
+        >
+          <div>
+            <span style={{ color: '#00e5ff', fontWeight: 700 }}>✓ CONSENSUS BLOCK MINTED:</span>{' '}
+            <span style={{ color: '#e2e8f0' }}>#{lastCycleResult.block.index}</span> ·{' '}
+            <span style={{ color: '#889bb5' }}>Hash: {lastCycleResult.block.hash?.slice(0, 20)}...</span> ·{' '}
+            <span style={{ color: '#889bb5' }}>PoW Nonce: {lastCycleResult.block.nonce}</span>
+          </div>
+          <div style={{ color: theme.verified, fontWeight: 600 }}>
+            {lastCycleResult.block.evidence?.lawRoute || '0 ➔ MINI ➔ FULL_STACK ➔ ECOSYSTEM'}
+          </div>
+        </div>
+      )}
 
       {/* 3-Pane Body Grid */}
       <div
