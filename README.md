@@ -217,6 +217,27 @@ pnpm cli mood
 pnpm cli keys
 ```
 
+### 4. Sovereign Continuum Gate & Swarm Protocol
+
+Run the entire multi-agent continuum with zero configuration:
+
+```bash
+# Execute the full master gate (18/18 packages typechecked + compiled + continuum verified)
+pnpm run gate:full
+
+# Run the 4-phase reverse/forward continuum engine
+pnpm run omega
+
+# Emit machine-readable §VI JSON receipts for the swarm ledger
+pnpm run omega:json
+
+# Run autonomous multi-cycle goal verification
+pnpm run omega:goal
+
+# Validate swarm protocol receipts and contracts
+pnpm run validate:swarm
+```
+
 ---
 
 ## Common Commands
