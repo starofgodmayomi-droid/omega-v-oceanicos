@@ -53,6 +53,8 @@ Invariants:
   • Ease(t): Non-linear harmonic development
   • Zero Entropy Mode: Ψ = 0
   • Gram Det: ⁴√det(I₄ + MᵀM) = 2.030543
+  • Frobenius Norm: ‖M_Ω‖_F = 4.0
+  • Notion Tri-Surface: 6/6 Canonical Surfaces + Meta Companion Index
   `);
   process.exit(0);
 }
