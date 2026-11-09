@@ -62,10 +62,14 @@ export type ShieldVerdict = {
 
 /** Step 1 — KAI observes the intent and refuses known fraud patterns. */
 export function scanIntent(intent: string): ShieldVerdict {
+  // Match the compatibility-normalised (NFKC) form so a full-width homograph
+  // such as `ｕｒｇｅｎｔ` cannot render like a blocked phrase and pass the raw
+  // byte comparison. ASCII is unchanged by NFKC.
+  const observedIntent = intent.normalize('NFKC');
   const matchedPatternIds: string[] = [];
   const matchedLabels: string[] = [];
   for (const entry of KAI_SHIELD_PATTERNS) {
-    if (entry.pattern.test(intent)) {
+    if (entry.pattern.test(observedIntent)) {
       matchedPatternIds.push(entry.id);
       if (!matchedLabels.includes(entry.label)) matchedLabels.push(entry.label);
     }
