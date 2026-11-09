@@ -92,7 +92,8 @@ function requireContext(context: Record<string, string> | undefined): Record<str
 }
 
 export function classifySymbolicIntent(intent: string): DropKind {
-  const normalized = requireText(intent, 'symbolicIntent');
+  // NFKC so a compatibility homograph cannot change the kind. The stored intent stays the source text.
+  const normalized = requireText(intent, 'symbolicIntent').normalize('NFKC');
   for (const [kind, pattern] of KIND_PATTERNS) {
     if (pattern.test(normalized)) return kind;
   }
