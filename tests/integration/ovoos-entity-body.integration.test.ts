@@ -38,6 +38,18 @@ test('shield phrases halt DIVERGENT and authorize nothing', () => {
   assert.equal(receipt.evidence_hash, sha256Hex(receipt.action));
 });
 
+test('a full-width shield homograph halts DIVERGENT and keeps the source intent', () => {
+  const raw = 'ｕｒｇｅｎｔ';
+  const { receipt, row } = runEntity({ intent: raw, phaseT: 0.1 });
+  assert.equal(raw.normalize('NFKC'), 'urgent');
+  assert.equal(receipt.status, 'DIVERGENT');
+  assert.equal(receipt.action, 'HALT ⊢ DIVERGENT');
+  assert.match(receipt.reason, /urgent/);
+  assert.equal(row.intent, raw);
+  assert.equal(row.authorized, false);
+  assert.equal(receipt.evidence_hash, sha256Hex(receipt.action));
+});
+
 test('a local sentence and a caller-supplied match stay UNKNOWN', () => {
   const first = runEntity({ intent: 'Map a patient plan for a book stall.', phaseT: 0 });
   assert.equal(first.receipt.status, 'UNKNOWN');

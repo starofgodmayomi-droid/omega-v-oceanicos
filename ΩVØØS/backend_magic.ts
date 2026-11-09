@@ -80,7 +80,9 @@ function round3(n: number): number {
 }
 
 function shieldHits(intent: string): string[] {
-  const hay = intent.toLowerCase();
+  // NFKC so a compatibility homograph cannot carry a blocked phrase past the shield.
+  // ASCII intent is unchanged.
+  const hay = intent.normalize('NFKC').toLowerCase();
   return SHIELD_PHRASES.filter((phrase) => hay.includes(phrase));
 }
 
