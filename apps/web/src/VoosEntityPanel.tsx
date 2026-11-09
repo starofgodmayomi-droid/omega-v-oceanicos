@@ -288,6 +288,29 @@ export function VoosEntityPanel() {
             GATE: FULL (18/18 PKGS)
           </span>
 
+          <a
+            href="https://app.notion.com/p/OCEANICOS-MOTION-Private-Wealth-Execution-Engine-4003080bdd5381598220ef09061f54b7"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              padding: '4px 10px',
+              borderRadius: theme.radiusPill,
+              fontSize: '11px',
+              fontWeight: 700,
+              fontFamily: theme.fontMono,
+              background: 'rgba(236, 72, 153, 0.15)',
+              color: '#ec4899',
+              border: '1px solid rgba(236, 72, 153, 0.35)',
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+            }}
+            title="Open Notion Private Wealth Control Plane (UUID: 4003080b-dd53-8159-8220-ef09061f54b7)"
+          >
+            NOTION: 6 SURFACES
+          </a>
+
           <button
             type="button"
             onClick={handleSyncCycle}

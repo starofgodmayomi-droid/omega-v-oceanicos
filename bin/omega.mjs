@@ -121,10 +121,15 @@ async function runCycle(cycleNum = 1) {
     if (webRes.status === 200) webHealthy = true;
   } catch {}
 
+  // 1c. Notion tri-surface validation
+  const notionCheck = spawnSync('node', ['bin/oceanicos.mjs', 'notion', 'status'], { encoding: 'utf8' });
+  const notionConfigured = notionCheck.status === 0 && notionCheck.stdout.includes('6 CANONICAL NOTION OPERATING SURFACES');
+
   if (!isJson) {
     console.log(`  • Fastify API (:5000)   : ${apiHealthy ? '✓ ONLINE (READY)' : '○ DEGRADED / UNREACHABLE'}`);
     console.log(`  • Python VOOS (:8088)   : ${voosDaemonHealthy ? '✓ ONLINE (30013030)' : '○ DEGRADED / UNREACHABLE'}`);
     console.log(`  • Web Preview (:3000)   : ${webHealthy ? '✓ HTTP 200 (SERVING)' : '○ DEGRADED / UNREACHABLE'}`);
+    console.log(`  • Notion Tri-Surface    : ${notionConfigured ? '✓ 6/6 CANONICAL SURFACES (CONFIGURED)' : '○ DEGRADED / UNREACHABLE'}`);
     console.log('\n[2/4] 💧 COMPRESS: Solving 4x4 Total Compression Matrix & Singularity Fixpoint...');
   }
 
@@ -189,6 +194,7 @@ async function runCycle(cycleNum = 1) {
     apiHealthy,
     voosDaemonHealthy,
     webHealthy,
+    notionConfigured,
     gramDet,
     isZeroEntropy,
     blockIndex,
@@ -222,6 +228,7 @@ async function main() {
       initial.unitPassed &&
       initial.contractPassed &&
       initial.swarmValid &&
+      initial.notionConfigured &&
       (isAll ? (initial.typecheckPassed && initial.buildPassed) : true)
     );
     const diff = spawnSync('git', ['diff', 'HEAD~1..HEAD'], { encoding: 'utf8' }).stdout;

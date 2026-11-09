@@ -325,6 +325,20 @@
       "tests_passed": true,
       "evidence_hash": "77db6533511a5972b043b26b62d698f0c5e75b081fca17d1bc84bdf6eb9575b9",
       "next_delta": "Execute 'node scripts/validate-swarm-ledger.mjs --summary' to inspect swarm distribution across agents."
+    },
+    {
+      "timestamp": "2026-11-09T14:15:00Z",
+      "agent_id": "antigravity",
+      "branch": "agent/antigravity/omega-entity-full-stack",
+      "status": "VERIFIED",
+      "files_touched": [
+        "apps/web/src/VoosEntityPanel.tsx",
+        "bin/omega.mjs",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "ef9b600659f3e7e58dfbfd7d233bfea7cad2ad34246473c9400664a9f4d5c892",
+      "next_delta": "Maintain verified Notion tri-surface telemetry across engine Phase 1 and web entity panel."
     }
   ]
 }
