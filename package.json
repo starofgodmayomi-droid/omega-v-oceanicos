@@ -14,6 +14,7 @@
     "lint": "pnpm typecheck",
     "format:check": "git diff --check",
     "validate:swarm": "node scripts/validate-swarm-ledger.mjs",
+    "compress:max": "node scripts/validate-swarm-ledger.mjs && node bin/oceanicos.mjs matrix 4x4 && node bin/oceanicos.mjs singularity && node bin/oceanicos.mjs cycle && pnpm run test:fast && pnpm test apps/web/src/__tests__/contract.test.ts",
     "audit": "node scripts/oceanicos-audit.mjs",
     "cli": "node bin/oceanicos.mjs",
     "oceanicos": "node bin/oceanicos.mjs",
