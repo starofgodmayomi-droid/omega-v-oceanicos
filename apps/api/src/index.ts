@@ -335,7 +335,7 @@ export function createApp(
       checks: {
         observer: 'ready',
         verifier: 'ready',
-        attester: (process.env.OMEGA_SIGNING_KEY || attestationSigningKey) ? 'ready' : 'degraded',
+        attester: (resolvedOptions.attestationSigningKey ?? process.env.OMEGA_SIGNING_KEY) ? 'ready' : 'degraded',
         covenant: 'ready',
         upgrade: 'ready',
         compression: 'ready',
@@ -833,7 +833,7 @@ export function createApp(
   }));
 
   fastify.post('/complete-loop', async (request: any, reply) => {
-    const signingKey = attestationSigningKey || process.env.OMEGA_SIGNING_KEY;
+    const signingKey = resolvedOptions.attestationSigningKey ?? process.env.OMEGA_SIGNING_KEY;
     if (!signingKey) return jsonError(reply, 503, 'ATTESTATION_SIGNING_KEY_REQUIRED');
     const result = kernel.cycle(request.body);
     const service = new AttestationService({ signingKey, algorithm: 'HMAC-SHA256' });
@@ -894,16 +894,17 @@ export function createApp(
   });
 
   fastify.post('/v1/attest', async (_request, reply) => {
-    if (!attestationSigningKey) return jsonError(reply, 503, 'ATTESTATION_SIGNING_KEY_REQUIRED');
-    if (attestationSigningKey.length < MIN_ATTESTATION_KEY_LENGTH) return jsonError(reply, 503, 'ATTESTATION_SIGNING_KEY_TOO_WEAK', { minimumLength: MIN_ATTESTATION_KEY_LENGTH });
-    const service = new AttestationService({ signingKey: attestationSigningKey, algorithm: 'HMAC-SHA256' });
+    const signingKey = resolvedOptions.attestationSigningKey ?? process.env.OMEGA_SIGNING_KEY;
+    if (!signingKey) return jsonError(reply, 503, 'ATTESTATION_SIGNING_KEY_REQUIRED');
+    if (signingKey.length < MIN_ATTESTATION_KEY_LENGTH) return jsonError(reply, 503, 'ATTESTATION_SIGNING_KEY_TOO_WEAK', { minimumLength: MIN_ATTESTATION_KEY_LENGTH });
+    const service = new AttestationService({ signingKey, algorithm: 'HMAC-SHA256' });
     const telemetry = ObserverEngine.generateTelemetry();
     const verificationResult = { id: `ver-${Date.now()}`, observationId: telemetry.uuid, timestamp: telemetry.timestamp, summary: { passed: true, confidence: 1, rulesApplied: 4, rulesPassed: 4, rulesFailed: 0 }, ruleVersions: { 'frontier-matrix': 'v1.0' } };
     return { success: true, attestation: service.attest(verificationResult), tip: ledgerMemory.getTip() };
   });
 
   fastify.post('/v1/cycle', async (request: any, reply) => {
-    const signingKey = process.env.OMEGA_SIGNING_KEY || attestationSigningKey;
+    const signingKey = resolvedOptions.attestationSigningKey ?? process.env.OMEGA_SIGNING_KEY;
     if (!signingKey) return jsonError(reply, 503, 'ATTESTATION_SIGNING_KEY_REQUIRED');
     const signature = request.headers['x-omega-signature'] as string | undefined;
     const publicKey = request.headers['x-omega-public-key'] as string | undefined;
