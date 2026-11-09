@@ -969,6 +969,22 @@ export function App() {
           >
             <span>⚙️</span>
             <span>Work Mode</span>
+            {moodData && (
+              <span
+                style={{
+                  fontSize: '9.5px',
+                  fontWeight: 700,
+                  padding: '1px 6px',
+                  borderRadius: '10px',
+                  background: 'rgba(56, 189, 248, 0.15)',
+                  border: '1px solid rgba(56, 189, 248, 0.35)',
+                  color: '#38bdf8',
+                  fontFamily: theme.fontMono,
+                }}
+              >
+                {moodData.moodEngine?.status || moodData.status || 'FLOW'}
+              </span>
+            )}
           </button>
           <button
             onClick={() => setViewportMode('evidence')}
@@ -1214,7 +1230,11 @@ export function App() {
             flex: 1,
           }}
         >
-          <OmegaWorkspace />
+          <OmegaWorkspace
+            moodData={moodData}
+            onFetchMood={fetchMood}
+            onEvaluateMoodPipeline={evaluateMoodPipeline}
+          />
         </div>
       ) : viewportMode === 'evidence' ? (
         <div

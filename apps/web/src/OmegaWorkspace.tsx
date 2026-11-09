@@ -34,7 +34,13 @@ import {
   type TotalCompressionResultView,
 } from './omega-api';
 
-export const OmegaWorkspace: React.FC = () => {
+export interface OmegaWorkspaceProps {
+  moodData?: any;
+  onFetchMood?: () => void;
+  onEvaluateMoodPipeline?: (payload: { signal: string; status?: string; consequential?: boolean }) => Promise<any>;
+}
+
+export const OmegaWorkspace: React.FC<OmegaWorkspaceProps> = (props) => {
   const [workers, setWorkers] = useState<OmegaWorkerInfo[]>([]);
   const [selectedWorkers, setSelectedWorkers] = useState<string[]>([
     'worker-observer',
@@ -64,6 +70,63 @@ export const OmegaWorkspace: React.FC = () => {
   const [compressionResult, setCompressionResult] = useState<TotalCompressionResultView | null>(null);
   const [validatingCompression, setValidatingCompression] = useState<boolean>(false);
   const [selectedLeaseWorker, setSelectedLeaseWorker] = useState<string>('worker-planner');
+  const [localMood, setLocalMood] = useState<any>(null);
+  const [moodUpdating, setMoodUpdating] = useState<boolean>(false);
+
+  const activeMood = props.moodData || localMood;
+
+  const loadMood = async () => {
+    try {
+      const res = await fetch('/v1/mood');
+      if (res.ok) {
+        const data = await res.json();
+        setLocalMood(data);
+      }
+    } catch {
+      // quiet
+    }
+  };
+
+  const setWorkMoodState = async (status: string, uncertainty: number) => {
+    setMoodUpdating(true);
+    try {
+      if (props.onEvaluateMoodPipeline) {
+        await props.onEvaluateMoodPipeline({
+          signal: `Work Mood set to ${status}`,
+          status,
+          consequential: false,
+        });
+      } else {
+        const res = await fetch('/v1/mood/pipeline', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            signal: `Work Mood set to ${status}`,
+            status,
+            consequential: false,
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setLocalMood((prev: any) => ({
+            ...prev,
+            status,
+            moodEngine: {
+              ...prev?.moodEngine,
+              status,
+              uncertainty,
+            },
+            moodMatrix: data.moodMatrix || prev?.moodMatrix,
+          }));
+        }
+      }
+      if (props.onFetchMood) props.onFetchMood();
+    } catch (err: any) {
+      setErrorMessage(err.message);
+    } finally {
+      setMoodUpdating(false);
+    }
+  };
 
   useEffect(() => {
     loadWorkers();
@@ -71,6 +134,7 @@ export const OmegaWorkspace: React.FC = () => {
     loadEvents();
     loadCopilotMode();
     loadKernelState();
+    loadMood();
     const unsubscribe = subscribeToOmegaEvents((newEvent) => {
       setEvents((prev) => [newEvent, ...prev.filter((e) => e.eventId !== newEvent.eventId)].slice(0, 40));
     });
@@ -428,6 +492,107 @@ export const OmegaWorkspace: React.FC = () => {
               <span style={{ color: '#38bdf8' }}>ANTIGRAVITY: ON</span>
               <span style={{ color: '#a78bfa' }}>DISSENT: PRESERVE</span>
               <span style={{ color: '#fbbf24' }}>TRANSITIONS: {copilotState?.verifiedTransitions ?? 0}</span>
+            </div>
+          </div>
+
+          {/* Autonomous Work Mood Telemetry Card */}
+          <div
+            style={{
+              background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 58, 138, 0.35) 100%)',
+              border: '1px solid rgba(56, 189, 248, 0.35)',
+              borderRadius: '8px',
+              padding: '14px 16px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.25)',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span>🌊</span>
+                <span>Autonomous Work Mood Telemetry</span>
+              </span>
+              <span
+                style={{
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  padding: '2px 8px',
+                  borderRadius: '12px',
+                  background: 'rgba(0, 245, 160, 0.15)',
+                  border: '1px solid rgba(0, 245, 160, 0.35)',
+                  color: '#00f5a0',
+                  fontFamily: 'monospace',
+                }}
+              >
+                {activeMood?.moodEngine?.status || activeMood?.status || 'OPTIMAL_FLOW'}
+              </span>
+            </div>
+
+            <div style={{ fontSize: '11px', color: '#94a3b8', lineHeight: '1.4' }}>
+              Dynamic cognitive flow state governing self-sensing worker pacing, uncertainty tolerance, and safety gates.
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '11px', color: '#cbd5e1' }}>
+              <div>
+                <span style={{ color: '#94a3b8' }}>Flow State: </span>
+                <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#38bdf8' }}>
+                  {activeMood?.status || 'MAX GOOD-O'}
+                </span>
+              </div>
+              <div>
+                <span style={{ color: '#94a3b8' }}>Flow Certainty: </span>
+                <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#00f5a0' }}>
+                  {Math.round((1 - (activeMood?.moodEngine?.uncertainty ?? 0.1)) * 100)}%
+                </span>
+              </div>
+              <div>
+                <span style={{ color: '#94a3b8' }}>Matrix Decision: </span>
+                <span style={{ fontFamily: 'monospace', fontWeight: 700, color: activeMood?.moodMatrix?.decision === 'VERIFIED' ? '#00f5a0' : '#a78bfa' }}>
+                  {activeMood?.moodMatrix?.decision || 'VERIFIED'}
+                </span>
+              </div>
+              <div>
+                <span style={{ color: '#94a3b8' }}>Frobenius Norm: </span>
+                <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#f59e0b' }}>
+                  {activeMood?.moodMatrix?.frobeniusNorm || '0.390'}
+                </span>
+              </div>
+            </div>
+
+            {/* Quick Mood Preset Selectors */}
+            <div style={{ borderTop: '1px solid rgba(56, 189, 248, 0.15)', paddingTop: '8px' }}>
+              <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '6px' }}>Set Autonomous Work Mood:</div>
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                {[
+                  { label: '🌊 Optimal Flow', status: 'OPTIMAL_FLOW', uncertainty: 0.05 },
+                  { label: '🛡️ High Integrity', status: 'HIGH_INTEGRITY', uncertainty: 0.02 },
+                  { label: '⚡ Deep Work', status: 'DEEP_WORK', uncertainty: 0.08 },
+                  { label: '⚖️ Equilibrium', status: 'EQUILIBRIUM', uncertainty: 0.15 },
+                ].map((preset) => {
+                  const isActive = (activeMood?.moodEngine?.status === preset.status || activeMood?.status === preset.status);
+                  return (
+                    <button
+                      key={preset.status}
+                      onClick={() => setWorkMoodState(preset.status, preset.uncertainty)}
+                      disabled={moodUpdating}
+                      style={{
+                        padding: '4px 8px',
+                        borderRadius: '4px',
+                        fontSize: '10px',
+                        fontWeight: 600,
+                        background: isActive ? 'rgba(56, 189, 248, 0.25)' : 'rgba(255, 255, 255, 0.05)',
+                        border: `1px solid ${isActive ? '#38bdf8' : 'rgba(255, 255, 255, 0.1)'}`,
+                        color: isActive ? '#38bdf8' : '#94a3b8',
+                        cursor: moodUpdating ? 'wait' : 'pointer',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      {preset.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
