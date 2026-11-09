@@ -139,7 +139,7 @@ export function App() {
   ]);
 
   const [openStageId, setOpenStageId] = useState<string | null>(null);
-  const [viewportMode, setViewportMode] = useState<'trading' | 'conversation' | 'work' | 'evidence' | 'catalog' | 'wealth' | 'ocean'>('trading');
+  const [viewportMode, setViewportMode] = useState<'conversation' | 'trading' | 'work' | 'evidence' | 'catalog' | 'wealth' | 'ocean'>('conversation');
   const [showCovenantPanel, setShowCovenantPanel] = useState<boolean>(false);
   const [showNewsPanel, setShowNewsPanel] = useState<boolean>(false);
   const [showCompressionPulse, setShowCompressionPulse] = useState<boolean>(false);
