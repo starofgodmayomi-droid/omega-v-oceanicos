@@ -100,6 +100,16 @@ export function AmbientBar(props: AmbientBarProps) {
       color: theme.verified,
       pulse: true,
     }] : []),
+    {
+      label: 'Repo',
+      value: 'starofgodmayomi-droid/omega-v-oceanicos',
+      color: theme.accent,
+    },
+    {
+      label: 'Checksum',
+      value: '30013030',
+      color: theme.verified,
+    },
   ];
 
   return (
