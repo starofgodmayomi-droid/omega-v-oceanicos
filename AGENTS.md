@@ -93,3 +93,6 @@ All secrets (signing key, tokens) are local dev values in `.env.base44-defaults`
 - API health: `curl http://localhost:5000/health` → `{"status":"ok",...}`
 - Web: `curl http://localhost:3000` → Vite-served HTML with `/@vite/client` and `/src/main.tsx`.
 - `docker compose -f docker-compose.base44.yml ps` → api healthy, web up.
+- Sovereign Gate: `pnpm run gate:full` → 18/18 packages typechecked, compiled, and continuum verified.
+- Machine-Readable Attestation: `pnpm run omega:json` → emits §VI JSON receipt for `kai_ledger.json`.
+- Swarm Validation: `pnpm run validate:swarm` → validates all ledger receipts and protocol invariants.
