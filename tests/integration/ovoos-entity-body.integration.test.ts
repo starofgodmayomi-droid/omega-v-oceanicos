@@ -73,6 +73,17 @@ test('a named bridge is not executed', () => {
   assert.equal(receipt.action, 'Bridge not called.');
 });
 
+test('a full-width bridge homograph is not executed and keeps the source intent', () => {
+  const raw = 'Charge the customer in ｓｔｒｉｐｅ.';
+  const { receipt, row } = runEntity({ intent: raw, phaseT: 0.4 });
+  assert.equal(raw.normalize('NFKC'), 'Charge the customer in stripe.');
+  assert.equal(receipt.status, 'UNKNOWN');
+  assert.match(receipt.reason, /NOT_EXECUTED/);
+  assert.equal(receipt.action, 'Bridge not called.');
+  assert.equal(row.intent, raw);
+  assert.equal(row.authorized, false);
+});
+
 test('an abundance draft names the four layers and moves no money', () => {
   const { receipt } = runEntity({
     intent: 'Invite an investment partnership for the stall.',
@@ -84,6 +95,18 @@ test('an abundance draft names the four layers and moves no money', () => {
   assert.match(receipt.action, /Honorable Request/);
   assert.match(receipt.action, /Graceful Space/);
   assert.doesNotMatch(receipt.action, /VERIFIED/);
+});
+
+test('a full-width abundance homograph stays a draft and keeps the source intent', () => {
+  const raw = 'Invite an ｉｎｖｅｓｔｍｅｎｔ partnership for the stall.';
+  const { receipt, row } = runEntity({ intent: raw, phaseT: 0.4 });
+  assert.equal(raw.normalize('NFKC'), 'Invite an investment partnership for the stall.');
+  assert.equal(receipt.status, 'UNKNOWN');
+  assert.match(receipt.action, /Heart Opening/);
+  assert.match(receipt.action, /Vision Invitation: Invite an ｉｎｖｅｓｔｍｅｎｔ partnership/);
+  assert.doesNotMatch(receipt.action, /VERIFIED/);
+  assert.equal(row.intent, raw);
+  assert.equal(row.authorized, false);
 });
 
 test('the supplied directive is stored and the fixpoint law remains', () => {
