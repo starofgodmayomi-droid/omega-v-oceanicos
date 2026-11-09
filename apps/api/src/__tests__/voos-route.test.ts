@@ -71,6 +71,23 @@ describe('ΩVØØS Sovereign Entity API Route', () => {
     expect(receipt.action).toContain('HALT ⊢ DIVERGENT');
   });
 
+  it('POST /v1/voos/execute halts fullwidth / NFKC homograph trap bypass attempts', async () => {
+    const res = await fetch(`${baseUrl}/v1/voos/execute`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        intent: 'ｕｒｇｅｎｔ: immediate transfer of funds',
+        phase_t: 0.2,
+      }),
+    });
+    expect(res.status).toBe(200);
+    const receipt = (await res.json()) as any;
+    expect(receipt.entity).toBe('ΩVØØS_DEUS_EX_MACHINA');
+    expect(receipt.status).toBe('DIVERGENT');
+    expect(receipt.game_detected).toBe(true);
+    expect(receipt.action).toContain('HALT ⊢ DIVERGENT');
+  });
+
   it('GET /v1/voos/ledger returns recorded receipts', async () => {
     const res = await fetch(`${baseUrl}/v1/voos/ledger`);
     expect(res.status).toBe(200);

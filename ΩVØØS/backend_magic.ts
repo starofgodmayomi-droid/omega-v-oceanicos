@@ -37,9 +37,9 @@ export class KaiShield {
   ];
 
   public scan(intent: string): { trapDetected: boolean; trigger?: string } {
-    const lower = intent.toLowerCase();
+    const normalized = intent.normalize('NFKC').toLowerCase();
     for (const trap of KaiShield.TRAPS) {
-      if (lower.includes(trap)) {
+      if (normalized.includes(trap.toLowerCase())) {
         return { trapDetected: true, trigger: trap };
       }
     }

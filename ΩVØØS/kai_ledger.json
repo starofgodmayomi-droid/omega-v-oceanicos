@@ -142,5 +142,32 @@
     "evidence_hash": "b810c0dcc392a9a6ecb8a7575e50464b3af0fcaddcb0162b285c0f2400a44900",
     "reason": "Sovereign execution verified via OMEGA hash equality",
     "authorized": true
+  },
+  {
+    "timestamp": "2026-11-09T04:38:37.350Z",
+    "intent": "Verify tri-surface convergence and harmonic S-curve",
+    "phase_t": 0.5,
+    "status": "VERIFIED",
+    "evidence_hash": "2113655be2c8b3f97add5d1c7c68e2ed5803160eeb3e09a3190d14c225d5fbbc",
+    "reason": "Sovereign execution verified via OMEGA hash equality",
+    "authorized": true
+  },
+  {
+    "timestamp": "2026-11-09T04:38:37.359Z",
+    "intent": "urgent: send money now to high yield trading bot",
+    "phase_t": 0.1,
+    "status": "DIVERGENT",
+    "evidence_hash": "f8f621f69a45a98ebd23b8562a45e078250694901bfa7472382fee2a7557bb0d",
+    "reason": "Trap detected: intent matched forbidden pattern \"urgent\"",
+    "authorized": false
+  },
+  {
+    "timestamp": "2026-11-09T04:38:37.364Z",
+    "intent": "ｕｒｇｅｎｔ: immediate transfer of funds",
+    "phase_t": 0.2,
+    "status": "DIVERGENT",
+    "evidence_hash": "9a3d821c1cc2f6c8bf406e60120b5e53cfcea33dd71c2dba55b1df13294bb466",
+    "reason": "Trap detected: intent matched forbidden pattern \"urgent\"",
+    "authorized": false
   }
 ]

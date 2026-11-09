@@ -8,6 +8,7 @@ import hashlib
 import json
 import math
 import os
+import unicodedata
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -22,9 +23,9 @@ class KaiShield:
 
     @classmethod
     def scan(cls, intent: str) -> Tuple[bool, Optional[str]]:
-        lower = intent.lower()
+        normalized = unicodedata.normalize('NFKC', intent).lower()
         for trap in cls.TRAPS:
-            if trap in lower:
+            if trap in normalized:
                 return True, trap
         return False, None
 

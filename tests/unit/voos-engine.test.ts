@@ -21,6 +21,12 @@ describe('ΩVØØS Deus Ex Machina Engine & Invariants', () => {
       expect(shield.scan('enter your private key here').trapDetected).toBe(true);
     });
 
+    it('should intercept fullwidth and NFKC homograph trap bypass attempts', () => {
+      expect(shield.scan('ｕｒｇｅｎｔ: action required').trapDetected).toBe(true);
+      expect(shield.scan('ＵＲＧＥＮＴ send funds').trapDetected).toBe(true);
+      expect(shield.scan('reveal ｐｒｉｖａｔｅ ｋｅｙ').trapDetected).toBe(true);
+    });
+
     it('should allow legitimate engineering intents', () => {
       expect(shield.scan('Verify SQLite local persistence invariants').trapDetected).toBe(false);
       expect(shield.scan('Attest state hash against root key').trapDetected).toBe(false);

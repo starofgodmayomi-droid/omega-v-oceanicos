@@ -127,9 +127,9 @@ export function registerVoosRoute(fastify: any): void {
     const boundedT = Math.max(0, Math.min(1, phaseT));
     const easedT = computeEase(boundedT);
 
-    // Step 1: PERCEIVE & ALIGN (KAI Shield Trap Scan)
-    const lower = intent.toLowerCase();
-    const trapMatch = TRAP_PATTERNS.find((trap) => lower.includes(trap));
+    // Step 1: PERCEIVE & ALIGN (KAI Shield Trap Scan with NFKC normalization)
+    const normalized = intent.normalize('NFKC').toLowerCase();
+    const trapMatch = TRAP_PATTERNS.find((trap) => normalized.includes(trap.toLowerCase()));
 
     if (trapMatch) {
       const reason = `Trap detected: intent matched forbidden pattern "${trapMatch}"`;
