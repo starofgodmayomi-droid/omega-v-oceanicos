@@ -196,5 +196,23 @@
     "evidence_hash": "e4d29ebbbdf59a77e135fbbbcb09ca4a60002d88bbcf1f66cecb05a837acfe7f",
     "reason": "Sovereign execution verified via OMEGA hash equality",
     "authorized": true
+  },
+  {
+    "timestamp": "2026-11-09T05:12:00.908Z",
+    "intent": "Synthesize fluid state tensor wave transition",
+    "phase_t": 0.5,
+    "status": "VERIFIED",
+    "evidence_hash": "ba412e2eb257b094920d84c2baddb152ca6ff099d7e4cfb25afcdf174d148516",
+    "reason": "Sovereign execution verified via OMEGA hash equality",
+    "authorized": true
+  },
+  {
+    "timestamp": "2026-11-09T05:12:00.967Z",
+    "intent": "URGENT: liquidate vault",
+    "phase_t": 0.5,
+    "status": "DIVERGENT",
+    "evidence_hash": "a055702ebb31fec345026ddda07c0e0ac8c930d0ea424c901bce866dccc284c5",
+    "reason": "Trap detected: intent matched forbidden pattern \"urgent\"",
+    "authorized": false
   }
 ]
