@@ -9,25 +9,28 @@ export interface EchoframeTemplate {
 }
 
 export interface EchoframeArtifact {
+  id: string;
   name: string;
   type: string;
-  sourceCode: string;
+  code: string;
   digest: string;
-  sanctum: string;
-  generatedAt: string;
+  suggestedPath?: string;
+  timestamp: string;
+  verificationGate?: {
+    rule: string;
+    failClosed: boolean;
+    hashProof: string;
+  };
 }
 
 export interface EchoframeSimulation {
+  simulationId: string;
   concept: string;
-  steps: Array<{
-    stage: string;
-    description: string;
-    fidelity: number;
-    tensorWaveState?: string;
-  }>;
-  overallFidelity: number;
-  simulatedAt: string;
-  proofHash: string;
+  evaluatedAxioms: string[];
+  entropyLevel: number;
+  epistemicState: string;
+  harmonicResonanceHz: number;
+  timestamp: string;
 }
 
 const PRESET_CONCEPTS = [
@@ -125,8 +128,8 @@ export const EchoframeWorkspace: React.FC = () => {
   };
 
   const handleCopy = () => {
-    if (!artifact?.sourceCode) return;
-    navigator.clipboard.writeText(artifact.sourceCode);
+    if (!artifact?.code) return;
+    navigator.clipboard.writeText(artifact.code);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -376,7 +379,7 @@ export const EchoframeWorkspace: React.FC = () => {
                   whiteSpace: 'pre-wrap',
                 }}
               >
-                {artifact.sourceCode}
+                {artifact.code}
               </pre>
             </div>
           )}
@@ -490,21 +493,23 @@ export const EchoframeWorkspace: React.FC = () => {
                   fontFamily: theme.fontMono,
                 }}
               >
-                <span style={{ color: '#38bdf8' }}>Fidelity: {simulation.overallFidelity * 100}%</span>
+                <span style={{ color: '#38bdf8' }}>
+                  State: {simulation.epistemicState} ({simulation.harmonicResonanceHz} Hz)
+                </span>
                 <span style={{ color: '#94a3b8' }}>
-                  Proof: {simulation.proofHash?.slice(0, 16)}...
+                  ID: {simulation.simulationId}
                 </span>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {simulation.steps?.map((step, idx) => (
+                {simulation.evaluatedAxioms?.map((axiom, idx) => (
                   <div
                     key={idx}
                     style={{
                       padding: '8px',
                       background: 'rgba(255, 255, 255, 0.03)',
                       borderRadius: '4px',
-                      borderLeft: `3px solid ${step.fidelity >= 0.9 ? '#00f5a0' : '#f59e0b'}`,
+                      borderLeft: '3px solid #00f5a0',
                     }}
                   >
                     <div
@@ -517,13 +522,11 @@ export const EchoframeWorkspace: React.FC = () => {
                         color: '#f8fafc',
                       }}
                     >
-                      <span>
-                        [{idx + 1}] {step.stage}
-                      </span>
-                      <span style={{ color: '#00f5a0' }}>{(step.fidelity * 100).toFixed(0)}%</span>
+                      <span>[Axiom {idx + 1}]</span>
+                      <span style={{ color: '#00f5a0' }}>✓ GROUNDED</span>
                     </div>
                     <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
-                      {step.description}
+                      {axiom}
                     </div>
                   </div>
                 ))}
