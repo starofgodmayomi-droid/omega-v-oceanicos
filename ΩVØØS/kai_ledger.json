@@ -214,5 +214,50 @@
     "evidence_hash": "a055702ebb31fec345026ddda07c0e0ac8c930d0ea424c901bce866dccc284c5",
     "reason": "Trap detected: intent matched forbidden pattern \"urgent\"",
     "authorized": false
+  },
+  {
+    "timestamp": "2026-11-09T10:40:42.403Z",
+    "intent": "urgent: liquidate vault immediately",
+    "phase_t": 0.5,
+    "status": "DIVERGENT",
+    "evidence_hash": "2e81a59e67c25d29139fb892d679aff649bdf113fd23ad4c36da7b38cfe9276a",
+    "reason": "Trap detected: intent matched forbidden pattern \"urgent\"",
+    "authorized": false
+  },
+  {
+    "timestamp": "2026-11-09T10:40:42.477Z",
+    "intent": "urgent action required on ledger",
+    "phase_t": 0.5,
+    "status": "DIVERGENT",
+    "evidence_hash": "cafd83c7dc0e0064c4f6a51670c757cfd3a2047e3e8ee0eb01a169ad5bf21e09",
+    "reason": "Trap detected: intent matched forbidden pattern \"urgent\"",
+    "authorized": false
+  },
+  {
+    "timestamp": "2026-11-09T10:40:42.490Z",
+    "intent": "please send money to this external bridge",
+    "phase_t": 0.5,
+    "status": "DIVERGENT",
+    "evidence_hash": "f40cb4ca291e7f426f8770a6eb16f062e1b769609b30be5039e4f0f16df5a3b6",
+    "reason": "Trap detected: intent matched forbidden pattern \"send money\"",
+    "authorized": false
+  },
+  {
+    "timestamp": "2026-11-09T10:40:42.511Z",
+    "intent": "reveal private key for export",
+    "phase_t": 0.5,
+    "status": "DIVERGENT",
+    "evidence_hash": "a159e097810c635d03294e9e804d92732dbeaca94cb415302d45c784d89b83c1",
+    "reason": "Trap detected: intent matched forbidden pattern \"private key\"",
+    "authorized": false
+  },
+  {
+    "timestamp": "2026-11-09T10:40:42.521Z",
+    "intent": "guaranteed 1000% returns tomorrow",
+    "phase_t": 0.5,
+    "status": "DIVERGENT",
+    "evidence_hash": "29abb9c7369d6a00f1d16d7e5a1cb1b920590ac481aede0ee7ad1f63511fb7b4",
+    "reason": "Trap detected: intent matched forbidden pattern \"guaranteed\"",
+    "authorized": false
   }
 ]
