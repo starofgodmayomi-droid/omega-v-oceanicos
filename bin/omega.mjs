@@ -76,12 +76,15 @@ async function runCycle(cycleNum = 1) {
   let buildPassed = true;
   if (isAll) {
     if (!isJson) console.log('\n[0/4] 🏗️ MONOREPO: Running Full Typecheck & Build Gates...');
-    const pnpmCmd = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
-    const tcRun = spawnSync(pnpmCmd, ['--recursive', 'run', 'typecheck'], { encoding: 'utf8' });
+    const isWin = process.platform === 'win32';
+    const exe = isWin ? 'cmd.exe' : 'pnpm';
+    const tcArgs = isWin ? ['/c', 'pnpm', '--recursive', 'run', 'typecheck'] : ['--recursive', 'run', 'typecheck'];
+    const tcRun = spawnSync(exe, tcArgs, { encoding: 'utf8' });
     typecheckPassed = tcRun.status === 0;
     if (!isJson) console.log(`  • Recursive Typecheck  : ${typecheckPassed ? '✓ 18/18 PASS' : '✗ FAILED'}`);
 
-    const buildRun = spawnSync(pnpmCmd, ['--recursive', 'run', 'build'], { encoding: 'utf8' });
+    const buildArgs = isWin ? ['/c', 'pnpm', '--recursive', 'run', 'build'] : ['--recursive', 'run', 'build'];
+    const buildRun = spawnSync(exe, buildArgs, { encoding: 'utf8' });
     buildPassed = buildRun.status === 0;
     if (!isJson) console.log(`  • Monorepo Build       : ${buildPassed ? '✓ ALL PACKAGES COMPILED' : '✗ FAILED'}`);
   }

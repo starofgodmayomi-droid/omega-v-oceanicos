@@ -273,6 +273,20 @@ export function VoosEntityPanel() {
           >
             WATER FLOWING
           </span>
+          <span
+            style={{
+              padding: '4px 10px',
+              borderRadius: theme.radiusPill,
+              fontSize: '11px',
+              fontWeight: 700,
+              fontFamily: theme.fontMono,
+              background: 'rgba(0, 245, 160, 0.15)',
+              color: '#00f5a0',
+              border: '1px solid rgba(0, 245, 160, 0.35)',
+            }}
+          >
+            GATE: FULL (18/18 PKGS)
+          </span>
 
           <button
             type="button"
