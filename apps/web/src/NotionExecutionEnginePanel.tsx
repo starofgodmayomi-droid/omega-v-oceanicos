@@ -1,6 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { theme } from './oceanicosTheme';
 
+const API_BASE_URL = (
+  import.meta.env.VITE_API_URL ||
+  (typeof window !== 'undefined' && window.location.port !== '5000'
+    ? `http://${window.location.hostname}:5000`
+    : '')
+).replace(/\/$/, '');
+
+function apiUrl(path: string): string {
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  return `${API_BASE_URL}${path}`;
+}
+
 interface NotionSurface {
   name: string;
   uuid: string;
@@ -185,14 +197,14 @@ export function NotionExecutionEnginePanel() {
 
   useEffect(() => {
     let unmounted = false;
-    fetch('/v1/notion/surfaces')
+    fetch(apiUrl('/v1/notion/surfaces'))
       .then(res => res.ok ? res.json() : null)
       .then(data => {
         if (!unmounted && data) setApiTelemetry(data);
       })
       .catch(() => {});
 
-    fetch('/v1/knowledge/envelope/schema')
+    fetch(apiUrl('/v1/knowledge/envelope/schema'))
       .then(res => res.ok ? res.json() : null)
       .then(data => {
         if (!unmounted && data) setEnvelopeSchema(data);
@@ -206,7 +218,7 @@ export function NotionExecutionEnginePanel() {
     setIsValidatingEnvelope(true);
     try {
       const parsed = JSON.parse(envelopePayloadText);
-      const res = await fetch('/v1/knowledge/envelope/validate', {
+      const res = await fetch(apiUrl('/v1/knowledge/envelope/validate'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(parsed),
