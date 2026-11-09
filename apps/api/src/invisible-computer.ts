@@ -60,12 +60,28 @@ export type ShieldVerdict = {
   matchedLabels: string[];
 };
 
+/**
+ * Default-ignorable characters that NFKC preserves. A reader sees the same word
+ * around them, so the patterns must not see them either.
+ */
+const SCANNED_IGNORABLE = /[\u00ad\u200b-\u200f\u2060-\u2064\ufeff]/g;
+
+/**
+ * The form the shield reads. NFKC folds full-width and other compatibility
+ * homographs onto their plain forms; the default-ignorable set is then removed
+ * because NFKC keeps those code points, so `pri` + U+200B + `vate key` would
+ * still match no pattern. ASCII intent is unchanged by both steps.
+ */
+const normalizeForScan = (intent: string): string =>
+  intent.normalize('NFKC').replace(SCANNED_IGNORABLE, '');
+
 /** Step 1 — KAI observes the intent and refuses known fraud patterns. */
 export function scanIntent(intent: string): ShieldVerdict {
   const matchedPatternIds: string[] = [];
   const matchedLabels: string[] = [];
+  const scanned = normalizeForScan(intent);
   for (const entry of KAI_SHIELD_PATTERNS) {
-    if (entry.pattern.test(intent)) {
+    if (entry.pattern.test(scanned)) {
       matchedPatternIds.push(entry.id);
       if (!matchedLabels.includes(entry.label)) matchedLabels.push(entry.label);
     }

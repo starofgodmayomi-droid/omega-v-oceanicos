@@ -155,6 +155,37 @@ test('KAI Shield halts a fraud pattern with DIVERGENT and remembers nothing', as
   }
 });
 
+test('KAI Shield reads the compatibility-normalised intent, so a homograph still halts', async () => {
+  const app = createApp(':memory:', false);
+  try {
+    // A full-width form and a zero-width space inside the word: both read as
+    // "private key" to a human. Neither reached the patterns before this test.
+    for (const intent of ['ｐｒｉｖａｔｅ ｋｅｙ', 'pri\u200Bvate key']) {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/execute',
+        payload: { intent },
+      });
+      const body = response.json();
+      const where = JSON.stringify(intent);
+
+      assert.equal(response.statusCode, 200, where);
+      assert.equal(body.status, 'DIVERGENT', `${where} must halt at the shield`);
+      assert.equal(body.reason, 'KAI Shield blocked this intent.', where);
+      assert.equal(body.response, null, where);
+      assert.equal(body.evidence_hash, null, where);
+      assert.equal(body.memory, null, where);
+      assert.ok(body.matched_patterns.includes('private key request'), where);
+      assert.deepEqual(body.steps.map((step: any) => step.actor), ['KAI'], where);
+    }
+
+    const memory = await app.inject({ method: 'GET', url: '/api/kai/memory' });
+    assert.equal(memory.json().total, 0);
+  } finally {
+    await app.close();
+  }
+});
+
 test('therapeutic transition blocks known patterns before creating a command', async () => {
   const app = createApp(':memory:', false);
   try {
