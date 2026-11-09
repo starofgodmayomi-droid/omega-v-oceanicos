@@ -20,6 +20,7 @@
     "omega:all": "node bin/omega.mjs --all",
     "omega:json": "node bin/omega.mjs --json",
     "omega:continuous": "node bin/omega.mjs --continuous",
+    "omega:goal": "node bin/omega.mjs --continuous --max-cycles 2",
     "gate:full": "node bin/omega.mjs --all",
     "audit": "node scripts/oceanicos-audit.mjs",
     "cli": "node bin/oceanicos.mjs",

@@ -23,6 +23,8 @@ const isForwardOnly = args.includes('--forward');
 const isReverseOnly = args.includes('--reverse');
 const isJson = args.includes('--json');
 const isAll = args.includes('--all') || args.includes('--full');
+const maxCyclesIdx = args.findIndex((a) => a === '--max-cycles' || a === '-n');
+const maxCycles = maxCyclesIdx !== -1 && args[maxCyclesIdx + 1] ? parseInt(args[maxCyclesIdx + 1], 10) : Infinity;
 
 if (isHelp) {
   console.log(`
@@ -40,6 +42,7 @@ Usage:
 Options:
   --all, --full      Full sovereign gate (monorepo typecheck + build + 4-phase continuum)
   --continuous, -c   Run continuous self-upgrading loop (10s intervals)
+  --max-cycles, -n   Set maximum goal iterations for continuous loop (e.g. -n 3)
   --json             Emit machine-readable §VI JSON receipt for swarm ledger
   --forward          Forward engineering mode (unit tests & 38-path contract)
   --reverse          Reverse observation mode (tri-surface & ledger invariants)
@@ -238,10 +241,20 @@ async function main() {
   }
 
   if (isContinuous) {
-    console.log('\n🌊 CONTINUOUS MODE ACTIVE. Next cycle in 10s (Ctrl+C to stop)...');
-    setInterval(async () => {
+    if (maxCycles <= 1) {
+      console.log(`\n✓ GOAL REACHED: Completed cycle 1.`);
+      return;
+    }
+    const cycleLimitDesc = Number.isFinite(maxCycles) ? ` (Goal Target: ${maxCycles} cycles)` : '';
+    console.log(`\n🌊 CONTINUOUS MODE ACTIVE${cycleLimitDesc}. Next cycle in 10s (Ctrl+C to stop)...`);
+    const timer = setInterval(async () => {
       cycle++;
       await runCycle(cycle);
+      if (cycle >= maxCycles) {
+        clearInterval(timer);
+        console.log(`\n✓ GOAL REACHED: Completed ${maxCycles} verified continuum cycles.`);
+        process.exit(0);
+      }
     }, 10000);
   } else {
     console.log(`
