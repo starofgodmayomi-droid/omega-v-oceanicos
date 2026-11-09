@@ -23,6 +23,65 @@
       "next_delta": "Claim one domain from SWARM_PROTOCOL.md §III, branch as agent/<platform>/<task>, and append your own receipt."
     },
     {
+      "timestamp": "2026-11-08T16:25:08Z",
+      "agent_id": "grok",
+      "branch": "agent/alpha/gaiacos-risk-gate",
+      "status": "VERIFIED",
+      "files_touched": [
+        "apps/api/src/invisible-computer.ts",
+        "tests/integration/execute-route.integration.test.ts",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "a5676d48e95769081b956372b2834817489ae9d63bdad5b00969529ee2a4c3ea",
+      "next_delta": "Gamma reviews this PR. Do not merge from the worker. Do not widen KAI_SHIELD_PATTERNS."
+    },
+    {
+      "timestamp": "2026-11-08T17:18:40.000Z",
+      "agent_id": "manus",
+      "branch": "agent/manus/omega-entity-skill-e2e",
+      "status": "VERIFIED",
+      "files_touched": [
+        "scripts/validate-skill-contracts.mjs",
+        "skills/omnidirectional-proactive-swarm/SKILL.md",
+        "skills/omega-entity-full-stack/SKILL.md",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "aff7bf24042815fce55ea661ce3ed536c6bb6ef0ba79b1ee39b9e216fcebca6b",
+      "next_delta": "Review the isolated skill-contract change and decide whether to authorize opening a pull request."
+    },
+    {
+      "timestamp": "2026-11-08T17:42:35.000Z",
+      "agent_id": "manus",
+      "branch": "agent/manus/omega-entity-skill-e2e",
+      "status": "VERIFIED",
+      "files_touched": [
+        "skills/omega-entity-full-stack/SKILL.md",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "a1c3baf9e044cd875dd8403f1f645983359d638ecd872446718d41c33cc9a9b2",
+      "next_delta": "Review the repository skill updates and authorize whether to open a pull request."
+    },
+    {
+      "timestamp": "2026-11-08T17:55:00Z",
+      "agent_id": "grok",
+      "branch": "agent/grok/omega-entity-full-stack",
+      "status": "UNKNOWN",
+      "files_touched": [
+        "skills/omega-entity-full-stack/SKILL.md",
+        ".claude/skills/omega-entity-full-stack/SKILL.md",
+        ".claude/skills/README.md",
+        "scripts/validate-skill-contracts.mjs",
+        "tests/integration/skill-install-contract.integration.test.ts",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": null,
+      "next_delta": "Auditor runs the full pnpm test gate on this branch. Do not treat the skill as a booted OS."
+    },
+    {
       "timestamp": "2026-11-09T05:14:00Z",
       "agent_id": "antigravity",
       "branch": "agent/antigravity/omega-entity-full-stack",
@@ -33,6 +92,9 @@
         ".agents/skills/omega-entity-full-stack/SKILL.md",
         ".agents/skills/omnidirectional-proactive-swarm/SKILL.md",
         "apps/web/vite.config.ts",
+        "apps/web/src/VoosEntityPanel.tsx",
+        "apps/api/src/invisible-computer.ts",
+        "tests/unit/invisible-computer.test.ts",
         "ΩVØØS/ASSIGNMENTS/001-alpha-gaiacos-risk-gate.md",
         ".github/PULL_REQUEST_TEMPLATE.md",
         ".github/workflows/verify.yml",
