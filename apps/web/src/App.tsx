@@ -22,6 +22,7 @@ import { FuturisticEcosystemChatPanel } from './FuturisticEcosystemChatPanel';
 import { VoosEntityPanel } from './VoosEntityPanel';
 import { TradingDashboard } from './TradingDashboard';
 import { WealthActionPanel } from './WealthActionPanel';
+import { EchoframeWorkspace } from './EchoframeWorkspace';
 import {
   theme,
   statusColor,
@@ -1235,6 +1236,7 @@ export function App() {
             onFetchMood={fetchMood}
             onEvaluateMoodPipeline={evaluateMoodPipeline}
           />
+          <EchoframeWorkspace />
         </div>
       ) : viewportMode === 'evidence' ? (
         <div
