@@ -106,6 +106,11 @@ export function AmbientBar(props: AmbientBarProps) {
       color: theme.accent,
     },
     {
+      label: 'Matrix M_Ω',
+      value: '⁴√det=2.0305 · ‖M‖=4',
+      color: '#38bdf8',
+    },
+    {
       label: 'Checksum',
       value: '30013030',
       color: theme.verified,
