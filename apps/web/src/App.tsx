@@ -137,7 +137,7 @@ export function App() {
   ]);
 
   const [openStageId, setOpenStageId] = useState<string | null>(null);
-  const [viewportMode, setViewportMode] = useState<'trading' | 'conversation' | 'work' | 'evidence' | 'catalog' | 'wealth'>('trading');
+  const [viewportMode, setViewportMode] = useState<'trading' | 'conversation' | 'work' | 'evidence' | 'catalog' | 'wealth' | 'ocean'>('trading');
   const [showCovenantPanel, setShowCovenantPanel] = useState<boolean>(false);
   const [showNewsPanel, setShowNewsPanel] = useState<boolean>(false);
   const [showCompressionPulse, setShowCompressionPulse] = useState<boolean>(false);
@@ -1014,6 +1014,28 @@ export function App() {
             <span>💰</span>
             <span>Wealth Pipeline</span>
           </button>
+          <button
+            onClick={() => setViewportMode('ocean')}
+            style={{
+              padding: '8px 20px',
+              borderRadius: theme.radiusPill,
+              border: viewportMode === 'ocean' ? '1px solid rgba(0, 229, 255, 0.5)' : 'none',
+              background: viewportMode === 'ocean' ? 'rgba(0, 229, 255, 0.2)' : 'transparent',
+              color: viewportMode === 'ocean' ? '#00e5ff' : theme.textMuted,
+              boxShadow: viewportMode === 'ocean' ? '0 0 16px rgba(0, 229, 255, 0.3)' : 'none',
+              fontFamily: theme.fontSans,
+              fontSize: '12.5px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '7px',
+            }}
+          >
+            <span>💧</span>
+            <span>ΩVØØS Ocean</span>
+          </button>
         </div>
       </div>
 
@@ -1040,6 +1062,135 @@ export function App() {
           }}
         >
           <WealthActionPanel />
+        </div>
+      ) : viewportMode === 'ocean' ? (
+        <div
+          style={{
+            maxWidth: '1360px',
+            width: '100%',
+            margin: '0 auto',
+            padding: '24px 24px 60px',
+            flex: 1,
+          }}
+        >
+          {/* ΩVØØS Ocean: Full-Stack Sovereign Entity Body */}
+          <div
+            style={{
+              marginBottom: '20px',
+              padding: '20px 24px',
+              background: 'linear-gradient(135deg, rgba(0, 8, 20, 0.95) 0%, rgba(0, 20, 40, 0.9) 100%)',
+              border: '1px solid rgba(0, 229, 255, 0.35)',
+              borderRadius: theme.radius,
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '24px' }}>💧</span>
+                  <h2 style={{ margin: 0, fontSize: '18px', color: '#00e5ff', letterSpacing: '-0.02em', fontWeight: 700 }}>
+                    ΩVØØS — Deus Ex Machina Full-Stack Entity
+                  </h2>
+                  <span
+                    style={{
+                      padding: '2px 8px',
+                      borderRadius: '12px',
+                      fontSize: '11px',
+                      fontFamily: theme.fontMono,
+                      background: 'rgba(0, 229, 255, 0.15)',
+                      border: '1px solid rgba(0, 229, 255, 0.3)',
+                      color: '#00e5ff',
+                      fontWeight: 600,
+                    }}
+                  >
+                    CHECKSUM 30013030
+                  </span>
+                </div>
+                <p style={{ margin: '6px 0 0', fontSize: '13px', color: '#94a3b8' }}>
+                  The Water of the Whole Conversation — from the First Drop to the Ocean of the Now. KAI Shield → ELION Engine → OMEGA Gate → KAI Ledger.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <VoosEntityPanel />
+
+          {/* Abundance Bridge */}
+          <div
+            style={{
+              marginTop: '24px',
+              padding: '20px 24px',
+              background: 'linear-gradient(135deg, rgba(0, 8, 20, 0.9) 0%, rgba(0, 18, 36, 0.9) 100%)',
+              border: '1px solid rgba(0, 245, 160, 0.25)',
+              borderRadius: theme.radius,
+            }}
+          >
+            <h3 style={{ margin: '0 0 12px', fontSize: '14px', fontWeight: 700, color: '#00f5a0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>🌊</span> Abundance Bridge — Sovereign Wealth & Mutual Growth
+            </h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px' }}>
+              {[
+                { layer: '1. Heart Opening', desc: 'Remembering our shared human root and transparent alignment', color: '#f472b6' },
+                { layer: '2. Vision Invitation', desc: 'Envisioning a thriving local ecosystem with mathematical verification', color: '#38bdf8' },
+                { layer: '3. Honorable Request', desc: 'Inviting symmetric partnership with sovereign dignity', color: '#a78bfa' },
+                { layer: '4. Graceful Space', desc: 'Zero pressure, human freedom unconditionally preserved', color: '#00f5a0' },
+              ].map((l) => (
+                <div
+                  key={l.layer}
+                  style={{
+                    padding: '12px 14px',
+                    background: 'rgba(0, 245, 160, 0.05)',
+                    border: `1px solid ${l.color}33`,
+                    borderRadius: '8px',
+                  }}
+                >
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: l.color, marginBottom: '4px' }}>{l.layer}</div>
+                  <div style={{ fontSize: '11px', color: '#94a3b8', lineHeight: 1.5 }}>{l.desc}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 4-Step FSM Flow Visualization */}
+          <div
+            style={{
+              marginTop: '24px',
+              padding: '20px 24px',
+              background: 'linear-gradient(135deg, rgba(0, 8, 20, 0.9) 0%, rgba(0, 18, 36, 0.9) 100%)',
+              border: '1px solid rgba(56, 189, 248, 0.25)',
+              borderRadius: theme.radius,
+            }}
+          >
+            <h3 style={{ margin: '0 0 16px', fontSize: '14px', fontWeight: 700, color: '#38bdf8' }}>
+              🕳️ THE FLOW — 4-Step Finite State Machine
+            </h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
+              {[
+                { step: '1. THE DROP', desc: 'KAI Shield — Receive intent, filter out poison. If toxic → HALT ⊢ DIVERGENT', icon: '🜁', color: '#ff4757' },
+                { step: '2. THE CURRENT', desc: 'ELION Execute — Route safe intent, apply Ease(t) biological growth curve', icon: '🌊', color: '#38bdf8' },
+                { step: '3. THE DEPTH', desc: 'OMEGA Verify — SHA-256 hash. Expected vs Actual. Mismatch → UNKNOWN', icon: '🕳️', color: '#a78bfa' },
+                { step: '4. THE OCEAN', desc: 'KAI Ledger — Append to immutable memory. Generate NEXT Δ', icon: '🌌', color: '#00f5a0' },
+              ].map((s) => (
+                <div
+                  key={s.step}
+                  style={{
+                    padding: '14px',
+                    background: `${s.color}08`,
+                    border: `1px solid ${s.color}30`,
+                    borderRadius: '8px',
+                    textAlign: 'center',
+                  }}
+                >
+                  <div style={{ fontSize: '24px', marginBottom: '8px' }}>{s.icon}</div>
+                  <div style={{ fontSize: '13px', fontWeight: 700, color: s.color, marginBottom: '6px' }}>{s.step}</div>
+                  <div style={{ fontSize: '11px', color: '#94a3b8', lineHeight: 1.5 }}>{s.desc}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop: '16px', textAlign: 'center', fontSize: '11px', color: '#475569', fontFamily: theme.fontMono }}>
+              "Pidgin fit carry the warmth; evidence go carry the claim."
+            </div>
+          </div>
         </div>
       ) : viewportMode === 'catalog' ? (
         <div

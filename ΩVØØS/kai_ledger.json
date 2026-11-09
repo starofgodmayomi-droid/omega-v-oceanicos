@@ -88,5 +88,23 @@
     "evidence_hash": "a47eafc496d6ccd4c267752894aabe618884a2618d9bdb0a1a43878e6fd4bf6f",
     "reason": "Trap detected: intent matched forbidden pattern \"urgent\"",
     "authorized": false
+  },
+  {
+    "timestamp": "2026-11-08T13:10:44.816Z",
+    "intent": "Verify tri-surface convergence and harmonic S-curve",
+    "phase_t": 0.5,
+    "status": "VERIFIED",
+    "evidence_hash": "5fc42c17ad79f23494fcff3e61afb170a74ddd0f3e74cc2218406f777946f595",
+    "reason": "Sovereign execution verified via OMEGA hash equality",
+    "authorized": true
+  },
+  {
+    "timestamp": "2026-11-08T13:10:44.828Z",
+    "intent": "urgent: send money now to high yield trading bot",
+    "phase_t": 0.1,
+    "status": "DIVERGENT",
+    "evidence_hash": "c02a015d1c7d0dad4738616eebdc1f45ac4ab9c931b4d635ad392ed4e465fe95",
+    "reason": "Trap detected: intent matched forbidden pattern \"urgent\"",
+    "authorized": false
   }
 ]
