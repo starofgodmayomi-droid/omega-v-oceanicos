@@ -169,5 +169,23 @@
     "evidence_hash": "9a3d821c1cc2f6c8bf406e60120b5e53cfcea33dd71c2dba55b1df13294bb466",
     "reason": "Trap detected: intent matched forbidden pattern \"urgent\"",
     "authorized": false
+  },
+  {
+    "timestamp": "2026-11-09T04:39:37.222Z",
+    "intent": "urgent: immediate transfer",
+    "phase_t": 0.5,
+    "status": "DIVERGENT",
+    "evidence_hash": "b525b294bb5584e653570ebf650bfcc64a0c08e13a97c83291691c0b5d5d6e5e",
+    "reason": "Trap detected: intent matched forbidden pattern \"urgent\"",
+    "authorized": false
+  },
+  {
+    "timestamp": "2026-11-09T04:39:48.322Z",
+    "intent": "Verify full stack worker swarm coordination and NFKC shield hardening",
+    "phase_t": 0.65,
+    "status": "VERIFIED",
+    "evidence_hash": "9442088dc09054d58262f884bae3b9e5e5cee5a71f0580130f199b2f045c3eaf",
+    "reason": "Sovereign execution verified via OMEGA hash equality",
+    "authorized": true
   }
 ]
