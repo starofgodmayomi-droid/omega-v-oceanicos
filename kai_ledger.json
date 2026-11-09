@@ -21,6 +21,20 @@
       "tests_passed": null,
       "evidence_hash": null,
       "next_delta": "Claim one domain from SWARM_PROTOCOL.md §III, branch as agent/<platform>/<task>, and append your own receipt."
+    },
+    {
+      "timestamp": "2026-11-09T19:48:26Z",
+      "agent_id": "base44",
+      "branch": "agent/base44/kai-shield-homograph-scan",
+      "status": "VERIFIED",
+      "files_touched": [
+        "apps/api/src/invisible-computer.ts",
+        "tests/integration/execute-route.integration.test.ts",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "ce23abf74290659eab91a650e2d66ce181ace4502d2c5160a9d1c7cba9c2c73d",
+      "next_delta": "Compose this NFKC + default-ignorable scan with the open agent/alpha/gaiacos-risk-gate PR #575 — it adds NFKC to the same scanIntent — then re-run tests/integration/execute-route.integration.test.ts once on the merged form; do not re-apply ORDER 001, which #575 already executes."
     }
   ]
 }
