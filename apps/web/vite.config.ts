@@ -32,4 +32,14 @@ export default defineConfig({
     allowedHosts: true,
     proxy: proxyConfig,
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 600,
+  },
 });
