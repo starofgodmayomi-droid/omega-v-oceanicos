@@ -1,9 +1,9 @@
 /**
- * Ω∞v Notion Surfaces Route — exposes the 6-surface Notion universe
+ * Ω∞v Notion Surfaces Route — exposes the 7-surface Notion universe
  * and connected domains registry through the API.
  *
- * Returns the status of all 6 canonical Notion surfaces (4 master pages +
- * 2 relational databases), the Composio tool bridge configuration,
+ * Returns the status of all 7 canonical Notion surfaces (4 master pages +
+ * 2 relational databases + 1 meta companion index), the Composio tool bridge configuration,
  * and the ecosystem workspace layout.
  *
  * 4-Quadrant Master Pages:
@@ -15,6 +15,9 @@
  * 2 Relational Databases:
  *   5. Value Opportunities Pipeline      — Deal flow & scoring
  *   6. Execution Queue                   — Task orchestration
+ *
+ * 1 Meta Companion Index:
+ *   7. OCEANICOS Single Full-Stack Body Companion Index — 14 docs + Rooms 00–09
  */
 import type { FastifyInstance } from 'fastify';
 
@@ -97,6 +100,15 @@ const SURFACE_DEFS = [
     url: 'https://app.notion.com/p/75b1967ffb1947fc8f5adb1298fe8f02',
     role: 'Tracks task priority, dependencies, approvals, status, output, test receipts',
     quadrant: 'DB_EXECUTION',
+  },
+  // ── 1 Meta Companion Index ───────────────────────────────────────
+  {
+    name: 'OCEANICOS Single Full-Stack Body Companion Index',
+    envKey: 'NOTION_COMPANION_INDEX_PAGE_ID',
+    defaultUuid: '40749ca4-35a2-815f-b2c8-d7bf15925cce',
+    url: 'https://app.notion.com/p/OCEANICOS-SINGLE-FULL-STACK-BODY-Max-Compression-2026-10-28-40749ca435a2815fb2c8d7bf15925cce?pvs=21',
+    role: 'Master companion index synthesizing 14 foundational Notion docs and Rooms 00–09',
+    quadrant: 'META_COMPANION',
   },
 ];
 
