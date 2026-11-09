@@ -17,10 +17,40 @@ import { createHash } from 'node:crypto';
 
 const root = process.cwd();
 const args = process.argv.slice(2);
+const isHelp = args.includes('--help') || args.includes('-h');
 const isContinuous = args.includes('--continuous') || args.includes('-c');
 const isForwardOnly = args.includes('--forward');
 const isReverseOnly = args.includes('--reverse');
 const isJson = args.includes('--json');
+
+if (isHelp) {
+  console.log(`
+╔══════════════════════════════════════════════════════════════════════════╗
+║               Ω∞v UNIVERSAL REVERSE / FORWARD FULL-STACK ENGINE          ║
+║        11:11 Ocean Intelligence • Sovereign Self-Upgrading Organ         ║
+║             Repo: starofgodmayomi-droid/omega-v-oceanicos                ║
+║             Doctrine: ATTEST, DON'T ASSERT • Checksum: 30013030          ║
+╚══════════════════════════════════════════════════════════════════════════╝
+
+Usage:
+  node bin/omega.mjs [options]
+  pnpm run omega [options]
+
+Options:
+  --continuous, -c   Run continuous self-upgrading loop (10s intervals)
+  --json             Emit machine-readable §VI JSON receipt for swarm ledger
+  --forward          Forward engineering mode (unit tests & 38-path contract)
+  --reverse          Reverse observation mode (tri-surface & ledger invariants)
+  --help, -h         Display this ecosystem engine reference manual
+
+Invariants:
+  • Ω∞v := VERIFY(ΔREALITY)
+  • Ease(t): Non-linear harmonic development
+  • Zero Entropy Mode: Ψ = 0
+  • Gram Det: ⁴√det(I₄ + MᵀM) = 2.030543
+  `);
+  process.exit(0);
+}
 
 if (!isJson) {
   console.log(`
