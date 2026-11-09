@@ -6,6 +6,8 @@ import {
   OMNICOS_ENTITY,
   classifyTool,
   easeProgress,
+  extractUrl,
+  observePage,
   runOmnicosPass,
   type OmnicosReceipt,
 } from '../../packages/omnios/dist/index.js';
@@ -108,6 +110,115 @@ describe('THE OMNICOS — package', () => {
   });
 });
 
+/** The BROWSER limb is exercised with an injected fetch and resolver: no test reaches the network. */
+const PUBLIC_DNS = async () => ['93.184.216.34'];
+
+const pageResponse = (body: string, status = 200): Response =>
+  new Response(body, { status, headers: { 'content-type': 'text/html; charset=utf-8' } });
+
+describe('THE OMNICOS — BROWSER limb', () => {
+  it('extracts one explicit http(s) URL and trims trailing punctuation', () => {
+    assert.equal(extractUrl('browse the page at https://example.com/docs.'), 'https://example.com/docs');
+    assert.equal(extractUrl('read http://example.com'), 'http://example.com/');
+    assert.equal(extractUrl('describe the singularity eye'), null);
+  });
+
+  it('refuses loopback, private, non-http and private-DNS targets before any fetch', async () => {
+    let fetched = 0;
+    const spy = (async () => {
+      fetched += 1;
+      return pageResponse('<p>should never be read</p>');
+    }) as unknown as typeof fetch;
+
+    for (const url of [
+      'http://127.0.0.1/health',
+      'http://[::1]/',
+      'http://10.0.0.7/',
+      'http://localhost/',
+      'file:///etc/passwd',
+    ]) {
+      const page = await observePage(url, { fetchImpl: spy, resolveHost: PUBLIC_DNS });
+      assert.equal(page.ok, false, `${url} must be refused`);
+      assert.ok(page.error, `${url} must declare a reason`);
+    }
+
+    const privateDns = await observePage('https://internal.example/', {
+      fetchImpl: spy,
+      resolveHost: async () => ['10.0.0.7'],
+    });
+    assert.equal(privateDns.error, 'PRIVATE_HOST_REFUSED');
+
+    let redirectHops = 0;
+    const privateRedirect = await observePage('https://public.example/start', {
+      fetchImpl: (async () => {
+        redirectHops += 1;
+        return new Response(null, { status: 302, headers: { location: 'http://127.0.0.1/secret' } });
+      }) as unknown as typeof fetch,
+      resolveHost: PUBLIC_DNS,
+    });
+    assert.equal(privateRedirect.error, 'PRIVATE_HOST_REFUSED');
+    assert.equal(redirectHops, 1, 'the first public hop was fetched; the private redirect never was');
+
+    assert.equal(fetched, 0, 'no refused target was ever fetched');
+  });
+
+  it('reads one page and keeps only the readable text', async () => {
+    const page = await observePage('https://public.example/news', {
+      fetchImpl: (async () =>
+        pageResponse(
+          '<html><head><title>The Drop</title><script>steal()</script></head><body><p>Observed: the tide is low.</p></body></html>',
+        )) as unknown as typeof fetch,
+      resolveHost: PUBLIC_DNS,
+    });
+
+    assert.equal(page.ok, true);
+    assert.equal(page.status, 200);
+    assert.equal(page.text, 'The Drop — Observed: the tide is low.');
+    assert.ok(page.bytes > 0);
+    assert.equal(page.finalUrl, 'https://public.example/news');
+  });
+
+  it('refuses a page larger than its byte cap', async () => {
+    const page = await observePage('https://public.example/big', {
+      fetchImpl: (async () => pageResponse(`<p>${'x'.repeat(2000)}</p>`)) as unknown as typeof fetch,
+      resolveHost: PUBLIC_DNS,
+      maxBytes: 500,
+    });
+
+    assert.equal(page.ok, false);
+    assert.equal(page.error, 'PAGE_TOO_LARGE');
+  });
+
+  it('answers VERIFIED from the observed page and hashes the extracted text', async () => {
+    const pass = await runOmnicosPass({
+      intent: 'browse the page at https://public.example/news',
+      browser: {
+        fetchImpl: (async () =>
+          pageResponse(
+            '<title>The Drop</title><p>The observed page says the tide is low.</p>',
+          )) as unknown as typeof fetch,
+        resolveHost: PUBLIC_DNS,
+      },
+    });
+
+    assert.equal(pass.receipt.tool_used, 'BROWSER');
+    assert.equal(pass.receipt.status, 'VERIFIED');
+    assert.match(pass.receipt.evidence_hash ?? '', /^[0-9a-f]{64}$/);
+    assert.match(pass.receipt.action, /BROWSER limb read https:\/\/public\.example\/news/);
+    assert.equal(pass.verification?.status, 'VERIFIED');
+  });
+
+  it('preserves UNKNOWN when the BROWSER intent names no URL', async () => {
+    const pass = await runOmnicosPass({ intent: 'browse the page for the tide' });
+
+    assert.equal(pass.receipt.tool_used, 'BROWSER');
+    assert.equal(pass.receipt.status, 'UNKNOWN');
+    assert.equal(pass.receipt.evidence_hash, null);
+    assert.match(pass.receipt.action, /no explicit http\(s\) URL/);
+    assert.equal(pass.verification, null);
+  });
+});
+
 describe('THE OMNICOS — HTTP contract', () => {
   const payload = (overrides: Record<string, unknown> = {}) => ({
     intent: 'describe what the singularity eye should verify',
@@ -200,6 +311,28 @@ describe('THE OMNICOS — HTTP contract', () => {
 
       const memory = await app.inject({ method: 'GET', url: '/api/kai/memory?limit=5' });
       assert.equal(memory.json().total, 0, 'UNKNOWN is never remembered');
+    } finally {
+      await app.close();
+    }
+  });
+
+  it('runs the BROWSER limb over HTTP and refuses a loopback target', async () => {
+    const app = createApp(':memory:', false);
+    try {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/v1/omnios/intent',
+        payload: { intent: 'browse the page at http://127.0.0.1/health' },
+      });
+      assert.equal(response.statusCode, 200, 'a refusal is a verdict, not an HTTP failure');
+      const receipt = response.json() as OmnicosReceipt;
+      assert.equal(receipt.tool_used, 'BROWSER');
+      assert.equal(receipt.status, 'UNKNOWN');
+      assert.equal(receipt.evidence_hash, null);
+      assert.match(receipt.action, /BROWSER limb could not read/);
+
+      const memory = await app.inject({ method: 'GET', url: '/api/kai/memory?limit=5' });
+      assert.equal(memory.json().total, 0, 'a refused read is never remembered');
     } finally {
       await app.close();
     }

@@ -4,19 +4,25 @@
  * One bounded pass that compresses the three actors into a single entity:
  *
  *   PERCEIVE & ALIGN   KAI Shield scans the intent (a trap halts the pass)
- *   CONNECT & GROW     ELION answers the safe intent, paced by Ease(t)
+ *   CONNECT & GROW     the BROWSER limb reads one page, or ELION answers,
+ *                      paced by Ease(t)
  *   SYNCHRONIZE        OMEGA recomputes the SHA-256 and checks the contract
  *   EVOLVE & REMEMBER  the caller may append the receipt to the KAI ledger
  *
- * Nothing here reaches the network or mutates reality. `tool_used` is a
- * declared routing projection of the intent text, not a record that a tool
- * ran; `action` states only what actually happened in this pass.
+ * The BROWSER limb is the one bounded network read: an explicit public http(s)
+ * URL is fetched through `browser-limb.ts` and its extracted text becomes the
+ * evidence OMEGA hashes. Every other limb is still a declared routing
+ * projection of the intent text, not a record that a tool ran; `action` states
+ * only what actually happened in this pass. Nothing here mutates reality.
  *
  * Checksum: 30013030 · DOCTRINE: ATTEST, DON'T ASSERT. UNKNOWN PRESERVED.
  */
 import { deriveAuthorityLevel, scanIntent, type AuthorityLevel } from '@oceanicos/kai';
 import { executeElion } from '@oceanicos/elion';
 import { sha256Hex, verifyOmega, type OmegaVerdict } from '@oceanicos/omega';
+import { extractUrl, observePage, type BrowserLimbOptions } from './browser-limb.js';
+
+export * from './browser-limb.js';
 
 export const OMNICOS_ENTITY = 'THE_OMNICOS' as const;
 export const OMNICOS_CHECKSUM = '30013030' as const;
@@ -69,6 +75,8 @@ export type OmnicosReceipt = {
 export type OmnicosPassInput = {
   intent: string;
   authorityLevel?: unknown;
+  /** Test seam for the BROWSER limb; HTTP callers never supply it. */
+  browser?: BrowserLimbOptions;
 };
 
 export type OmnicosPass = {
@@ -111,6 +119,84 @@ export async function runOmnicosPass(input: OmnicosPassInput): Promise<OmnicosPa
         next_delta: 'Restate the intent without urgency, guaranteed returns, credentials, or a transfer request.',
       },
       verification: null,
+    };
+  }
+
+  // 2 — CONNECT & GROW: the BROWSER limb reads one page; every other limb is
+  // answered by ELION.
+  if (tool === 'BROWSER') {
+    const target = extractUrl(intent);
+    if (!target) {
+      return {
+        receipt: {
+          entity: OMNICOS_ENTITY,
+          tool_used: tool,
+          status: 'UNKNOWN',
+          game_detected: false,
+          phase_t: round(easeProgress(2 / OMNICOS_PHASES.length)),
+          evidence_hash: null,
+          action: 'BROWSER limb refused: the intent names no explicit http(s) URL, so no page was fetched.',
+          next_delta: 'Name one public http(s) URL to read, then run the pass again.',
+        },
+        verification: null,
+      };
+    }
+
+    const observation = await observePage(target, input.browser);
+    if (!observation.ok) {
+      return {
+        receipt: {
+          entity: OMNICOS_ENTITY,
+          tool_used: tool,
+          status: 'UNKNOWN',
+          game_detected: false,
+          phase_t: round(easeProgress(2 / OMNICOS_PHASES.length)),
+          evidence_hash: null,
+          action: `BROWSER limb could not read ${target} (${observation.error ?? 'FETCH_FAILED'}); no page was used as evidence.`,
+          next_delta: 'Supply a reachable public http(s) URL or preserve UNKNOWN.',
+        },
+        verification: null,
+      };
+    }
+
+    // 3 — SYNCHRONIZE: OMEGA hashes the observed text, not the limb's claim.
+    const output = [
+      `Observed page: ${observation.finalUrl}`,
+      `HTTP ${observation.status} · ${observation.contentType ?? 'unknown'} · ${observation.bytes} bytes`,
+      '',
+      observation.text,
+    ].join('\n');
+    const evidenceHash = sha256Hex(output);
+    const verification = verifyOmega({ output, evidenceHash, authorityLevel });
+
+    if (verification.status === 'VERIFIED') {
+      return {
+        receipt: {
+          entity: OMNICOS_ENTITY,
+          tool_used: tool,
+          status: 'VERIFIED',
+          game_detected: false,
+          phase_t: round(easeProgress(1)),
+          evidence_hash: evidenceHash,
+          action: `BROWSER limb read ${observation.finalUrl} (HTTP ${observation.status}, ${observation.bytes} bytes); OMEGA recomputed the SHA-256 over the extracted page text and the contract held.`,
+          next_delta: 'Review the observed page text; the pass read one page and executed nothing else.',
+        },
+        verification,
+      };
+    }
+
+    return {
+      receipt: {
+        entity: OMNICOS_ENTITY,
+        tool_used: tool,
+        status: 'UNKNOWN',
+        game_detected: false,
+        phase_t: round(easeProgress(3 / OMNICOS_PHASES.length)),
+        evidence_hash: evidenceHash,
+        action: verification.reason ?? 'OMEGA could not verify the observed page.',
+        next_delta: 'Treat the page as unverified evidence and supply a bounded observation.',
+      },
+      verification,
     };
   }
 

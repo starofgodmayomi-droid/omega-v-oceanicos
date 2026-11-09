@@ -7,7 +7,8 @@
  * entity, tool_used, status, game_detected, phase_t, evidence_hash, action,
  * next_delta. A trap intent answers 200 with `DIVERGENT` — a verdict, not an
  * HTTP failure. Only a VERIFIED receipt is appended to the KAI ledger, and
- * the pass itself never executes a repository operation or calls a tool.
+ * the pass never executes a repository operation. A BROWSER intent is the one
+ * network read: the omnios package fetches the public URL named in the intent.
  */
 import type { FastifyInstance } from 'fastify';
 import { OMNICOS_ENTITY, runOmnicosPass, type OmnicosReceipt } from '@oceanicos/omnios';

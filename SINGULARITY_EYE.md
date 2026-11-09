@@ -28,19 +28,38 @@ names which limb the intent would use; it is not proof that a limb ran.
 
 | Limb | What it would reach | Physical boundary in this repository |
 | --- | --- | --- |
-| `BROWSER` | web pages, DOM navigation | not wired — no scraper is called |
+| `BROWSER` | web pages, DOM navigation | **wired** — `packages/omnios/src/browser-limb.ts` reads one public page (see below) |
 | `API` | Stripe, GitHub, TradingView, Composio, Telegram | `packages/gateway`, `apps/api` connectors |
 | `CODE` | local code execution | `packages/sandbox`, `packages/runtime` |
 | `LLM` | model cognition (default) | `packages/elion` — `executeElion` (OpenAI-compatible, or the labelled local composer) |
 | `COMMS` | messages, email | `packages/webhook` |
 | `DB` | the ledger and stores | `apps/api/src/kai-memory.ts`, `packages/remember` |
 
+## THE BROWSER LIMB (one bounded read)
+
+A `BROWSER` intent is the only pass that reaches the network. It must name one
+explicit `http(s)` URL; the limb then:
+
+- admits only `http`/`https` on port 80/443, with no embedded credentials;
+- refuses `localhost`, `*.local`, `*.internal`, and any host that resolves to a
+  loopback, private, link-local, metadata or multicast address — before the
+  socket opens;
+- follows at most 3 redirects, re-checking each hop against the same gate;
+- stops at 8 seconds and 512 KiB, and accepts only readable content types;
+- strips scripts, styles and markup, keeping at most 6000 characters.
+
+The extracted text becomes the evidence: OMEGA recomputes the SHA-256 over
+`Observed page: <url>` + the HTTP line + the text. A refused URL, a failed
+fetch, an oversized page or an empty body preserves `UNKNOWN` with a declared
+reason and writes nothing to the ledger. The limb reads; it never clicks,
+submits or executes.
+
 ## THE FOUR PHASES (one finite pass)
 
 | Phase | Actor | Behaviour |
 | --- | --- | --- |
 | `PERCEIVE_ALIGN` | KAI Shield | a trap (`urgent`, `send money`, `guaranteed`, `private key`, …) halts with `DIVERGENT`; no tool is contacted |
-| `CONNECT_GROW` | ELION | answers the safe intent, labelled with the engine that produced it |
+| `CONNECT_GROW` | BROWSER / ELION | the BROWSER limb reads one page when routed there; otherwise ELION answers, labelled with the engine that produced it |
 | `SYNCHRONIZE` | OMEGA Gate | recomputes the SHA-256, checks the contract; a fabrication or empty answer is `UNKNOWN` |
 | `EVOLVE_REMEMBER` | KAI Ledger | only `VERIFIED` receipts are appended to `KaiMemory` |
 
@@ -81,7 +100,7 @@ never invented. `tool_used` names a limb; `action` states only what ran.
 ## BOUNDARY
 
 This document describes an executable contract, not a deployment, a revenue
-stream, or a cosmic claim. The pass composes text and appends one hash. It
-executes no repository operation, spends nothing, and contacts no tool. Symbolic
-language is symbolic; only an observed runtime result may be reported as
-`VERIFIED`.
+stream, or a cosmic claim. The pass appends one hash. It executes no repository
+operation and spends nothing; the only network contact is the BROWSER limb's
+one bounded read of an explicitly named public page. Symbolic language is
+symbolic; only an observed runtime result may be reported as `VERIFIED`.

@@ -313,7 +313,7 @@ export function OmnicosPanel() {
               : '{\n  "entity": "THE_OMNICOS",\n  "status": "AWAITING_INTENT"\n}'}
           </pre>
           <div style={{ color: '#54787f', font: '8.5px DM Mono, monospace', marginTop: '6px', lineHeight: 1.5 }}>
-            tool_used is a declared routing limb, not proof a tool ran. Only a VERIFIED receipt is appended to the KAI ledger.
+            BROWSER performs one bounded read of the URL in the intent; every other limb is a declared route. Only a VERIFIED receipt is appended to the KAI ledger.
           </div>
         </div>
       </div>
