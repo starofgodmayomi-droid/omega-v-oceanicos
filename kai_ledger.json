@@ -21,6 +21,20 @@
       "tests_passed": null,
       "evidence_hash": null,
       "next_delta": "Claim one domain from SWARM_PROTOCOL.md §III, branch as agent/<platform>/<task>, and append your own receipt."
+    },
+    {
+      "timestamp": "2026-11-09T13:00:06Z",
+      "agent_id": "grok",
+      "branch": "agent/grok/ovoos-shield-nfkc",
+      "status": "VERIFIED",
+      "files_touched": [
+        "ΩVØØS/backend_magic.ts",
+        "tests/integration/ovoos-entity-body.integration.test.ts",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "583ae10dec19f5b936df94f5394bd34b701c09e76165f3573931cf5d9f8f6ea0",
+      "next_delta": "Fold BRIDGE and ABUNDANCE in runEntity through the same NFKC form. Do not merge from the worker."
     }
   ]
 }
