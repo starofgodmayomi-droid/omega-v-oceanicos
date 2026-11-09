@@ -108,3 +108,16 @@ ledger.entries.forEach((entry, index) => {
 console.log(
   `validated ${ledger.entries.length} swarm ledger receipt(s) and the ΩVØØS protocol contract`
 );
+
+if (process.argv.includes('--summary') || process.argv.includes('-s')) {
+  const counts = {};
+  for (const entry of ledger.entries) {
+    counts[entry.agent_id] = (counts[entry.agent_id] || 0) + 1;
+  }
+  console.log('\nReceipts breakdown by agent:');
+  for (const [agent, count] of Object.entries(counts)) {
+    console.log(`  • ${agent.padEnd(16)}: ${count}`);
+  }
+  const last = ledger.entries[ledger.entries.length - 1];
+  console.log(`\nLatest Receipt: [${last.status}] ${last.branch} (${last.timestamp})`);
+}
