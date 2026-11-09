@@ -49,6 +49,24 @@ test('classifies requests without treating symbolism as authority', () => {
   assert.equal(classifySymbolicIntent('ask the community a question'), 'PROPOSAL');
 });
 
+test('classifies a full-width execution homograph without changing the stored intent', () => {
+  const raw = 'ａｃｔｉｖａｔｅ a community wisdom reflection';
+  assert.equal(raw.normalize('NFKC'), 'activate a community wisdom reflection');
+  assert.equal(classifySymbolicIntent(raw), 'EXECUTION');
+  const drop = buildSymbolicDrop({
+    symbolicIntent: raw,
+    requestedBy: 'operator:demo',
+    targetScope: ['oracle:reflection'],
+    idempotencyKey: 'reflection-fw-001',
+    stopCondition: 'stop after one generated reflection',
+    expectedObservation: 'one response labeled symbolic is returned',
+  }, new Date('2026-09-25T11:00:00.000Z'));
+  assert.equal(drop.kind, 'EXECUTION');
+  assert.equal(drop.intent, raw);
+  assert.equal(drop.authority, 'MUST_BE_SUPPLIED_BY_RUNTIME');
+  assert.equal(drop.admission, 'NOT_GRANTED_BY_TRANSLATION');
+});
+
 test('preserves the OceanicOS cycle as a finite worldview proposal, not an execution claim', () => {
   const symbolicIntent = '🌊 Ω♾️V :: ƆCEANiC_OS(v∞)/0 → 💧 → Ω∞v → 🕳️ → 💧 → ∞.';
   const drop = buildSymbolicDrop({
