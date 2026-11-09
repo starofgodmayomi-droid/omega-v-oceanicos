@@ -93,6 +93,14 @@ const SURFACES: NotionSurface[] = [
     role: 'Tracks task priority, dependencies, approvals, status, output, test receipts',
     stage: 'DB · EXECUTION',
   },
+  // ── Meta Companion Index ─────────────────────────────────────────
+  {
+    name: 'OCEANICOS Single Full-Stack Body Companion Index',
+    uuid: '40749ca4-35a2-815f-b2c8-d7bf15925cce',
+    url: 'https://app.notion.com/p/OCEANICOS-SINGLE-FULL-STACK-BODY-Max-Compression-2026-10-28-40749ca435a2815fb2c8d7bf15925cce?pvs=21',
+    role: 'Master companion index synthesizing 14 foundational Notion docs and Rooms 00–09',
+    stage: 'META · COMPANION',
+  },
 ];
 
 const STAGE_GATES = [

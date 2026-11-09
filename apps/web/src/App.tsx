@@ -89,7 +89,7 @@ const OCEAN_FABRIC_ACTIONS = [
   { icon: '🌌', label: 'Dream Journal', intent: 'Record Night Ocean Dream: I saw a star fall into the deep water and rise in new form' },
   { icon: '⚡', label: 'Lucid Build', intent: 'Continue building with lucid skill across all 14 monorepo packages' },
   { icon: '🔍', label: 'REA Deconstruct', intent: 'Reverse engineer target https://github.com/morluto/rea with autonomous work mood telemetry' },
-  { icon: '🏛️', label: 'Notion Surfaces', intent: 'Inspect all 6 canonical Notion operating surfaces and private wealth execution queue' },
+  { icon: '🏛️', label: 'Notion Surfaces', intent: 'Inspect all 7 canonical Notion operating surfaces and private wealth execution queue' },
   { icon: '📰', label: 'AI News', intent: '__TOGGLE_NEWS__' },
 ];
 
@@ -791,7 +791,7 @@ export function App() {
       id: 'notion-engine',
       icon: '🏛️',
       label: 'Notion Engine',
-      subtitle: 'Private wealth execution OS & 6 canonical surfaces (4 master pages + 2 databases)',
+      subtitle: 'Private wealth execution OS & 7 canonical surfaces (4 master pages, 2 databases, 1 meta index)',
       state: 'available' as const,
       detail: <NotionExecutionEnginePanel />,
     },

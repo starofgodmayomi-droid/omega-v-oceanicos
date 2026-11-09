@@ -308,7 +308,7 @@ export function VoosEntityPanel() {
             }}
             title="Open Notion Private Wealth Control Plane (UUID: 4003080b-dd53-8159-8220-ef09061f54b7)"
           >
-            NOTION: 6 SURFACES
+            NOTION: 7 SURFACES
           </a>
 
           <button
