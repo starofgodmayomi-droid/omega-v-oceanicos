@@ -39,6 +39,7 @@
  * to the real implementation), so this file's own fixture setup, and every
  * other test file in the suite, is unaffected.
  */
+import { jest } from '@jest/globals';
 jest.mock('node:fs', () => {
   const actual = jest.requireActual('node:fs');
   return {

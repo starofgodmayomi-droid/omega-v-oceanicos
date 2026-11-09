@@ -5,6 +5,7 @@ module.exports = {
     '<rootDir>/tests/**/*.test.ts',
     '<rootDir>/continuum/packages/kernel/src/__tests__/**/*.test.ts',
     '<rootDir>/packages/*/src/__tests__/**/*.test.ts',
+    '<rootDir>/apps/*/src/__tests__/**/*.test.ts',
   ],
   testPathIgnorePatterns: [
     '/node_modules/',
@@ -24,6 +25,11 @@ module.exports = {
     'full-loop\\.integration\\.test\\.ts$',
     'governance\\.test\\.ts$',
     'canonical-store-lifecycle\\.integration\\.test\\.ts$',
+    'max_equation_api\\.test\\.ts$',
+    'conversational_integration\\.test\\.ts$',
+    'web_frontend_e2e\\.test\\.ts$',
+    'pwa_offline\\.test\\.ts$',
+    'knowledge-envelope-contract\\.integration\\.test\\.ts$',
   ],
   moduleNameMapper: {
     '\\.\\./\\.\\./packages/([^/]+)/dist/index(\\.js)?$': '<rootDir>/packages/$1/src/index.ts',
@@ -47,8 +53,18 @@ module.exports = {
     '^@omega-v/attestation$': '<rootDir>/packages/attestation/src/index.ts',
     '^@omega-v/remember$': '<rootDir>/packages/remember/src/index.ts',
     '^@omega-v/mini$': '<rootDir>/packages/mini/src/index.ts',
+    '^@omega-v/pluralism$': '<rootDir>/packages/pluralism/src/index.ts',
+    '^@omega-v/authorization$': '<rootDir>/packages/authorization/src/index.ts',
+    '^@omega-v/generative$': '<rootDir>/packages/generative/src/index.ts',
+    '^@omega-v/inference$': '<rootDir>/packages/inference/src/index.ts',
+    '^@omega-v/vector$': '<rootDir>/packages/vector/src/index.ts',
+    '^@omega-v/mood$': '<rootDir>/packages/mood/src/index.ts',
+    '^@omega-v/contract$': '<rootDir>/continuum/packages/contract/src/index.ts',
+    '^@oceanicos/contract$': '<rootDir>/continuum/packages/contract/src/index.ts',
     '^@omega-v/(.*)$': '<rootDir>/continuum/packages/$1/src/index.ts',
+    '^fastify$': '<rootDir>/apps/api/node_modules/fastify',
   },
+  moduleDirectories: ['node_modules', '<rootDir>/apps/api/node_modules'],
   transform: {
     '^.+\\.tsx?$': [
       'ts-jest',

@@ -30,6 +30,7 @@
  * forces `reconcile` itself to throw a plain, non-Error value once, closing
  * its fallback branch too.
  */
+import { jest } from '@jest/globals';
 jest.mock('node:fs', () => {
   const actual = jest.requireActual('node:fs');
   return {

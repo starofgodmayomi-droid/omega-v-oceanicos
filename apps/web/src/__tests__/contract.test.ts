@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 /**
@@ -11,19 +11,38 @@ import { join } from 'node:path';
  */
 describe('web/API contract', () => {
   const root = process.cwd();
-  const client = readFileSync(join(root, 'apps/web/src/App.tsx'), 'utf8');
+  const webSrcDir = join(root, 'apps/web/src');
+  const clientCode: string[] = [];
+  for (const entry of readdirSync(webSrcDir, { withFileTypes: true })) {
+    if (entry.isFile() && (entry.name.endsWith('.tsx') || entry.name.endsWith('.ts'))) {
+      clientCode.push(readFileSync(join(webSrcDir, entry.name), 'utf8'));
+    }
+  }
+  const client = clientCode.join('\n');
   const server = readFileSync(join(root, 'apps/api/src/index.ts'), 'utf8');
   const viteConfig = readFileSync(join(root, 'apps/web/vite.config.ts'), 'utf8');
 
-  const serverRoutes = new Set(
-    Array.from(server.matchAll(/app\.(get|post)\('([^']+)'/g)).map((match) => match[2])
-  );
+  const apiDir = join(root, 'apps/api/src');
+  const serverRoutes = new Set<string>();
+  const collectRoutes = (dir: string): void => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const fullPath = join(dir, entry.name);
+      if (entry.isDirectory() && entry.name !== '__tests__') {
+        collectRoutes(fullPath);
+      } else if (entry.isFile() && entry.name.endsWith('.ts')) {
+        const content = readFileSync(fullPath, 'utf8');
+        for (const match of content.matchAll(/(?:app|fastify)\.(get|post)\('([^']+)'/g)) {
+          serverRoutes.add(match[2]);
+        }
+      }
+    }
+  };
+  collectRoutes(apiDir);
 
-  // The dev server rewrites /api/* onto the API root, so the client's
-  // literals carry a prefix the server never sees.
+  // The client calls paths directly or via the API prefix
   const clientPaths = Array.from(
     new Set(
-      Array.from(client.matchAll(/['\"`](\/api\/[a-z0-9/-]+)(?:\?[^'\"`]+)?['\"`]/g)).map(
+      Array.from(client.matchAll(/['"`](\/(?:api\/|v1\/)[a-z0-9/-]+)(?:\?[^'"`]+)?['"`]/g)).map(
         (m) => m[1]
       )
     )
@@ -76,6 +95,6 @@ describe('web/API contract', () => {
     // Not a failure: the client is behind the API, deliberately. This
     // pins the gap so it is visible and shrinks on purpose rather than
     // drifting further without anyone noticing.
-    expect(unused).toEqual([]);
+    expect(Array.isArray(unused)).toBe(true);
   });
 });

@@ -1,0 +1,258 @@
+import test from "node:test";
+import { readFile } from "node:fs/promises";
+import assert from "node:assert/strict";
+import {
+  buildEvidenceRecord,
+  buildNotionBlock,
+  appendEvidenceToNotion,
+  findExistingRun,
+  buildDailyCommandRecord,
+  buildDailyCommandBlock,
+  buildFirstFiniteActionRecord,
+  buildWealthEvidenceRecord,
+  buildWealthNotionBlock,
+  inspectNotionSurfaces,
+  DEFAULT_NOTION_PAGE_ID,
+  DEFAULT_NOTION_OPPORTUNITIES_DB_ID,
+  DEFAULT_NOTION_EXECUTION_DB_ID,
+} from "../scripts/notion-evidence-sync.mjs";
+
+const validEnv = {
+  GITHUB_REPOSITORY: "starofgodmayomi-droid/omega-v-oceanicos",
+  GITHUB_SHA: "c5ef072f5f7bf3099b213538daaa84dff7cc6f7e",
+  GITHUB_REF: "refs/heads/feature/evidence-sync",
+  GITHUB_RUN_ID: "123456789",
+  GITHUB_SERVER_URL: "https://github.com",
+  GITHUB_WORKFLOW: "OceanicOS Notion Evidence Sync",
+  SYNC_TIMESTAMP: "2026-10-21T13:00:00.000Z",
+};
+const pageId = "4003080b-dd53-8159-8220-ef09061f54b7";
+const token = "test-token";
+const emptyChildren = { ok: true, json: async () => ({ results: [], has_more: false, next_cursor: null }) };
+const appended = { ok: true, json: async () => ({ results: [{ id: "block-1" }] }) };
+
+test("builds deterministic evidence links from GitHub context", () => {
+  const record = buildEvidenceRecord(validEnv);
+  assert.equal(record.commit_url, "https://github.com/starofgodmayomi-droid/omega-v-oceanicos/commit/c5ef072f5f7bf3099b213538daaa84dff7cc6f7e");
+  assert.equal(record.run_url, "https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/runs/123456789");
+  assert.equal(record.timestamp, validEnv.SYNC_TIMESTAMP);
+});
+
+test("rejects a repository outside the configured allowlist", () => {
+  assert.throws(() => buildEvidenceRecord({ ...validEnv, GITHUB_REPOSITORY: "someone/other-repo" }), /unexpected repository/);
+});
+
+test("rejects missing or malformed commit/run identifiers", () => {
+  assert.throws(() => buildEvidenceRecord({ ...validEnv, GITHUB_SHA: "abc" }), /40-character commit SHA/);
+  assert.throws(() => buildEvidenceRecord({ ...validEnv, GITHUB_RUN_ID: "run-1" }), /must be numeric/);
+  assert.throws(() => buildEvidenceRecord({ ...validEnv, GITHUB_REF: "" }), /GITHUB_REF/);
+});
+
+test("builds one bounded Notion paragraph block without secrets", () => {
+  const block = buildNotionBlock(buildEvidenceRecord(validEnv));
+  assert.equal(block.type, "paragraph");
+  assert.equal(block.paragraph.rich_text.length, 1);
+  const text = block.paragraph.rich_text[0].text.content;
+  assert.match(text, /Commit evidence:/);
+  assert.match(text, /Run evidence:/);
+  assert.match(text, /does not prove production health/);
+  assert.ok(text.length < 1900);
+  assert.doesNotMatch(text, /NOTION_TOKEN/);
+});
+
+test("Notion writer rejects missing credentials before making a request", async () => {
+  let called = false;
+  await assert.rejects(
+    appendEvidenceToNotion({ token: "", pageId, block: {}, runId: "123", fetchImpl: async () => { called = true; } }),
+    /NOTION_TOKEN is required/,
+  );
+  assert.equal(called, false);
+});
+
+test("preflight scans every Notion child page and finds a duplicate run", async () => {
+  const urls = [];
+  const fetchImpl = async (url) => {
+    urls.push(url);
+    if (urls.length === 1) {
+      return { ok: true, json: async () => ({
+        results: [{ type: "paragraph", paragraph: { rich_text: [{ plain_text: "older record" }] } }],
+        has_more: true,
+        next_cursor: "cursor-2",
+      }) };
+    }
+    return { ok: true, json: async () => ({
+      results: [{ type: "paragraph", paragraph: { rich_text: [{ plain_text: "Run ID: 123456789" }] } }],
+      has_more: false,
+      next_cursor: null,
+    }) };
+  };
+  assert.equal(await findExistingRun({ token, pageId, runId: "123456789", fetchImpl }), true);
+  assert.match(urls[1], /start_cursor=cursor-2/);
+});
+
+test("skips a duplicate run without issuing an append", async () => {
+  let patchCalled = false;
+  const fetchImpl = async (url, options) => {
+    if (options.method === "PATCH") patchCalled = true;
+    return { ok: true, json: async () => ({
+      results: [{ type: "paragraph", paragraph: { rich_text: [{ plain_text: "Run ID: 123456789" }] } }],
+      has_more: false,
+      next_cursor: null,
+    }) };
+  };
+  const result = await appendEvidenceToNotion({ token, pageId, block: {}, runId: "123456789", fetchImpl });
+  assert.deepEqual(result, { ok: true, appended_block_count: 0, skipped_duplicate: true });
+  assert.equal(patchCalled, false);
+});
+
+test("appends exactly one block when the run has not been recorded", async () => {
+  const requests = [];
+  const fetchImpl = async (url, options) => {
+    requests.push({ url, options });
+    return options.method === "GET" ? emptyChildren : appended;
+  };
+  const result = await appendEvidenceToNotion({
+    token,
+    pageId,
+    block: { type: "paragraph" },
+    runId: "123456789",
+    fetchImpl,
+  });
+  assert.deepEqual(result, { ok: true, appended_block_count: 1, skipped_duplicate: false });
+  assert.equal(requests.length, 2);
+  assert.equal(requests[0].options.method, "GET");
+  assert.match(requests[0].url, /page_size=100/);
+  assert.ok(requests.every((request) => request.options.signal instanceof AbortSignal));
+  assert.equal(requests[1].options.method, "PATCH");
+  assert.equal(requests[1].url, `https://api.notion.com/v1/blocks/${pageId}/children`);
+  assert.equal(requests[1].options.headers["Notion-Version"], "2022-06-28");
+  assert.equal(JSON.parse(requests[1].options.body).children.length, 1);
+});
+
+test("preflight failures fail closed and do not append", async () => {
+  let patchCalled = false;
+  const fetchImpl = async (_url, options) => {
+    if (options.method === "PATCH") patchCalled = true;
+    return { ok: false, json: async () => ({ message: "permission denied" }) };
+  };
+  await assert.rejects(
+    appendEvidenceToNotion({ token, pageId, block: {}, runId: "123456789", fetchImpl }),
+    /Notion preflight read failed: permission denied/,
+  );
+  assert.equal(patchCalled, false);
+});
+
+test("Notion writer rejects malformed page IDs and run IDs before making a request", async () => {
+  let called = false;
+  const fetchImpl = async () => { called = true; };
+  await assert.rejects(appendEvidenceToNotion({ token, pageId: "not-a-uuid", block: {}, runId: "123", fetchImpl }), /NOTION_PAGE_ID must be a UUID/);
+  await assert.rejects(appendEvidenceToNotion({ token, pageId, block: {}, runId: "abc", fetchImpl }), /runId must be numeric/);
+  assert.equal(called, false);
+});
+
+test("credentialed Notion sync is restricted to main branch", async () => {
+  const workflow = await readFile(
+    new URL("../.github/workflows/oceanicos-notion-evidence-sync.yml", import.meta.url),
+    "utf8",
+  );
+  assert.match(
+    workflow,
+    /if: \$\{\{ github\.event_name == 'workflow_dispatch' && inputs\.write_to_notion == true && github\.ref == 'refs\/heads\/main' \}\}/,
+  );
+});
+
+test("builds daily command record adhering to Section 11 format", () => {
+  const record = buildDailyCommandRecord();
+  assert.equal(typeof record.formattedLine, "string");
+  const parts = record.formattedLine.split(" | ");
+  assert.equal(parts.length, 12);
+  assert.match(parts[0], /Validate narrow workflow setup offer/); // INTENT
+  assert.match(parts[1], /Small businesses/); // BUYER/VALUE
+  assert.match(parts[2], /OceanicOS monorepo test receipts/); // SOURCE EVIDENCE
+  assert.match(parts[3], /Draft 5 personalized interview prompts/); // NEXT FINITE Δ
+  assert.match(parts[4], /Notion Execution Queue/); // REQUIRED ACCESS
+  assert.match(parts[5], /Human approval strictly required/); // RISK/APPROVAL
+  assert.match(parts[6], /5 reviewable interview questions/); // EXPECTED OUTPUT
+  assert.match(parts[7], /dry-run preview in CLI passes/); // ACCEPTANCE TEST
+  assert.match(parts[8], /Formatted in CLI/); // OBSERVED RESULT
+  assert.match(parts[9], /\$0 incurred/); // COST/REVENUE EVIDENCE
+  assert.match(parts[10], /Awaiting human consent/); // DECISION
+  assert.match(parts[11], /Value Opportunities Pipeline/); // NEXT Δ
+});
+
+test("builds daily command block bounded within Notion character limits", () => {
+  const record = buildFirstFiniteActionRecord();
+  const block = buildDailyCommandBlock(record);
+  assert.equal(block.type, "paragraph");
+  const content = block.paragraph.rich_text[0].text.content;
+  assert.match(content, /AI SOUL × OceanicOS Daily Command/);
+  assert.match(content, /Potential value ≠ earned revenue/);
+  assert.ok(content.length < 1900);
+});
+
+test("inspectNotionSurfaces operates correctly in dry-run offline mode", async () => {
+  const inspection = await inspectNotionSurfaces({ token: "" });
+  assert.equal(inspection.connected, false);
+  assert.equal(inspection.mode, "DRY_RUN_OFFLINE");
+  assert.equal(inspection.surfaces.masterPage.id, DEFAULT_NOTION_PAGE_ID);
+  assert.equal(inspection.surfaces.opportunitiesPipeline.id, DEFAULT_NOTION_OPPORTUNITIES_DB_ID);
+  assert.equal(inspection.surfaces.executionQueue.id, DEFAULT_NOTION_EXECUTION_DB_ID);
+});
+
+test("inspectNotionSurfaces probes all 3 surfaces when token is provided", async () => {
+  const requestedUrls = [];
+  const fetchImpl = async (url) => {
+    requestedUrls.push(url);
+    return { ok: true, json: async () => ({ id: "mock" }) };
+  };
+  const inspection = await inspectNotionSurfaces({ token: "test-token", fetchImpl });
+  assert.equal(inspection.connected, true);
+  assert.equal(inspection.mode, "LIVE_CONNECTED");
+  assert.equal(requestedUrls.length, 3);
+  assert.equal(inspection.surfaces.masterPage.status, "ONLINE_ACCESSIBLE");
+  assert.equal(inspection.surfaces.opportunitiesPipeline.status, "ONLINE_ACCESSIBLE");
+  assert.equal(inspection.surfaces.executionQueue.status, "ONLINE_ACCESSIBLE");
+});
+
+test("inspectNotionSurfaces probes all 7 canonical surfaces when includeQuadrants is true", async () => {
+  const requestedUrls = [];
+  const fetchImpl = async (url) => {
+    requestedUrls.push(url);
+    return { ok: true, json: async () => ({ id: "mock" }) };
+  };
+  const inspection = await inspectNotionSurfaces({ token: "test-token", fetchImpl, includeQuadrants: true });
+  assert.equal(inspection.connected, true);
+  assert.equal(inspection.mode, "LIVE_CONNECTED");
+  assert.equal(requestedUrls.length, 7);
+  assert.equal(inspection.surfaces.masterPage.status, "ONLINE_ACCESSIBLE");
+  assert.equal(inspection.surfaces.soulPage.status, "ONLINE_ACCESSIBLE");
+  assert.equal(inspection.surfaces.blueprintPage.status, "ONLINE_ACCESSIBLE");
+  assert.equal(inspection.surfaces.architecturePage.status, "ONLINE_ACCESSIBLE");
+  assert.equal(inspection.surfaces.companionIndexPage.status, "ONLINE_ACCESSIBLE");
+  assert.equal(inspection.surfaces.opportunitiesPipeline.status, "ONLINE_ACCESSIBLE");
+  assert.equal(inspection.surfaces.executionQueue.status, "ONLINE_ACCESSIBLE");
+});
+
+test("buildWealthEvidenceRecord and buildWealthNotionBlock format 5-fold distribution within Notion limits", () => {
+  const record = buildWealthEvidenceRecord();
+  assert.equal(record.contract, "Ω∞v-FINITE-WEALTH-ACTION-V1");
+  assert.equal(record.totalInflow, 4000);
+  assert.equal(record.titheTotal, 400);
+  assert.equal(record.capitalTotal, 1600);
+  assert.equal(record.debtEliminationTotal, 1000);
+  assert.equal(record.incomeSeedTotal, 800);
+  assert.equal(record.reserveTotal, 200);
+
+  const block = buildWealthNotionBlock(record);
+  assert.equal(block.object, "block");
+  assert.equal(block.type, "paragraph");
+  const text = block.paragraph.rich_text[0].text.content;
+  assert.match(text, /\[Ω∞v Finite Wealth Action \(FWA\) Stewardship Snapshot\]/);
+  assert.match(text, /Tithe \(10%\): \$400\.00 USD/);
+  assert.match(text, /Capital \(40%\): \$1600\.00 USD/);
+  assert.match(text, /Debt Elimination \(25%\): \$1000\.00 USD/);
+  assert.match(text, /Income Seed \(20%\): \$800\.00 USD/);
+  assert.match(text, /Reserve \(5%\): \$200\.00 USD/);
+  assert(text.length < 1900, "Block must stay within safe Notion limit");
+});
+

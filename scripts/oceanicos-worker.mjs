@@ -3,6 +3,7 @@
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
+import { createHash } from 'node:crypto';
 
 const root = process.cwd();
 const args = new Set(process.argv.slice(2));
@@ -10,6 +11,55 @@ const continuous = args.has('--continuous');
 const verify = args.has('--verify');
 const MAX_CYCLES = 32;
 const MAX_INTERVAL_MS = 60 * 60 * 1000;
+
+// ----------- Shared Verification Contract Integration -----------
+let evaluateVerificationContract = null;
+try {
+  const mod = await import('../packages/verification/src/verification-contract.ts');
+  evaluateVerificationContract = mod.evaluateVerificationContract ?? mod.default;
+} catch {
+  try {
+    const mod = await import('../packages/verification/dist/verification-contract.js');
+    evaluateVerificationContract = mod.evaluateVerificationContract ?? mod.default;
+  } catch {}
+}
+
+/** Run the 4-outcome verification contract and report to stdout */
+function runVerificationContract(cycleIndex, allCommandsPassed) {
+  if (!evaluateVerificationContract) {
+    console.log('[Ω∞ WORKER] Verification contract unavailable (packages not compiled).');
+    return null;
+  }
+
+  const receipt = evaluateVerificationContract({
+    stateBefore: `WORKER_CYCLE_${cycleIndex}_PRE`,
+    intent: `CONTINUOUS_REALITY_VERIFICATION_CYCLE_${cycleIndex}`,
+    expectedState: 'WORKER_VERIFIED',
+    authority: true,
+    humanConsent: true,
+    policyPassed: true,
+    attempted: true,
+    executed: allCommandsPassed,
+    observation: allCommandsPassed
+      ? { observed: true, observedState: 'WORKER_VERIFIED' }
+      : { observed: true, observedState: 'WORKER_FAILED' },
+    evidence: allCommandsPassed
+      ? { claim: `Worker cycle ${cycleIndex} all commands passed`, observed: true, verified: true, confidence: 1.0 }
+      : { claim: `Worker cycle ${cycleIndex} had failures`, observed: true, verified: false },
+    stepIndex: cycleIndex,
+  });
+
+  const outcomeColor = receipt.outcome === 'VERIFIED' ? '\x1b[32m' : '\x1b[31m';
+  console.log(`\n[Ω∞ WORKER] VERIFICATION CONTRACT (4-OUTCOME):`);
+  console.log(`  Outcome          : ${outcomeColor}${receipt.outcome}\x1b[0m`);
+  console.log(`  Decision         : ${receipt.decision}`);
+  console.log(`  Frobenius Norm   : ${receipt.frobeniusNorm}`);
+  console.log(`  ⁴√det(I₄ + MᵀM) : ${receipt.fourthRootGramDeterminant}`);
+  console.log(`  Proof Hash       : ${receipt.proofChain.currentHash.substring(0, 32)}...`);
+  console.log(`  Reason           : ${receipt.reason}`);
+
+  return receipt;
+}
 
 function parseBoundedInteger(name, rawValue, defaultValue, minimum, maximum) {
   const value = rawValue === undefined ? defaultValue : Number(rawValue);
@@ -87,6 +137,11 @@ async function executeCycle(index) {
     const passed = await run(label, command, commandArgs);
     allPassed &&= passed;
     if (!passed && verify) break;
+  }
+
+  // Run shared verification contract (4-outcome gate) after commands
+  if (verify) {
+    runVerificationContract(index, allPassed);
   }
 
   console.log(`\n[Ω∞ WORKER] CYCLE ${index}: ${allPassed ? 'VERIFIED' : 'NOT VERIFIED'}`);

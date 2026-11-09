@@ -383,4 +383,8 @@ export class VerificationEngine {
 export { AsymmetricValidationGuard, type AsymmetricKeyPair } from './asymmetric.js';
 export * from './frontier.js';
 export * from './regional-mesh.js';
+export * from './covenant-verifier.js';
+export * from './verification-contract.js';
+export * from './max-equation.js';
 export { VerificationEngine as default };
+

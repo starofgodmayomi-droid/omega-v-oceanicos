@@ -281,6 +281,9 @@ export type {
   TotalCompressionValidationIssue,
   TotalCompressionValidationResult,
 } from './total-compress.js';
+export { validateKnowledgeEnvelope, KNOWLEDGE_KINDS, KNOWLEDGE_STATES, KNOWLEDGE_VISIBILITIES } from './knowledge-envelope.js';
+export type { KnowledgeEnvelope, KnowledgeEnvelopeResult } from './knowledge-envelope.js';
+
 
 export function executeOceanicosMaxExpansion(): CryptographicBlock {
   const kernelChain = new PluralisticHashChain();
@@ -310,5 +313,6 @@ export {
   type ReplayVerificationOutcome,
 } from './reconciliation-boundary.js';
 export * from './canonical-kernel.js';
+export * from './upgrade/singularity.js';
 
 export default MiniKernel;

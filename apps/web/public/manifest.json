@@ -1,0 +1,27 @@
+{
+  "name": "OCEANICOS Ω∞v — Water Intelligence",
+  "short_name": "Ω∞v",
+  "description": "Whole Ecosystem Conversational AI — Verified Evidence, Living Sovereignty, Fail-Closed Intelligence",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#020d18",
+  "theme_color": "#69e7b9",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "utilities"],
+  "lang": "en",
+  "dir": "ltr"
+}

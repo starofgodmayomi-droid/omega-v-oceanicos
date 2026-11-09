@@ -58,3 +58,4 @@ data/
 __pycache__/
 *.pyc
 ai_os_workspace/
+.github/workflows/.archive/

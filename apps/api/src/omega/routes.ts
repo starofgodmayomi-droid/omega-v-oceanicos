@@ -35,7 +35,11 @@ import { RealityObserverEngine } from './reality-observer.js';
 import { OmegaCommandStore } from './store.js';
 import { createOmegaSecurityHook, type OmegaSecurityOptions } from './security.js';
 import { evaluateAuthorization } from '@oceanicos/authorization';
-import type { OmegaCommandStore as CanonicalOmegaCommandStore } from '../omega.js';
+import {
+  type OmegaCommandStore as CanonicalOmegaCommandStore,
+  type OmegaCommandAdmissionEvidenceResolver,
+  isOmegaCommandAdmissionEvidence,
+} from '../omega.js';
 
 export interface OmegaRouteOptions {
   store?: OmegaCommandStore;
@@ -44,6 +48,8 @@ export interface OmegaRouteOptions {
   security?: OmegaSecurityOptions;
   kernel?: OceanicosKernel;
   kernelStatePath?: string;
+  omegaCommandAdmissionEvidence?: OmegaCommandAdmissionEvidenceResolver;
+  enforceAdminOperatorIdentity?: (request: any, reply: any) => boolean;
 }
 
 export const omegaRoutes: FastifyPluginAsync<OmegaRouteOptions> = async (
@@ -425,13 +431,33 @@ export const omegaRoutes: FastifyPluginAsync<OmegaRouteOptions> = async (
         if (canonicalCmd.status !== 'PROPOSED' && canonicalCmd.status !== 'REVIEW') {
           return reply.status(409).send({ success: false, error: 'OMEGA_COMMAND_STALE' });
         }
-        const body = request.body && typeof request.body === 'object' && !Array.isArray(request.body) ? request.body : {};
-        const authority = typeof body.authority === 'string' ? body.authority : null;
-        const policy = typeof body.policy === 'string' ? body.policy : null;
-        const admitted = resolveChangeAdmission({ ...canonicalCmd.change, authority, policy }, { authorityVerified: body.authorityVerified === true, policySatisfied: body.policySatisfied === true });
-        const status = decisionToStatus(admitted.decision);
-        const updated = opts.canonicalStore.update(canonicalCmd, { change: admitted, status });
-        opts.canonicalStore.record('command.admitted', updated, { decision: admitted.decision });
+        if (!opts.omegaCommandAdmissionEvidence) {
+          return reply.status(503).send({ success: false, error: 'OMEGA_ADMISSION_EVIDENCE_UNAVAILABLE', status: canonicalCmd.status });
+        }
+
+        let evidence: unknown;
+        try {
+          evidence = await opts.omegaCommandAdmissionEvidence(request, canonicalCmd);
+        } catch {
+          return reply.status(503).send({ success: false, error: 'OMEGA_ADMISSION_EVIDENCE_UNAVAILABLE', status: canonicalCmd.status });
+        }
+        if (!isOmegaCommandAdmissionEvidence(evidence)) {
+          return reply.status(503).send({ success: false, error: 'OMEGA_ADMISSION_EVIDENCE_INVALID', status: canonicalCmd.status });
+        }
+
+        const admitted = resolveChangeAdmission({
+          ...canonicalCmd.change,
+          authority: evidence.authority.trim(),
+          policy: evidence.policy.trim(),
+        }, {
+          authorityVerified: evidence.authorityVerified,
+          policySatisfied: evidence.policySatisfied,
+        });
+        const requiresExplicitApproval = canonicalCmd.status === 'REVIEW' && admitted.decision === 'ALLOW';
+        const change = requiresExplicitApproval ? { ...admitted, decision: 'REVIEW' as const, authorized: false } : admitted;
+        const status = requiresExplicitApproval ? 'REVIEW' : decisionToStatus(change.decision);
+        const updated = opts.canonicalStore.update(canonicalCmd, { change, status });
+        opts.canonicalStore.record('command.admitted', updated, { decision: change.decision, evidenceSource: 'server-side-resolver' });
         return {
           success: true,
           command: updated,
@@ -571,6 +597,9 @@ export const omegaRoutes: FastifyPluginAsync<OmegaRouteOptions> = async (
       if (canonicalCmd) {
         if (canonicalCmd.status !== 'REVIEW') {
           return reply.status(409).send({ success: false, error: 'OMEGA_APPROVAL_REQUIRES_REVIEW' });
+        }
+        if (opts.enforceAdminOperatorIdentity && !opts.enforceAdminOperatorIdentity(request, reply)) {
+          return;
         }
         const body = request.body && typeof request.body === 'object' && !Array.isArray(request.body) ? request.body : {};
         const operator = typeof body.operator === 'string' && body.operator.trim() ? body.operator : (body.approvedBy || 'dashboard-operator');

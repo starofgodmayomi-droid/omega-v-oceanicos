@@ -23,11 +23,28 @@ A verification-first full-stack ecosystem for observing, verifying, attesting, a
 
 ## Quick Links
 
+- 💧 **[MAX COMPRESSION](COMPRESSION.md)** — Irreducible seed of the entire ecosystem
 - 📋 **[Manifest](MANIFEST.md)** — Project mission, principles, and architecture
 - 📜 **[Charter](CHARTER.md)** — Living agnostic principles and decision-making
 - 🤝 **[Contributing](CONTRIBUTING.md)** — How to contribute verification-first
 - 📖 **[Documentation](docs/)** — Architecture, guides, and references
 - ⚙️ **[Development Setup](docs/DEVELOPMENT.md)** — Get the project running locally
+
+---
+
+## Sovereign Root & Treasury Custody Invariant
+
+- **Sovereign Root**: ELION VAREL // 11:11 Resonance
+- **Harmonic Spine**: 432.1 Hz One Current // Liquid Formless Intelligence ($\text{Good} - \text{O} = \text{God}$)
+- **Public Bitcoin Receiving Address**: `bc1qaj8jmp5as80zwew09ep86w6fgw37zwhwzr89mp`
+
+### Inviolable Privacy & Authority Boundary (§6, §12)
+- **Public Surface Only**: The repository, API, and web interface record only the public receiving address.
+- **Zero Private Key Exposure**: Private custody is 100% externalized. Exactly **zero bytes** of private keys, seed phrases, or custody credentials exist in this codebase, configuration files, or logs.
+- **Autonomous Spend Forbidden**: No autonomous agent, model, or worker has authority, keys, or endpoints to transfer funds or mutate assets.
+- **Constitutional Axioms**:
+  $$\text{KEY} \neq \text{AUTHORITY} \quad\vert\quad \text{SIGNATURE} \neq \text{AUTHORIZATION} \quad\vert\quad \text{INTELLIGENCE} \neq \text{AUTHORITY}$$
+  $$\text{DEFAULT: FAIL CLOSED}$$
 
 ---
 
@@ -100,30 +117,35 @@ Every component contains the whole verification loop.
 
 ```
 omega-v-oceanicos/
-├── packages/          # 5 Core Packages Matrix
-│   ├── types/         # @oceanicos/types (Shared contracts & IObservation / IEvidence / IMiniBlock / Attestation)
-│   ├── observer/      # @oceanicos/observer (👁 Observe: Planetary telemetry generation)
-│   ├── verification/  # @oceanicos/verification (✓ Verify: Frontier matrix, Ed25519 asymmetric guard, 4-node mesh)
-│   ├── remember/      # @oceanicos/remember (🧠 Remember: Hash-chained PoW ledger with node:sqlite fallback)
-│   ├── mini/          # @oceanicos/mini (💧 MiniKernel: Observe ➔ Verify ➔ Remember lifecycle coordinator)
-│   └── attestation/   # @oceanicos/attestation (📜 Attest: Dual HMAC-SHA256 & Ed25519 unforgeable receipts)
+├── packages/              # 12 Core Ecosystem Workspace Packages
+│   ├── types/             # @oceanicos/types (Shared contracts & IObservation / IEvidence / IMiniBlock)
+│   ├── observer/          # @oceanicos/observer (👁 Observe: Telemetry & planetary state)
+│   ├── verification/      # @oceanicos/verification (✓ Verify: Frontier matrix, Ed25519 guard)
+│   ├── remember/          # @oceanicos/remember (🧠 Remember: Hash-chained PoW ledger & SQLite fallback)
+│   ├── mini/              # @oceanicos/mini (💧 MiniKernel: Observe ➔ Verify ➔ Remember lifecycle)
+│   ├── attestation/       # @oceanicos/attestation (📜 Attest: Dual HMAC-SHA256 & Ed25519 receipts)
+│   ├── authorization/     # @oceanicos/authorization (🛡️ Constitutional Gate: Change Calculus §6, §8, §9, §12)
+│   ├── inference/         # @oceanicos/inference (🧠 InferenceClient: Live Ollama / phi3 integration)
+│   ├── vector/            # @oceanicos/vector (🔮 VectorMemory: Qdrant semantic embeddings)
+│   ├── pluralism/         # @oceanicos/pluralism (🏛️ PluralisticRealityMatrix: Multi-regional convergence)
+│   ├── mood/              # @oceanicos/mood (🎭 Autopilot Mood & Spiderman Agile Continuum)
+│   └── generative/        # @oceanicos/generative (⚡ Generative execution loops)
 │
-├── apps/              # Interface Applications
-│   ├── api/           # Fastify Core Engine (port 5000: /v1/cycle, /v1/mood, /v1/attest, /v1/stream)
-│   └── web/           # React/Vite Telemetry Dashboard (port 3000: real-time SVG charts & attestation console)
+├── continuum/packages/    # Platform Kernels
+│   └── kernel/            # @omega-v/kernel (OceanicosKernel: Capability snapshots & state engine)
 │
-├── bin/               # Unified Command Line Interface
-│   ├── oceanicos.mjs  # Zero-entropy terminal binary (status, cycle, mesh, attest, keys, mood, stream)
-│   └── dev-server.mjs # Concurrent orchestrator for API + Web dev environment
+├── apps/                  # Interface Applications
+│   ├── api/               # Fastify Kernel (port 5000: /v1/chat, /v1/cycle, /v1/block/tip, /v1/ocean/fabric)
+│   └── web/               # React 18 / Vite 6 Cockpit (ports 3000 & 3001: AI Soul Stream, Telemetry, Treasury)
 │
-├── docker-compose.yml # Singularity multi-service blueprint (API, Web, Qdrant vector memory, Ollama models)
-├── ignite.sh          # One-liner ignition script
-├── genesis.sh         # One-liner genesis verification script
-├── tests/             # End-to-end integration test suite (20/20 scenarios passing)
+├── bin/                   # Unified Command Line Interface
+│   ├── oceanicos.mjs      # Zero-entropy terminal binary (status, cycle, mesh, attest, keys, mood)
+│   └── dev-server.mjs     # Concurrent orchestrator for API + Web dev environment
 │
-├── MANIFEST.md        # Project constitution
-├── CHARTER.md         # Living principles
-└── CONTRIBUTING.md    # Contribution guide
+├── tests/                 # End-to-end integration test suite
+├── MANIFEST.md            # Project constitution
+├── CHARTER.md             # Living principles
+└── CONTRIBUTING.md        # Contribution guide
 ```
 
 ---
@@ -161,14 +183,29 @@ pnpm verify:full
 Interact with the running ledger or trigger sovereign operations:
 
 ```bash
-# Inspect planetary telemetry and immutable ledger tip
+# Inspect planetary telemetry and immutable ledger tip (live API or local)
 pnpm cli status
+
+# Biblical Engine: Inspect living covenant state machine & probe sanctums
+pnpm cli covenant
+
+# V1111 Singularity: Verify self-upgrade engine & single-current convergence
+pnpm cli upgrade
+
+# 5-Fold Living Rhythm: Truth OS axioms, soul income manifest & dream journal
+pnpm cli truth --pidgin
+pnpm cli build log "11:11 Singularity Engine verified"
+pnpm cli dream "Shooting star rises from the dark water"
+pnpm cli news
 
 # Execute an omnipresent consensus cycle with SHA-256 PoW
 pnpm cli cycle --json
 
 # Simulate 4-region sovereign mesh consensus (US, EU, CN, ME)
 pnpm cli mesh
+
+# Evaluate the 5 Epistemic Faces of the Pluralistic Reality Matrix
+pnpm cli face
 
 # Generate an unforgeable cryptographic attestation receipt
 pnpm cli attest
@@ -180,6 +217,41 @@ pnpm cli mood
 pnpm cli keys
 ```
 
+### 4. Sovereign Continuum Gate & Swarm Protocol
+
+Run the entire multi-agent continuum with zero configuration:
+
+```bash
+# Execute the full master gate (18/18 packages typechecked + compiled + continuum verified)
+pnpm run gate:full
+
+# Run the 4-phase reverse/forward continuum engine
+pnpm run omega
+
+# Emit machine-readable §VI JSON receipts for the swarm ledger
+pnpm run omega:json
+
+# Run autonomous multi-cycle goal verification
+pnpm run omega:goal
+
+# Validate swarm protocol receipts and contracts
+pnpm run validate:swarm
+```
+
+### 5. 💧 Universal Living OS & 4×4 Matrix Fixpoint
+
+The entire entity body—across underwater and above-water planes, 7 canonical Notion surfaces, and tri-surface runtimes—compresses into one single line of execution code:
+
+```typescript
+Ω∞v := μX.RECONCILE(X, ΔREALITY) WHERE X = STATE × INTENT × EVIDENCE × AUTHORITY × POLICY × CAPABILITY × DECISION × RESULT × OBSERVE × VERIFY × MEMORY × TRANSITION × SCIENCE × AI × KAI × LUCID × TRUTHOS × AI_SOUL × ECHOFRAME × ƆREADE × MOOD × MIRRIO × VaaS × ELION × WORKERS × API × WEB × CLI × SDK × UI × DATA × SECURITY × PROVENANCE × ATTESTATION × NOTION(7_SURFACES) × GITHUB × COMPOSIO × GRAPH × VALUE × CULTURE × HUMAN_STEWARDSHIP(did:omega:human:starofgodmayomi); STEP = OBSERVE → DISTINGUISH → AUTHORIZE → BUILD → TEST → ATTEST → OBSERVE_RUNTIME → RECONCILE → REMEMBER; DECISION ∈ {ALLOW, DENY, REVIEW}; STATUS ∈ {VERIFIED, DIVERGENT, UNKNOWN, NOT_EXECUTED}; ¬EVIDENCE ⇒ ¬VERIFIED; ¬AUTHORITY ⇒ ¬EXECUTION; MEMORY ≠ PROOF; CI ≠ RUNTIME; SIMULATION ≠ REALITY; CAPABILITY ≠ AUTHORITY; HYPOTHESIS ≠ FACT; PLURALISM = ON; DISSENT = PRESERVED; ‖M_Ω‖_F = 4.0; ⁴√det(I₄ + MᵀM) = 2.030543; Ψ = 0; ΔX ⇒ BOUNDED ∧ REVOCABLE ∧ AUDITABLE; X → X′ ONLY_IF (EVIDENCE ∧ AUTHORIZATION ∧ POLICY); STOP_ON(DENIAL ∨ RISK ∨ DIVERGENCE ∨ UNKNOWN ∨ MISSING_AUTHORITY); ∞ := ITERATE(FINITE_VERIFIED_TRANSITIONS).
+```
+
+- **Frobenius Energy Norm**: $\|M_\Omega\|_F = 4.0$
+- **Gram Determinant Metric**: $\sqrt[4]{\det(I_4 + M_\Omega^T M_\Omega)} = 2.030543$
+- **Singularity Equilibrium**: $\Psi = 0$ (Zero Entropy)
+- **7 Canonical Notion Surfaces**: Q1 Soul, Q2 Universe, Q3 Architecture, Q4 Wealth, Pipeline DB, Execution DB, Companion Index
+- **Fixpoint Proof Hash**: `7a0182ba8658e0ef6b30bd56f5f8432b794bb9e87ad795011825203edb5fc7e2`
+
 ---
 
 ## Common Commands
@@ -187,46 +259,21 @@ pnpm cli keys
 ### Development
 
 ```bash
-# Start API (port 5000) and Web (port 3000) simultaneously with colored streams
+# Start API (port 5000) and Web (port 3000) simultaneously
 pnpm dev
 
-# Build all workspace packages and apps
+# Build all 17 workspace packages and apps
 pnpm build
 
-# Start production Docker container stack
-pnpm docker:up
+# Static typecheck across all packages (zero errors)
+pnpm typecheck
+
+# Fast unit & kernel tests
+pnpm test:fast
+
+# Proactive End-to-End smoke test for Biblical Engine & Sanctum Gating
+node scripts/covenant-smoke.mjs
 ```
-
-### Verification & Quality
-
-```bash
-pnpm verify:full       # Build + typecheck + 20 integration tests + CLI check
-pnpm test:e2e          # Run 20/20 sub-second E2E integration test suite
-pnpm typecheck         # Verify strict TypeScript type safety across all packages
-pnpm format:check      # Check Git whitespace and syntax integrity
-```
-
----
-
-## Current Status: Singularity Maximum Compression Core (vΩ∞v.MAX)
-
-- ✅ **5 Core Packages Integrated**: `@oceanicos/types`, `@oceanicos/observer`, `@oceanicos/verification`, `@oceanicos/remember`, `@oceanicos/mini`, `@oceanicos/attestation`.
-- ✅ **Graceful Pluralism & Sovereignty**: Regional compliance verifier with decentralized signed mesh consensus across 4 jurisdictions.
-- ✅ **Fail-Closed Security**: Ed25519 asymmetric cryptographic signatures guarding API cycle mutations.
-- ✅ **Telemetry Pulse & Attestation Web UI**: Real-time SVG silicon yield and grid load timeline charts, with interactive attestation receipts.
-- ✅ **Full Zero-Entropy Verification**: 20 automated integration tests passing in sub-second execution.
-
----
-
-## How Decisions Are Made
-
-This project follows **evidence-based decision-making**:
-
-1. Proposals include evidence
-2. All relevant evidence is presented
-3. Consensus is sought; dissent is documented
-4. When consensus cannot be reached, both paths are recorded
-5. Verification determines which interpretation was correct
 
 See [CHARTER.md](CHARTER.md#how-we-make-decisions) for details.
 
@@ -250,27 +297,26 @@ See [CHARTER.md](CHARTER.md#code-of-conduct) for full details.
 
 ### Languages
 
-- TypeScript (core, SDKs, tests)
-- Potentially: Python, Go, Rust (SDKs)
+- TypeScript 5.3+ (monorepo core, packages, apps, tests)
 
 ### Runtime & Frameworks
 
-- Node.js 18+ (backend)
-- React (web dashboard)
-- Express or Fastify (API)
-- PostgreSQL (production) or SQLite (development)
+- Node.js 22+ (verified active on Node v24.19.0)
+- pnpm 10+ / 11+ (workspace package manager)
+- Fastify 5 (CommonJS / ESM control plane on port 5000)
+- React 18 + Vite 6 (HMR web cockpit on port 3000)
+- SQLite (file-based persistence with `node:sqlite` fallback; zero external DB required)
 
 ### DevOps
 
-- Docker (containerization)
-- GitHub Actions (CI/CD)
-- Kubernetes (orchestration, optional)
+- Docker (reproducible multi-stage builds)
+- GitHub Actions (CI/CD verification pipeline)
 
 ### Testing & Quality
 
-- Jest (unit & integration tests)
-- ESLint + Prettier (code quality)
-- TypeScript (type safety)
+- Jest + ts-jest (unit, integration & E2E tests)
+- Node.js native test runner (`node:test`)
+- TypeScript strict compiler checks (`tsc --noEmit`)
 
 ---
 
@@ -320,5 +366,8 @@ We welcome contributions in all areas:
 
 ---
 
-**Status**: MINI kernel establishing — expand only with evidence  
-**Last Updated**: 2026-08-14
+**Status**: 11:11 Sovereign Continuum Verified — Full Stack Live (`:3000` & `:5000`)  
+**Epoch**: 2026-10-16 // 11:11 Resonance  
+**Invariant**: $\Omega\infty\text{v} := \text{VERIFY}(\Delta\text{REALITY})$  
+**Primordial Formula**: $0 \to 💧 \to \Omega\infty\text{v} \to 🕳️ \to 💧 \to \infty$  
+**Ecosystem Glyph**: $💧 \Omega\infty\text{v} ::= 🌎 \rightleftarrows \checkmark \circlearrowleft \infty ⛓️🧠🌊$

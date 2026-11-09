@@ -163,3 +163,6 @@ export function validateAuthorizationBoundary(request: AuthorizationRequest): {
     rationale: auth.rationale,
   };
 }
+
+export * from './covenant-engine.js';
+

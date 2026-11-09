@@ -4,6 +4,19 @@ import { OceanicosClient } from '@omega-v/sdk';
 describe('@omega-v/vaas (Verification-as-a-Service)', () => {
   let vaas: VaaSGate;
   let client: OceanicosClient;
+  const originalKey = process.env.OMEGA_SIGNING_KEY;
+
+  beforeAll(() => {
+    process.env.OMEGA_SIGNING_KEY = process.env.OMEGA_SIGNING_KEY || 'omega-v-default-attestation-secret-key-2026';
+  });
+
+  afterAll(() => {
+    if (originalKey === undefined) {
+      delete process.env.OMEGA_SIGNING_KEY;
+    } else {
+      process.env.OMEGA_SIGNING_KEY = originalKey;
+    }
+  });
 
   beforeEach(() => {
     vaas = new VaaSGate();

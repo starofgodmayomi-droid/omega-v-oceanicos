@@ -101,12 +101,15 @@ export const parseAuditQuery = (
   if (to !== undefined && Number.isNaN(Date.parse(to))) {
     return { error: 'to must be an ISO-8601 timestamp' };
   }
+  if (from !== undefined && to !== undefined && Date.parse(from) > Date.parse(to)) {
+    return { error: 'from must not be later than to' };
+  }
 
   let limit: number | undefined;
   if (rawLimit !== undefined) {
     const parsed = parseInt(rawLimit, 10);
     if (isNaN(parsed) || parsed < 1 || parsed > 500) {
-      return { error: 'limit must be between 1 and 500' };
+      return { error: 'limit must be an integer between 1 and 500' };
     }
     limit = parsed;
   }

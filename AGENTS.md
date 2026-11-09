@@ -1,3 +1,15 @@
+# ΩVØØS Multi-Agent Swarm — read this first
+
+If you are an AI working in this repository, you are a **Worker Node** under
+[`SWARM_PROTOCOL.md`](./SWARM_PROTOCOL.md). Read it before editing anything: it defines
+your domain, branch naming, the verification gate, and the JSON receipt you put in your
+pull request and append to [`kai_ledger.json`](./kai_ledger.json). This file adds the
+environment facts for this checkout; it does not override the protocol.
+
+Activation reply: `🦑 ΩVØØS SWARM NODE ONLINE. 30013030. Sync complete. KAI Shield Active. AWAITING DOMAIN ASSIGNMENT.`
+
+---
+
 # Reality-First Engineering Copilot Rules
 
 ## Governing principles
@@ -81,3 +93,6 @@ All secrets (signing key, tokens) are local dev values in `.env.base44-defaults`
 - API health: `curl http://localhost:5000/health` → `{"status":"ok",...}`
 - Web: `curl http://localhost:3000` → Vite-served HTML with `/@vite/client` and `/src/main.tsx`.
 - `docker compose -f docker-compose.base44.yml ps` → api healthy, web up.
+- Sovereign Gate: `pnpm run gate:full` → 18/18 packages typechecked, compiled, and continuum verified.
+- Machine-Readable Attestation: `pnpm run omega:json` → emits §VI JSON receipt for `kai_ledger.json`.
+- Swarm Validation: `pnpm run validate:swarm` → validates all ledger receipts and protocol invariants.

@@ -13,12 +13,24 @@ import { theme, statusColor, humanStatus } from './oceanicosTheme';
 
 interface AmbientBarProps {
   connected: boolean;
+  restActive?: boolean;
   reconnectAttempt: number;
   simulationMode: boolean;
   identityActive: boolean;
   realityStatus: string | null;
   epochsRemembered: number;
   miningActive: boolean;
+  mood?: {
+    status?: string;
+    uncertainty?: number;
+    context?: string;
+    decision?: string;
+  } | null;
+  latestTransition?: {
+    epoch?: number;
+    hash?: string;
+    outcome?: string;
+  } | null;
 }
 
 interface Indicator {
@@ -29,20 +41,24 @@ interface Indicator {
 }
 
 export function AmbientBar(props: AmbientBarProps) {
+  const isHealthy = props.connected || props.restActive;
+
   const indicators: Indicator[] = [
     {
       label: 'Connection',
       value: props.connected
         ? 'Connected'
-        : props.reconnectAttempt > 0
-          ? 'Reconnecting…'
-          : 'Offline',
-      color: props.connected
+        : props.restActive
+          ? 'Active (REST)'
+          : props.reconnectAttempt > 0
+            ? 'Reconnecting…'
+            : 'Offline',
+      color: isHealthy
         ? theme.verified
         : props.reconnectAttempt > 0
           ? theme.warning
           : theme.divergent,
-      pulse: !props.connected,
+      pulse: !isHealthy,
     },
     {
       label: 'Mode',
@@ -72,6 +88,32 @@ export function AmbientBar(props: AmbientBarProps) {
       label: 'Activity',
       value: props.miningActive ? 'Autonomous mining' : 'Idle',
       color: props.miningActive ? theme.warning : theme.unknown,
+    },
+    ...(props.mood?.status ? [{
+      label: 'Mood',
+      value: `${props.mood.status} · ${Math.round((1 - (props.mood.uncertainty ?? 0.1)) * 100)}% flow`,
+      color: props.mood.status === 'OPTIMAL_FLOW' || props.mood.status === 'HIGH_INTEGRITY' || props.mood.decision === 'ALLOW' ? theme.verified : theme.accent,
+    }] : []),
+    ...(props.latestTransition ? [{
+      label: 'Transition',
+      value: `Epoch ${props.latestTransition.epoch ?? '?'} · ${props.latestTransition.outcome ?? 'VERIFIED'}`,
+      color: theme.verified,
+      pulse: true,
+    }] : []),
+    {
+      label: 'Repo',
+      value: 'starofgodmayomi-droid/omega-v-oceanicos',
+      color: theme.accent,
+    },
+    {
+      label: 'Matrix M_Ω',
+      value: '⁴√det=2.0305 · ‖M‖=4 · Ψ=0 · 7-Notion',
+      color: '#38bdf8',
+    },
+    {
+      label: 'Checksum',
+      value: '30013030',
+      color: theme.verified,
     },
   ];
 
