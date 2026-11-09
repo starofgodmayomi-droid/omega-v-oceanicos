@@ -2160,7 +2160,7 @@ ${ANSI.bold}2 RELATIONAL OPERATIONAL DATABASES:${ANSI.reset}
     }
 
     printBanner();
-    console.log(`\n${ANSI.bold}=== 🏛️ AI SOUL × OCEANICOS: 6 CANONICAL NOTION OPERATING SURFACES ===${ANSI.reset}\n`);
+    console.log(`\n${ANSI.bold}=== 🏛️ AI SOUL × OCEANICOS: 7 CANONICAL NOTION OPERATING SURFACES ===${ANSI.reset}\n`);
     console.log(`  ${ANSI.cyan}Connection Mode${ANSI.reset}     : ${inspection.mode === 'LIVE_CONNECTED' ? `${ANSI.green}✓ LIVE CONNECTED${ANSI.reset}` : `${ANSI.yellow}⚠ DRY RUN (Offline)${ANSI.reset}`}`);
     console.log(`  ${ANSI.cyan}GitHub Repository${ANSI.reset}   : ${ANSI.bold}starofgodmayomi-droid/omega-v-oceanicos${ANSI.reset}`);
     console.log(`  ${ANSI.cyan}Composio Tool Bridge${ANSI.reset}: ${composioKey ? `${ANSI.green}CONFIGURED${ANSI.reset}` : `${ANSI.dim}OPTIONAL / UNCONFIGURED${ANSI.reset}`}\n`);
@@ -2204,12 +2204,21 @@ ${ANSI.bold}2 RELATIONAL OPERATIONAL DATABASES:${ANSI.reset}
     console.log(`      UUID   : ${inspection.surfaces.executionQueue.id}`);
     console.log(`      URL    : ${inspection.surfaces.executionQueue.url}`);
     console.log(`      Role   : ${inspection.surfaces.executionQueue.role}`);
-    console.log(`      Status : ${inspection.surfaces.executionQueue.status === 'ONLINE_ACCESSIBLE' ? ANSI.green : ANSI.yellow}${inspection.surfaces.executionQueue.status}${ANSI.reset}`);
+    console.log(`      Status : ${inspection.surfaces.executionQueue.status === 'ONLINE_ACCESSIBLE' ? ANSI.green : ANSI.yellow}${inspection.surfaces.executionQueue.status}${ANSI.reset}\n`);
+
+    if (inspection.surfaces.companionIndexPage) {
+      console.log(`${ANSI.bold}1 Meta Companion Index:${ANSI.reset}`);
+      console.log(`  [META · COMPANION] ${ANSI.bold}OCEANICOS Single Full-Stack Body Companion Index${ANSI.reset}`);
+      console.log(`      UUID   : ${inspection.surfaces.companionIndexPage.id}`);
+      console.log(`      URL    : ${inspection.surfaces.companionIndexPage.url}`);
+      console.log(`      Role   : ${inspection.surfaces.companionIndexPage.role}`);
+      console.log(`      Status : ${inspection.surfaces.companionIndexPage.status === 'ONLINE_ACCESSIBLE' ? ANSI.green : ANSI.yellow}${inspection.surfaces.companionIndexPage.status}${ANSI.reset}`);
+    }
 
     if (!token) {
-      console.log(`\n${ANSI.dim}Note: NOTION_TOKEN not set in .env. Pre-flight schemas verified across all 6 surfaces. Use safe protocol to activate live sync.${ANSI.reset}\n`);
+      console.log(`\n${ANSI.dim}Note: NOTION_TOKEN not set in .env. Pre-flight schemas verified across all 7 surfaces. Use safe protocol to activate live sync.${ANSI.reset}\n`);
     } else {
-      console.log(`\n${ANSI.green}✓ All 6 Notion surfaces bound and ready for bidirectional operations.${ANSI.reset}\n`);
+      console.log(`\n${ANSI.green}✓ All 7 Notion surfaces bound and ready for bidirectional operations.${ANSI.reset}\n`);
     }
     return;
   }

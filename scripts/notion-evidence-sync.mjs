@@ -10,6 +10,7 @@ export const DEFAULT_NOTION_BLUEPRINT_PAGE_ID = "4003080b-dd53-8153-b957-c6bdb94
 export const DEFAULT_NOTION_ARCHITECTURE_PAGE_ID = "4003080b-dd53-8142-a075-c9da63c46c70";
 export const DEFAULT_NOTION_OPPORTUNITIES_DB_ID = "baf1877d-e979-4cd8-949e-6c48cdee4c7a";
 export const DEFAULT_NOTION_EXECUTION_DB_ID = "75b1967f-fb19-47fc-8f5a-db1298fe8f02";
+export const DEFAULT_NOTION_COMPANION_INDEX_PAGE_ID = "40749ca4-35a2-815f-b2c8-d7bf15925cce";
 
 function notionHeaders(token) {
   return {
@@ -363,6 +364,7 @@ export async function inspectNotionSurfaces({
   soulPageId = process.env.NOTION_SOUL_PAGE_ID || DEFAULT_NOTION_SOUL_PAGE_ID,
   blueprintPageId = process.env.NOTION_BLUEPRINT_PAGE_ID || DEFAULT_NOTION_BLUEPRINT_PAGE_ID,
   architecturePageId = process.env.NOTION_ARCHITECTURE_PAGE_ID || DEFAULT_NOTION_ARCHITECTURE_PAGE_ID,
+  companionIndexPageId = process.env.NOTION_COMPANION_INDEX_PAGE_ID || DEFAULT_NOTION_COMPANION_INDEX_PAGE_ID,
   fetchImpl = fetch,
   includeQuadrants = false,
 } = {}) {
@@ -414,6 +416,13 @@ export async function inspectNotionSurfaces({
       role: "OceanicOS GitHub to Notion Architecture Map — codebase mirror",
       status: "CONFIGURED",
     };
+    const companionUuid = companionIndexPageId.replace(/-/g, "");
+    surfaces.companionIndexPage = {
+      id: companionIndexPageId,
+      url: `https://app.notion.com/p/OCEANICOS-SINGLE-FULL-STACK-BODY-Max-Compression-2026-10-28-${companionUuid}?pvs=21`,
+      role: "Master companion index synthesizing 14 foundational Notion docs and Rooms 00–09",
+      status: "CONFIGURED",
+    };
   }
 
   if (!token) {
@@ -452,6 +461,7 @@ export async function inspectNotionSurfaces({
       { key: "soulPage", id: soulPageId },
       { key: "blueprintPage", id: blueprintPageId },
       { key: "architecturePage", id: architecturePageId },
+      { key: "companionIndexPage", id: companionIndexPageId },
     ]) {
       try {
         const res = await fetchImpl(`https://api.notion.com/v1/pages/${p.id}`, notionRequestOptions(token, "GET"));

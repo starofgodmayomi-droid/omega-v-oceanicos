@@ -125,13 +125,16 @@ async function runCycle(cycleNum = 1) {
 
   // 1c. Notion tri-surface validation
   const notionCheck = spawnSync('node', ['bin/oceanicos.mjs', 'notion', 'status'], { encoding: 'utf8' });
-  const notionConfigured = notionCheck.status === 0 && notionCheck.stdout.includes('6 CANONICAL NOTION OPERATING SURFACES');
+  const notionConfigured = notionCheck.status === 0 && (
+    notionCheck.stdout.includes('7 CANONICAL NOTION OPERATING SURFACES') ||
+    notionCheck.stdout.includes('6 CANONICAL NOTION OPERATING SURFACES')
+  );
 
   if (!isJson) {
     console.log(`  • Fastify API (:5000)   : ${apiHealthy ? '✓ ONLINE (READY)' : '○ DEGRADED / UNREACHABLE'}`);
     console.log(`  • Python VOOS (:8088)   : ${voosDaemonHealthy ? '✓ ONLINE (30013030)' : '○ DEGRADED / UNREACHABLE'}`);
     console.log(`  • Web Preview (:3000)   : ${webHealthy ? '✓ HTTP 200 (SERVING)' : '○ DEGRADED / UNREACHABLE'}`);
-    console.log(`  • Notion Tri-Surface    : ${notionConfigured ? '✓ 6/6 CANONICAL SURFACES (CONFIGURED)' : '○ DEGRADED / UNREACHABLE'}`);
+    console.log(`  • Notion Tri-Surface    : ${notionConfigured ? '✓ 7/7 CANONICAL SURFACES (CONFIGURED)' : '○ DEGRADED / UNREACHABLE'}`);
     console.log('\n[2/4] 💧 COMPRESS: Solving 4x4 Total Compression Matrix & Singularity Fixpoint...');
   }
 
