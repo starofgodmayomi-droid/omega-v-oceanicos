@@ -24,6 +24,7 @@ import { TradingDashboard } from './TradingDashboard';
 import { WealthActionPanel } from './WealthActionPanel';
 import { EchoframeWorkspace } from './EchoframeWorkspace';
 import { WatcherCorridorPanel } from './WatcherCorridorPanel';
+import { V0CreationMirror } from './V0CreationMirror';
 import {
   theme,
   statusColor,
@@ -140,7 +141,7 @@ export function App() {
   ]);
 
   const [openStageId, setOpenStageId] = useState<string | null>(null);
-  const [viewportMode, setViewportMode] = useState<'conversation' | 'trading' | 'watcher' | 'work' | 'evidence' | 'catalog' | 'wealth' | 'ocean'>('conversation');
+  const [viewportMode, setViewportMode] = useState<'conversation' | 'v0' | 'trading' | 'watcher' | 'work' | 'evidence' | 'catalog' | 'wealth' | 'ocean'>('conversation');
   const [showCovenantPanel, setShowCovenantPanel] = useState<boolean>(false);
   const [showNewsPanel, setShowNewsPanel] = useState<boolean>(false);
   const [showCompressionPulse, setShowCompressionPulse] = useState<boolean>(false);
@@ -886,6 +887,28 @@ export function App() {
           }}
         >
           <button
+            onClick={() => setViewportMode('v0')}
+            style={{
+              padding: '8px 18px',
+              borderRadius: theme.radiusPill,
+              border: viewportMode === 'v0' ? '1px solid rgba(255, 255, 255, 0.4)' : 'none',
+              background: viewportMode === 'v0' ? 'rgba(255, 255, 255, 0.15)' : 'transparent',
+              color: viewportMode === 'v0' ? '#ffffff' : theme.textMuted,
+              boxShadow: viewportMode === 'v0' ? '0 0 16px rgba(255, 255, 255, 0.2)' : 'none',
+              fontFamily: theme.fontSans,
+              fontSize: '12.5px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '7px',
+            }}
+          >
+            <span style={{ fontWeight: 800 }}>v0</span>
+            <span>v0 Mirror</span>
+          </button>
+          <button
             onClick={() => setViewportMode('trading')}
             style={{
               padding: '8px 20px',
@@ -1080,7 +1103,23 @@ export function App() {
         </div>
       </div>
 
-      {viewportMode === 'trading' ? (
+      {viewportMode === 'v0' ? (
+        <div
+          style={{
+            maxWidth: '1280px',
+            width: '100%',
+            margin: '0 auto',
+            padding: '24px 24px 60px',
+            flex: 1,
+          }}
+        >
+          <V0CreationMirror
+            onSendPrompt={() => {
+              setViewportMode('conversation');
+            }}
+          />
+        </div>
+      ) : viewportMode === 'trading' ? (
         <div
           style={{
             maxWidth: '1440px',

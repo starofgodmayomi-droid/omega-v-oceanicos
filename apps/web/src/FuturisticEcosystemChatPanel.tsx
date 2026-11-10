@@ -8,6 +8,7 @@ import {
   toggleAudio,
 } from './audioResonance';
 import { enqueueOfflineMessage, syncOfflineQueue } from './offlineQueue';
+import { V0CreationMirror } from './V0CreationMirror';
 
 /* ── API plumbing ── */
 const API_BASE_URL = (
@@ -1281,6 +1282,29 @@ export function FuturisticEcosystemChatPanel() {
 
             <div style={{ flex: 1 }} />
 
+            {messages.length > 0 && (
+              <button
+                onClick={() => setMessages([])}
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: '8px',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  color: '#ffffff',
+                  fontSize: '11px',
+                  fontFamily: theme.fontMono,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  transition: 'all 0.2s',
+                }}
+                title="Return to v0 Creation Mirror"
+              >
+                <span>+</span> New Creation
+              </button>
+            )}
+
             <button
               onClick={() => setAudioOn(toggleAudio())}
               style={{
@@ -1307,53 +1331,55 @@ export function FuturisticEcosystemChatPanel() {
             </span>
           </div>
 
-          {/* Quick action chips */}
-          <div
-            style={{
-              display: 'flex',
-              gap: '6px',
-              padding: '10px 20px',
-              overflowX: 'auto',
-              position: 'relative',
-              zIndex: 2,
-              flexWrap: 'nowrap',
-              scrollbarWidth: 'none',
-            }}
-          >
-            {ACTION_CHIPS.map((chip, i) => (
-              <button
-                key={i}
-                onClick={() => handleSend(chip.query)}
-                disabled={loading}
-                style={{
-                  padding: '7px 14px',
-                  borderRadius: '20px',
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  whiteSpace: 'nowrap',
-                  background: 'rgba(10, 31, 40, 0.85)',
-                  border: '1px solid rgba(105, 231, 185, 0.18)',
-                  color: '#c8e9df',
-                  cursor: loading ? 'not-allowed' : 'pointer',
-                  transition: 'all 0.2s ease',
-                  backdropFilter: 'blur(8px)',
-                  flexShrink: 0,
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(105, 231, 185, 0.5)';
-                  e.currentTarget.style.color = 'var(--omega-current)';
-                  e.currentTarget.style.background = 'rgba(105, 231, 185, 0.08)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(105, 231, 185, 0.18)';
-                  e.currentTarget.style.color = '#c8e9df';
-                  e.currentTarget.style.background = 'rgba(10, 31, 40, 0.85)';
-                }}
-              >
-                {chip.label}
-              </button>
-            ))}
-          </div>
+          {/* Quick action chips (visible during active conversation) */}
+          {messages.length > 0 && (
+            <div
+              style={{
+                display: 'flex',
+                gap: '6px',
+                padding: '10px 20px',
+                overflowX: 'auto',
+                position: 'relative',
+                zIndex: 2,
+                flexWrap: 'nowrap',
+                scrollbarWidth: 'none',
+              }}
+            >
+              {ACTION_CHIPS.map((chip, i) => (
+                <button
+                  key={i}
+                  onClick={() => handleSend(chip.query)}
+                  disabled={loading}
+                  style={{
+                    padding: '7px 14px',
+                    borderRadius: '20px',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    whiteSpace: 'nowrap',
+                    background: 'rgba(10, 31, 40, 0.85)',
+                    border: '1px solid rgba(105, 231, 185, 0.18)',
+                    color: '#c8e9df',
+                    cursor: loading ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.2s ease',
+                    backdropFilter: 'blur(8px)',
+                    flexShrink: 0,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = 'rgba(105, 231, 185, 0.5)';
+                    e.currentTarget.style.color = 'var(--omega-current)';
+                    e.currentTarget.style.background = 'rgba(105, 231, 185, 0.08)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = 'rgba(105, 231, 185, 0.18)';
+                    e.currentTarget.style.color = '#c8e9df';
+                    e.currentTarget.style.background = 'rgba(10, 31, 40, 0.85)';
+                  }}
+                >
+                  {chip.label}
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Message stream */}
           <div
@@ -1362,242 +1388,141 @@ export function FuturisticEcosystemChatPanel() {
               display: 'flex',
               flexDirection: 'column',
               gap: '16px',
-              padding: '16px 24px',
+              padding: messages.length === 0 ? '0' : '16px 24px',
               overflowY: 'auto',
               position: 'relative',
               zIndex: 2,
-              minHeight: '400px',
-              maxHeight: '55vh',
+              minHeight: messages.length === 0 ? 'auto' : '400px',
+              maxHeight: messages.length === 0 ? 'none' : '55vh',
             }}
           >
-            {messages.length === 0 && (
-              <div
-                style={{
-                  margin: 'auto',
-                  textAlign: 'center',
-                  padding: '60px 24px',
-                }}
-              >
-                {/* Living ocean surface icon */}
-                <div
-                  className="water-still"
-                  style={{
-                    fontSize: '56px',
-                    marginBottom: '20px',
-                    filter: 'drop-shadow(0 0 20px rgba(105, 231, 185, 0.3))',
-                  }}
-                >
-                  🌊
-                </div>
-
-                {/* Water Intelligence identity */}
-                <div style={{
-                  fontSize: '20px',
-                  fontWeight: 800,
-                  color: 'var(--omega-current)',
-                  marginBottom: '6px',
-                  letterSpacing: '0.06em',
-                }}>
-                  The Ocean is Online
-                </div>
-                <div style={{
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  color: '#8ba8a0',
-                  letterSpacing: '0.15em',
-                  textTransform: 'uppercase',
-                  marginBottom: '16px',
-                }}>
-                  One Ocean · Many Currents · Visible Evidence
-                </div>
-
-                {/* Water metaphor description */}
-                <div style={{
-                  fontSize: '13px',
-                  color: '#8ba8a0',
-                  maxWidth: '480px',
-                  margin: '0 auto',
-                  lineHeight: 1.7,
-                }}>
-                  Speak your intent — it flows through {totalOrgans} living organs
-                  and {workers.length} bounded currents. Intelligence routes like water;
-                  knowledge forms depth; verified results surface with clarity.
-                </div>
-
-                {/* Water depth layers indicator */}
-                <div style={{
-                  display: 'flex',
-                  gap: '8px',
-                  justifyContent: 'center',
-                  marginTop: '24px',
-                  flexWrap: 'wrap',
-                }}>
-                  {[
-                    { label: 'Surface', desc: 'Interface', color: 'var(--omega-current)' },
-                    { label: 'Currents', desc: 'Routing', color: 'var(--current-flow, rgba(105,231,185,0.35))' },
-                    { label: 'Depth', desc: 'Knowledge', color: 'var(--biolum-secondary, rgba(80,180,220,0.4))' },
-                    { label: 'Core', desc: 'Verification', color: 'var(--pressure-verified, rgba(105,231,185,0.6))' },
-                  ].map((layer) => (
-                    <div
-                      key={layer.label}
-                      style={{
-                        padding: '6px 14px',
-                        borderRadius: '10px',
-                        background: 'rgba(10, 31, 40, 0.8)',
-                        border: `1px solid ${layer.color}`,
-                        fontSize: '10px',
-                        fontFamily: theme.fontMono,
-                        backdropFilter: 'blur(8px)',
-                      }}
-                    >
-                      <div style={{ color: layer.color, fontWeight: 700 }}>{layer.label}</div>
-                      <div style={{ color: '#547b74', fontSize: '9px', marginTop: '2px' }}>{layer.desc}</div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Governing equation */}
-                <div
-                  className="water-depth-shimmer"
-                  style={{
-                    marginTop: '20px',
-                    padding: '12px 24px',
-                    borderRadius: '14px',
-                    background: 'linear-gradient(135deg, rgba(5, 16, 22, 0.9), rgba(10, 31, 40, 0.8))',
-                    border: '1px solid rgba(105, 231, 185, 0.2)',
-                    fontFamily: theme.fontMono,
-                    fontSize: '12px',
-                    color: 'var(--omega-current)',
-                    display: 'inline-block',
-                    boxShadow: '0 4px 24px rgba(0, 0, 0, 0.3)',
-                  }}
-                >
-                  <div>Ω∞v = VERIFY(Δ(Intent, Reality))</div>
-                  <div style={{ fontSize: '9px', color: '#547b74', marginTop: '4px' }}>
-                    Δ* = argmax[ V / (R + C + ε) ]
-                  </div>
-                </div>
-              </div>
+            {messages.length === 0 ? (
+              <V0CreationMirror
+                onSendPrompt={(p) => handleSend(p)}
+                onOpenMenu={() => setSidePanel(sidePanel ? null : 'organs')}
+              />
+            ) : (
+              messages.map((m) => (
+                <MessageBubble key={m.id} msg={m} />
+              ))
             )}
-
-            {messages.map((m) => (
-              <MessageBubble key={m.id} msg={m} />
-            ))}
 
             {loading && !messages.some((m) => m.isStreaming) && <TypingIndicator />}
             <div ref={chatEndRef} />
           </div>
 
-          {/* ─── INPUT BAR ─── */}
-          <div
-            style={{
-              padding: '12px 20px 16px',
-              borderTop: '1px solid rgba(105, 231, 185, 0.1)',
-              background: 'rgba(5, 16, 22, 0.95)',
-              backdropFilter: 'blur(16px)',
-              position: 'relative',
-              zIndex: 3,
-            }}
-          >
+          {/* ─── INPUT BAR (visible during active conversation) ─── */}
+          {messages.length > 0 && (
             <div
               style={{
-                display: 'flex',
-                alignItems: 'flex-end',
-                gap: '10px',
-                padding: '6px 6px 6px 16px',
-                background: 'rgba(10, 31, 40, 0.9)',
-                border: '1.5px solid rgba(105, 231, 185, 0.25)',
-                borderRadius: '16px',
-                transition: 'border-color 0.3s',
-                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.3)',
-              }}
-              onFocus={(e) => {
-                (e.currentTarget as HTMLElement).style.borderColor = 'rgba(105, 231, 185, 0.5)';
-              }}
-              onBlur={(e) => {
-                (e.currentTarget as HTMLElement).style.borderColor = 'rgba(105, 231, 185, 0.25)';
+                padding: '12px 20px 16px',
+                borderTop: '1px solid rgba(105, 231, 185, 0.1)',
+                background: 'rgba(5, 16, 22, 0.95)',
+                backdropFilter: 'blur(16px)',
+                position: 'relative',
+                zIndex: 3,
               }}
             >
-              <textarea
-                ref={inputRef}
-                value={input}
-                onChange={(e) => {
-                  setInput(e.target.value);
-                  // Auto-resize
-                  e.target.style.height = 'auto';
-                  e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSend();
-                  }
-                }}
-                placeholder="Communicate intent to the Whole Ecosystem Body…"
-                disabled={loading}
-                rows={1}
+              <div
                 style={{
-                  flex: 1,
-                  background: 'transparent',
-                  border: 'none',
-                  outline: 'none',
-                  color: '#ebfaf4',
-                  fontSize: '14px',
-                  fontFamily: theme.fontSans,
-                  padding: '10px 0',
-                  resize: 'none',
-                  lineHeight: 1.5,
-                  maxHeight: '120px',
-                }}
-              />
-              <button
-                onClick={() => handleSend()}
-                disabled={loading || !input.trim()}
-                style={{
-                  padding: '10px 22px',
-                  background:
-                    input.trim() && !loading
-                      ? 'linear-gradient(135deg, var(--omega-current-bright) 0%, var(--omega-current) 100%)'
-                      : 'rgba(84, 123, 116, 0.15)',
-                  color: input.trim() && !loading ? '#06141a' : '#547b74',
-                  fontWeight: 800,
-                  fontSize: '13px',
-                  border: 'none',
-                  borderRadius: '12px',
-                  cursor: input.trim() && !loading ? 'pointer' : 'not-allowed',
                   display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  transition: 'all 0.25s ease',
-                  flexShrink: 0,
-                  boxShadow: input.trim() && !loading ? '0 2px 12px rgba(105, 231, 185, 0.3)' : 'none',
-                  letterSpacing: '0.03em',
+                  alignItems: 'flex-end',
+                  gap: '10px',
+                  padding: '6px 6px 6px 16px',
+                  background: 'rgba(10, 31, 40, 0.9)',
+                  border: '1.5px solid rgba(105, 231, 185, 0.25)',
+                  borderRadius: '16px',
+                  transition: 'border-color 0.3s',
+                  boxShadow: '0 4px 24px rgba(0, 0, 0, 0.3)',
+                }}
+                onFocus={(e) => {
+                  (e.currentTarget as HTMLElement).style.borderColor = 'rgba(105, 231, 185, 0.5)';
+                }}
+                onBlur={(e) => {
+                  (e.currentTarget as HTMLElement).style.borderColor = 'rgba(105, 231, 185, 0.25)';
                 }}
               >
-                <span>Dispatch</span>
-                <span>⚡</span>
-              </button>
-            </div>
+                <textarea
+                  ref={inputRef}
+                  value={input}
+                  onChange={(e) => {
+                    setInput(e.target.value);
+                    // Auto-resize
+                    e.target.style.height = 'auto';
+                    e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSend();
+                    }
+                  }}
+                  placeholder="Communicate intent to the Whole Ecosystem Body…"
+                  disabled={loading}
+                  rows={1}
+                  style={{
+                    flex: 1,
+                    background: 'transparent',
+                    border: 'none',
+                    outline: 'none',
+                    color: '#ebfaf4',
+                    fontSize: '14px',
+                    fontFamily: theme.fontSans,
+                    padding: '10px 0',
+                    resize: 'none',
+                    lineHeight: 1.5,
+                    maxHeight: '120px',
+                  }}
+                />
+                <button
+                  onClick={() => handleSend()}
+                  disabled={loading || !input.trim()}
+                  style={{
+                    padding: '10px 22px',
+                    background:
+                      input.trim() && !loading
+                        ? 'linear-gradient(135deg, var(--omega-current-bright) 0%, var(--omega-current) 100%)'
+                        : 'rgba(84, 123, 116, 0.15)',
+                    color: input.trim() && !loading ? '#06141a' : '#547b74',
+                    fontWeight: 800,
+                    fontSize: '13px',
+                    border: 'none',
+                    borderRadius: '12px',
+                    cursor: input.trim() && !loading ? 'pointer' : 'not-allowed',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    transition: 'all 0.25s ease',
+                    flexShrink: 0,
+                    boxShadow: input.trim() && !loading ? '0 2px 12px rgba(105, 231, 185, 0.3)' : 'none',
+                    letterSpacing: '0.03em',
+                  }}
+                >
+                  <span>Dispatch</span>
+                  <span>⚡</span>
+                </button>
+              </div>
 
-            {/* Bottom micro-bar */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '6px 8px 0',
-                fontSize: '10px',
-                color: '#547b74',
-              }}
-            >
-              <span>Shift + Enter for newline · Every response verified through Ω∞v</span>
-              <span style={{ fontFamily: theme.fontMono }}>
-                {tipData?.timestamp
-                  ? `Last block: ${new Date(tipData.timestamp).toLocaleTimeString()}`
-                  : 'Genesis state'}
-              </span>
+              {/* Bottom micro-bar */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '6px 8px 0',
+                  fontSize: '10px',
+                  color: '#547b74',
+                }}
+              >
+                <span>Shift + Enter for newline · Every response verified through Ω∞v</span>
+                <span style={{ fontFamily: theme.fontMono }}>
+                  {tipData?.timestamp
+                    ? `Last block: ${new Date(tipData.timestamp).toLocaleTimeString()}`
+                    : 'Genesis state'}
+                </span>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* ─── RIGHT COLUMN: Always-visible mini verification HUD ─── */}
