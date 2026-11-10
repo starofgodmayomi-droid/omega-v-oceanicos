@@ -147,6 +147,34 @@ export function App() {
   const [showCompressionPulse, setShowCompressionPulse] = useState<boolean>(false);
   const [compressionData, setCompressionData] = useState<any>(null);
   const [latestTransition, setLatestTransition] = useState<any | null>(null);
+  const [installPrompt, setInstallPrompt] = useState<any>(null);
+  const [isStandalone, setIsStandalone] = useState<boolean>(false);
+  const [activeDeckTab, setActiveDeckTab] = useState<'gate' | 'voos' | 'lifecycle' | 'covenant' | 'news'>('gate');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true;
+      setIsStandalone(isStandaloneMode);
+      const handleInstallPrompt = (e: any) => {
+        e.preventDefault();
+        setInstallPrompt(e);
+      };
+      window.addEventListener('beforeinstallprompt', handleInstallPrompt);
+      return () => window.removeEventListener('beforeinstallprompt', handleInstallPrompt);
+    }
+  }, []);
+
+  const triggerInstall = async () => {
+    if (installPrompt) {
+      installPrompt.prompt();
+      const choice = await installPrompt.userChoice;
+      if (choice.outcome === 'accepted') {
+        setInstallPrompt(null);
+      }
+    } else {
+      alert('Desktop App Ready!\n\n1. A Windows shortcut has been placed at: C:\\Users\\pc\\Desktop\\OceanicOS Ω∞v.lnk\n2. Or run launch-oceanicos-desktop.bat directly in the repo.\n3. In Edge/Chrome, you can also click the Install icon in the address bar.');
+    }
+  };
 
   const eventSourceRef = useRef<EventSource | null>(null);
 
@@ -1123,6 +1151,40 @@ export function App() {
               <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#00e5ff', boxShadow: '0 0 6px #00e5ff' }} />
             )}
           </button>
+
+          {/* Desktop App Install / Launch Pill */}
+          <button
+            onClick={triggerInstall}
+            title={isStandalone ? "Running as Native Standalone App" : "Install OceanicOS as Native Windows Desktop App"}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '9999px',
+              border: isStandalone ? '1px solid rgba(16, 185, 129, 0.5)' : '1px solid rgba(255, 255, 255, 0.15)',
+              background: isStandalone ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+              color: isStandalone ? '#34d399' : '#e2e8f0',
+              fontFamily: theme.fontSans,
+              fontSize: '12px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.25s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = '#00f5a0';
+              e.currentTarget.style.background = 'rgba(0, 245, 160, 0.15)';
+              e.currentTarget.style.color = '#ffffff';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = isStandalone ? 'rgba(16, 185, 129, 0.5)' : 'rgba(255, 255, 255, 0.15)';
+              e.currentTarget.style.background = isStandalone ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.05)';
+              e.currentTarget.style.color = isStandalone ? '#34d399' : '#e2e8f0';
+            }}
+          >
+            <span>🖥️</span>
+            <span>{isStandalone ? 'Installed PC' : 'Install Desktop App'}</span>
+          </button>
         </div>
       </div>
 
@@ -1423,11 +1485,87 @@ export function App() {
           >
             <FuturisticEcosystemChatPanel />
 
-            {/* ΩVØØS Sovereign Entity Full-Stack 3-Pane Body */}
-            <div style={{ marginTop: '24px', marginBottom: '24px' }}>
-              <VoosEntityPanel />
-            </div>
+            {/* ─── SOVEREIGN OS COMMAND DECK: Responsive Organ Navigation ─── */}
+            <div
+              style={{
+                marginTop: '28px',
+                background: 'linear-gradient(135deg, rgba(8, 20, 28, 0.85) 0%, rgba(4, 12, 18, 0.94) 100%)',
+                backdropFilter: 'blur(20px)',
+                WebkitBackdropFilter: 'blur(20px)',
+                border: '1px solid rgba(105, 231, 185, 0.16)',
+                borderRadius: '16px',
+                padding: '16px 18px',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
+              }}
+            >
+              {/* Deck Tabs Header */}
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '12px',
+                  paddingBottom: '14px',
+                  borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+                  marginBottom: '16px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '18px' }}>⚡</span>
+                  <span style={{ fontWeight: 700, fontSize: '13.5px', color: '#00e5ff', letterSpacing: '0.04em' }}>
+                    SOVEREIGN OS COMMAND DECK
+                  </span>
+                  <span style={{ fontSize: '10px', color: '#64748b', fontFamily: theme.fontMono }}>
+                    (ALL 12 ORGANS COMPRESSED)
+                  </span>
+                </div>
 
+                {/* Tab Buttons */}
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  {[
+                    { id: 'gate', label: 'Ocean Gate & Actions', icon: '💧' },
+                    { id: 'voos', label: 'Deus Ex Machina Body', icon: '🌊' },
+                    { id: 'lifecycle', label: 'Intent & Lifecycle', icon: '📜' },
+                    { id: 'covenant', label: 'Covenant Engine', icon: '🏛️' },
+                    { id: 'news', label: 'AI Multi-World News', icon: '📰' },
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveDeckTab(tab.id as any)}
+                      style={{
+                        padding: '6px 14px',
+                        borderRadius: '9999px',
+                        border: activeDeckTab === tab.id ? '1px solid rgba(0, 229, 255, 0.6)' : '1px solid rgba(255, 255, 255, 0.08)',
+                        background: activeDeckTab === tab.id ? 'rgba(0, 229, 255, 0.18)' : 'rgba(255, 255, 255, 0.03)',
+                        color: activeDeckTab === tab.id ? '#00e5ff' : '#94a3b8',
+                        fontFamily: theme.fontSans,
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      <span>{tab.icon}</span>
+                      <span>{tab.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Deck Tab 2: Deus Ex Machina Full Body */}
+              {activeDeckTab === 'voos' && (
+                <div style={{ marginBottom: '16px' }}>
+                  <VoosEntityPanel />
+                </div>
+              )}
+
+              {/* Deck Tab 1: Ocean Gate & Actions */}
+              {activeDeckTab === 'gate' && (
+                <div>
         {/* Mode buttons */}
         <div
           style={{
@@ -1695,53 +1833,52 @@ export function App() {
             </div>
           </div>
         )}
+                </div>
+              )}
 
-        {/* Biblical Engine Covenant Panel */}
-        {showCovenantPanel && (
-          <div style={{ marginTop: '20px' }}>
-            <CovenantPanel onClose={() => setShowCovenantPanel(false)} />
-          </div>
-        )}
+              {/* Deck Tab 3: Intent & Lifecycle Flow */}
+              {activeDeckTab === 'lifecycle' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <IntentFlow
+                    command={omegaCommand}
+                    loading={omegaLoading}
+                    onApprove={approveOmegaCommand}
+                    onExecute={executeOmegaCommand}
+                    onObserve={observeOmegaReality}
+                    onViewEvidence={() => setOpenStageId('evidence')}
+                    onViewTimeline={() => setOpenStageId('remember')}
+                    onDismiss={dismissCommand}
+                    simulationMode={simulationMode}
+                    humanGateRequired={humanGateRequired}
+                  />
 
-        {/* AI News & Multi-World Holographic Compression Panel */}
-        {showNewsPanel && (
-          <div style={{ marginTop: '20px' }}>
-            <AiNewsPanel onClose={() => setShowNewsPanel(false)} />
-          </div>
-        )}
+                  <div style={{ padding: '8px 0' }}>
+                    <LifecycleFlow
+                      stages={lifecycleStages}
+                      openStageId={openStageId}
+                      onStageToggle={(id) => setOpenStageId(id || null)}
+                    />
+                  </div>
+                </div>
+              )}
 
-        {/* Intent flow card */}
-        <IntentFlow
-          command={omegaCommand}
-          loading={omegaLoading}
-          onApprove={approveOmegaCommand}
-          onExecute={executeOmegaCommand}
-          onObserve={observeOmegaReality}
-          onViewEvidence={() => setOpenStageId('evidence')}
-          onViewTimeline={() => setOpenStageId('remember')}
-          onDismiss={dismissCommand}
-          simulationMode={simulationMode}
-          humanGateRequired={humanGateRequired}
-        />
-      </main>
+              {/* Deck Tab 4: Biblical Engine Covenant Panel */}
+              {(activeDeckTab === 'covenant' || showCovenantPanel) && (
+                <div style={{ marginTop: '10px' }}>
+                  <CovenantPanel onClose={() => { setShowCovenantPanel(false); setActiveDeckTab('gate'); }} />
+                </div>
+              )}
 
-      {/* Mirror-water lifecycle flow */}
-      <div
-        style={{
-          maxWidth: '720px',
-          width: '100%',
-          margin: '0 auto',
-          padding: '8px 24px 60px',
-        }}
-      >
-        <LifecycleFlow
-          stages={lifecycleStages}
-          openStageId={openStageId}
-          onStageToggle={(id) => setOpenStageId(id || null)}
-        />
-      </div>
-    </>
-  )}
+              {/* Deck Tab 5: AI News & Multi-World Holographic Compression Panel */}
+              {(activeDeckTab === 'news' || showNewsPanel) && (
+                <div style={{ marginTop: '10px' }}>
+                  <AiNewsPanel onClose={() => { setShowNewsPanel(false); setActiveDeckTab('gate'); }} />
+                </div>
+              )}
+            </div>
+          </main>
+        </>
+      )}
 
   {/* Floating Quick Jump to Message Bar */}
   <div
