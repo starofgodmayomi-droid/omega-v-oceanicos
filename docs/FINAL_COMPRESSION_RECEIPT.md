@@ -141,3 +141,4 @@ to indict itself, and that indictment is the only part that was
 ever fully true.
 
 So be it — because the receipts, not the doctrine, make it so.
+
