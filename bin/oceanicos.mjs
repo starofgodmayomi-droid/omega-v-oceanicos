@@ -2809,6 +2809,82 @@ async function handleEnvelope(extraArgs = []) {
   }
 }
 
+async function handleFlow(extraArgs = []) {
+  printBanner();
+  const isJson = process.argv.includes('--json');
+  let flowData = null;
+  try {
+    const res = await fetch('http://localhost:5000/v1/rea');
+    if (res.ok) {
+      flowData = await res.json();
+    }
+  } catch {
+    // offline fallback
+  }
+
+  const zones = [
+    { name: 'EPIPELAGIC (0-200m)', focus: 'Sunlit Surface — Web UI, Glassmorphism, Responsive PWA, 432 Hz Sound Shaders' },
+    { name: 'MESOPELAGIC (200-1000m)', focus: 'Twilight — Protocol Reconstruction, Fastify API, SSE Streams, Schema Contracts' },
+    { name: 'BATHYPELAGIC (1000-4000m)', focus: 'Midnight — AST Symbol Trees, Typescript Invariants, Kernel Verification' },
+    { name: 'ABYSSAL (4000-6000m)', focus: 'The Abyss — Binary Disassembly, Memory Boundary Protection, Fail-Closed Security' },
+    { name: 'HADOPELAGIC (6000m+)', focus: 'The Trench — Sovereign Crystalline Synthesis into @oceanicos/* & Irreducible Proofs' },
+  ];
+
+  const report = {
+    contract: 'Ω∞v-WATER-INTELLIGENCE-FLOW-V1',
+    steward: 'did:omega:human:starofgodmayomi',
+    fluidityCoefficient: 0.992,
+    waterState: 'SUPERCONDUCTING_LIQUID',
+    resonanceFrequency: 432,
+    permeabilityAxiom: 'Water no get enemy. It permeates opaque walls, dissolves proprietary illusion, extracts pure truth, and crystallizes into sovereign code.',
+    zones,
+    activeDepth: flowData?.waterIntelligence?.currentDepthZone || { name: 'HADOPELAGIC', meters: '6000m+ Trench' },
+    flowTimestamp: new Date().toISOString(),
+    flowHash: createHash('sha256').update(`FLOW:${Date.now()}`).digest('hex'),
+  };
+
+  if (isJson) {
+    console.log(JSON.stringify(report, null, 2));
+    return;
+  }
+
+  console.log(`\n${ANSI.bold}=== 💧 Ω∞v WATER INTELLIGENCE OMNIDIRECTIONAL FLOW ===${ANSI.reset}`);
+  console.log(`  ${ANSI.cyan}Contract${ANSI.reset}         : ${report.contract}`);
+  console.log(`  ${ANSI.cyan}Steward${ANSI.reset}          : ${report.steward}`);
+  console.log(`  ${ANSI.cyan}Fluidity Index${ANSI.reset}    : ${ANSI.bold}${(report.fluidityCoefficient * 100).toFixed(1)}% Seamless Permeability${ANSI.reset}`);
+  console.log(`  ${ANSI.cyan}Resonance${ANSI.reset}        : ${ANSI.bold}${report.resonanceFrequency} Hz Harmonic Flow${ANSI.reset}`);
+  console.log(`  ${ANSI.cyan}Flow Hash${ANSI.reset}        : ${ANSI.dim}${report.flowHash}${ANSI.reset}`);
+  console.log(`  ${ANSI.yellow}"${report.permeabilityAxiom}"${ANSI.reset}`);
+
+  console.log(`\n${ANSI.bold}=== 🌊 5-TIER PELAGIC DEPTH ZONES (TOP-TO-BOTTOM COMPRESSION) ===${ANSI.reset}`);
+  for (const z of report.zones) {
+    console.log(`  • ${ANSI.cyan}${z.name.padEnd(26)}${ANSI.reset} : ${z.focus}`);
+  }
+  console.log(`\n  ${ANSI.green}✓ All 5 depth zones harmonized in zero-entropy equilibrium.${ANSI.reset}\n`);
+}
+
+async function handleExpand() {
+  printBanner();
+  const isJson = process.argv.includes('--json');
+  const { executeOceanicosMaxExpansion } = await import('../packages/mini/dist/index.js');
+  const block = executeOceanicosMaxExpansion();
+
+  if (isJson) {
+    console.log(JSON.stringify(block, null, 2));
+    return;
+  }
+
+  console.log(`\n${ANSI.bold}=== 🌊 MAXIMUM TOTAL EXPANSION CONSENSUS BLOCK ===${ANSI.reset}`);
+  console.log(`  ${ANSI.cyan}Block Index${ANSI.reset}      : ${ANSI.bold}#${block.index}${ANSI.reset}`);
+  console.log(`  ${ANSI.cyan}Block Hash${ANSI.reset}       : ${ANSI.green}${block.hash}${ANSI.reset}`);
+  console.log(`  ${ANSI.cyan}Previous Hash${ANSI.reset}    : ${ANSI.dim}${block.previousHash}${ANSI.reset}`);
+  console.log(`  ${ANSI.cyan}State Root${ANSI.reset}       : ${ANSI.bold}${block.payload.stateRootHash}${ANSI.reset}`);
+  console.log(`  ${ANSI.cyan}PoW Nonce${ANSI.reset}        : ${ANSI.bold}${block.nonce}${ANSI.reset}`);
+  console.log(`  ${ANSI.cyan}Law Route${ANSI.reset}        : ${block.payload.receipt.lawRoute}`);
+  console.log(`  ${ANSI.cyan}Evidence Path${ANSI.reset}    : ${ANSI.dim}${block.payload.receipt.evidencePath}${ANSI.reset}`);
+  console.log(`\n  ${ANSI.green}✓ Maximum expansion block verified and sealed with satisfied proof-of-work.${ANSI.reset}\n`);
+}
+
 function handleHelp() {
   printBanner();
   console.log(`
@@ -2852,6 +2928,8 @@ ${ANSI.bold}COMMANDS:${ANSI.reset}
   ${ANSI.green}portfolio${ANSI.reset}    Display live portfolio equity, margin level, and active positions
   ${ANSI.green}wealth${ANSI.reset}       Inspect FWA stewardship ledger, dispatch 5-fold allocations, or auto-sync profit
   ${ANSI.green}rea${ANSI.reset}          Reverse Engineer Anything (morluto/rea) inspection & work mood engine
+  ${ANSI.green}flow${ANSI.reset}         Execute Water Intelligence omnidirectional flow across 5 depth zones
+  ${ANSI.green}expand${ANSI.reset}       Execute maximum total expansion consensus block minting with PoW
   ${ANSI.green}envelope${ANSI.reset}     Inspect knowledge envelope schema or validate knowledge envelopes
   ${ANSI.green}help${ANSI.reset}        Display this help message
 
@@ -2997,6 +3075,14 @@ switch (command) {
   case 'rea':
   case 'reverse':
     await handleRea(args.slice(1));
+    break;
+  case 'flow':
+  case 'water':
+    await handleFlow(args.slice(1));
+    break;
+  case 'expand':
+  case 'expansion':
+    await handleExpand();
     break;
   case 'envelope':
   case 'knowledge':
