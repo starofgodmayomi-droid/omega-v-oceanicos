@@ -748,3 +748,4 @@ export function WatcherCorridorPanel() {
     </div>
   );
 }
+

@@ -108,3 +108,4 @@ export function registerWatcherRoute(fastify: FastifyInstance): void {
     };
   });
 }
+
