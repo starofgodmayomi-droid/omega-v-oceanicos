@@ -878,38 +878,104 @@ export function V0CreationMirror({
         </div>
       ) : (
         <>
-          {/* ── Hero Heading ── */}
-          <h1
+          {/* ── Hero Heading & Aura ── */}
+          <div
             style={{
-              fontSize: 'clamp(28px, 4.5vw, 38px)',
-              fontWeight: 700,
-              color: '#ffffff',
-              letterSpacing: '-0.025em',
-              margin: '36px 0 24px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              margin: '32px 0 24px',
               textAlign: 'center',
-              lineHeight: 1.15,
+              position: 'relative',
             }}
           >
-            What do you want to create?
-          </h1>
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '4px 14px',
+                borderRadius: '9999px',
+                background: 'rgba(0, 229, 255, 0.08)',
+                border: '1px solid rgba(0, 229, 255, 0.25)',
+                color: '#38bdf8',
+                fontSize: '11px',
+                fontWeight: 600,
+                letterSpacing: '0.04em',
+                marginBottom: '14px',
+                backdropFilter: 'blur(8px)',
+              }}
+            >
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00e5ff', boxShadow: '0 0 8px #00e5ff' }} />
+              <span>Ω∞v OCEANICOS · NEXT-GEN CREATION MIRROR</span>
+            </div>
+            <h1
+              style={{
+                fontSize: 'clamp(32px, 5vw, 44px)',
+                fontWeight: 800,
+                letterSpacing: '-0.03em',
+                margin: 0,
+                lineHeight: 1.15,
+                background: 'linear-gradient(135deg, #ffffff 0%, #e0f2fe 40%, #7dd3fc 70%, #38bdf8 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                textShadow: '0 0 35px rgba(56, 189, 248, 0.22)',
+              }}
+            >
+              What do you want to create?
+            </h1>
+            <p
+              style={{
+                fontSize: '14px',
+                color: '#94a3b8',
+                margin: '8px 0 0',
+                maxWidth: '520px',
+                fontWeight: 400,
+              }}
+            >
+              Prompt, prototype, and iterate components with fluid state and real-time previews.
+            </p>
+          </div>
 
-          {/* ── Prompt Card ── */}
+          {/* ── Prompt Card with Ambient Glow ── */}
           <div
             style={{
               width: '100%',
               maxWidth: '680px',
-              background: '#0e0e10',
-              border: '1px solid #27272a',
-              borderRadius: '16px',
-              padding: '16px 18px 14px',
-              boxShadow: '0 10px 40px rgba(0, 0, 0, 0.65)',
-              display: 'flex',
-              flexDirection: 'column',
-              transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
-              boxSizing: 'border-box',
               position: 'relative',
             }}
           >
+            {/* Ambient Radial Aura */}
+            <div
+              style={{
+                position: 'absolute',
+                top: '-20px',
+                left: '10%',
+                right: '10%',
+                height: '140px',
+                background: 'radial-gradient(ellipse at 50% 50%, rgba(14, 165, 233, 0.2) 0%, rgba(99, 102, 241, 0.08) 50%, transparent 80%)',
+                filter: 'blur(28px)',
+                pointerEvents: 'none',
+                zIndex: 0,
+              }}
+            />
+
+            <div
+              style={{
+                position: 'relative',
+                zIndex: 1,
+                width: '100%',
+                background: 'linear-gradient(180deg, #121316 0%, #0a0b0d 100%)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                borderRadius: '18px',
+                padding: '18px 20px 14px',
+                boxShadow: '0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(14, 165, 233, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+                display: 'flex',
+                flexDirection: 'column',
+                transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+                boxSizing: 'border-box',
+              }}
+            >
             {/* Multiline Prompt Input */}
             <textarea
               ref={textareaRef}
@@ -1099,6 +1165,7 @@ export function V0CreationMirror({
               </div>
             </div>
           </div>
+        </div>
 
           {/* ── Quick Action Suggestion Pills ── */}
           <div
@@ -1108,8 +1175,8 @@ export function V0CreationMirror({
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              gap: '10px',
-              marginTop: '22px',
+              gap: '12px',
+              marginTop: '24px',
             }}
           >
             {/* Row 1: First 3 Chips */}
@@ -1118,7 +1185,7 @@ export function V0CreationMirror({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '8px',
+                gap: '10px',
                 flexWrap: 'wrap',
               }}
             >
@@ -1129,30 +1196,37 @@ export function V0CreationMirror({
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '8px',
-                    padding: '8px 18px',
+                    gap: '9px',
+                    padding: '9px 20px',
                     borderRadius: '9999px',
-                    background: '#121214',
-                    border: '1px solid #27272a',
+                    background: 'linear-gradient(135deg, rgba(22, 26, 34, 0.75) 0%, rgba(13, 16, 22, 0.85) 100%)',
+                    border: '1px solid rgba(255, 255, 255, 0.09)',
+                    backdropFilter: 'blur(12px)',
+                    WebkitBackdropFilter: 'blur(12px)',
                     color: '#e4e4e7',
                     fontSize: '13.5px',
                     fontWeight: 500,
                     cursor: 'pointer',
-                    transition: 'all 0.15s ease',
+                    transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
                     userSelect: 'none',
+                    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.35)',
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = '#1a1a1e';
-                    e.currentTarget.style.borderColor = '#3f3f46';
+                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(28, 34, 46, 0.85) 0%, rgba(18, 24, 32, 0.95) 100%)';
+                    e.currentTarget.style.borderColor = 'rgba(0, 229, 255, 0.4)';
                     e.currentTarget.style.color = '#ffffff';
+                    e.currentTarget.style.boxShadow = '0 0 18px rgba(0, 229, 255, 0.2), 0 6px 20px rgba(0, 0, 0, 0.5)';
+                    e.currentTarget.style.transform = 'translateY(-1px)';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.background = '#121214';
-                    e.currentTarget.style.borderColor = '#27272a';
+                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(22, 26, 34, 0.75) 0%, rgba(13, 16, 22, 0.85) 100%)';
+                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.09)';
                     e.currentTarget.style.color = '#e4e4e7';
+                    e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.35)';
+                    e.currentTarget.style.transform = 'translateY(0)';
                   }}
                 >
-                  <span style={{ color: '#a1a1aa', display: 'flex', alignItems: 'center' }}>{item.icon}</span>
+                  <span style={{ color: '#38bdf8', display: 'flex', alignItems: 'center' }}>{item.icon}</span>
                   <span>{item.label}</span>
                 </button>
               ))}
@@ -1164,7 +1238,7 @@ export function V0CreationMirror({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '8px',
+                gap: '10px',
               }}
             >
               {currentPool.slice(3, 4).map((item) => (
@@ -1174,30 +1248,37 @@ export function V0CreationMirror({
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '8px',
-                    padding: '8px 18px',
+                    gap: '9px',
+                    padding: '9px 20px',
                     borderRadius: '9999px',
-                    background: '#121214',
-                    border: '1px solid #27272a',
+                    background: 'linear-gradient(135deg, rgba(22, 26, 34, 0.75) 0%, rgba(13, 16, 22, 0.85) 100%)',
+                    border: '1px solid rgba(255, 255, 255, 0.09)',
+                    backdropFilter: 'blur(12px)',
+                    WebkitBackdropFilter: 'blur(12px)',
                     color: '#e4e4e7',
                     fontSize: '13.5px',
                     fontWeight: 500,
                     cursor: 'pointer',
-                    transition: 'all 0.15s ease',
+                    transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
                     userSelect: 'none',
+                    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.35)',
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = '#1a1a1e';
-                    e.currentTarget.style.borderColor = '#3f3f46';
+                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(28, 34, 46, 0.85) 0%, rgba(18, 24, 32, 0.95) 100%)';
+                    e.currentTarget.style.borderColor = 'rgba(0, 229, 255, 0.4)';
                     e.currentTarget.style.color = '#ffffff';
+                    e.currentTarget.style.boxShadow = '0 0 18px rgba(0, 229, 255, 0.2), 0 6px 20px rgba(0, 0, 0, 0.5)';
+                    e.currentTarget.style.transform = 'translateY(-1px)';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.background = '#121214';
-                    e.currentTarget.style.borderColor = '#27272a';
+                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(22, 26, 34, 0.75) 0%, rgba(13, 16, 22, 0.85) 100%)';
+                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.09)';
                     e.currentTarget.style.color = '#e4e4e7';
+                    e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.35)';
+                    e.currentTarget.style.transform = 'translateY(0)';
                   }}
                 >
-                  <span style={{ color: '#a1a1aa', display: 'flex', alignItems: 'center' }}>{item.icon}</span>
+                  <span style={{ color: '#38bdf8', display: 'flex', alignItems: 'center' }}>{item.icon}</span>
                   <span>{item.label}</span>
                 </button>
               ))}
@@ -1208,27 +1289,31 @@ export function V0CreationMirror({
                 aria-label="Refresh Suggestions"
                 title="Refresh suggestions"
                 style={{
-                  width: '36px',
-                  height: '36px',
+                  width: '38px',
+                  height: '38px',
                   borderRadius: '50%',
-                  background: '#121214',
-                  border: '1px solid #27272a',
+                  background: 'linear-gradient(135deg, rgba(22, 26, 34, 0.75) 0%, rgba(13, 16, 22, 0.85) 100%)',
+                  border: '1px solid rgba(255, 255, 255, 0.09)',
+                  backdropFilter: 'blur(12px)',
                   color: '#a1a1aa',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
-                  transition: 'all 0.15s ease',
+                  transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.35)',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = '#1a1a1e';
-                  e.currentTarget.style.borderColor = '#3f3f46';
+                  e.currentTarget.style.background = 'linear-gradient(135deg, rgba(28, 34, 46, 0.85) 0%, rgba(18, 24, 32, 0.95) 100%)';
+                  e.currentTarget.style.borderColor = 'rgba(0, 229, 255, 0.4)';
                   e.currentTarget.style.color = '#ffffff';
+                  e.currentTarget.style.boxShadow = '0 0 18px rgba(0, 229, 255, 0.2)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = '#121214';
-                  e.currentTarget.style.borderColor = '#27272a';
+                  e.currentTarget.style.background = 'linear-gradient(135deg, rgba(22, 26, 34, 0.75) 0%, rgba(13, 16, 22, 0.85) 100%)';
+                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.09)';
                   e.currentTarget.style.color = '#a1a1aa';
+                  e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.35)';
                 }}
               >
                 <svg

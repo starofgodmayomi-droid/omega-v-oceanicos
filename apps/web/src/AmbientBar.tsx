@@ -122,16 +122,34 @@ export function AmbientBar(props: AmbientBarProps) {
       style={{
         display: 'flex',
         flexWrap: 'wrap',
-        gap: '4px 22px',
-        padding: '10px 28px',
-        borderBottom: `1px solid ${theme.borderSubtle}`,
+        gap: '6px 12px',
+        padding: '10px 24px',
+        background: 'linear-gradient(180deg, rgba(8, 20, 24, 0.85) 0%, rgba(5, 12, 16, 0.75) 100%)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        borderBottom: '1px solid rgba(105, 231, 185, 0.12)',
+        boxShadow: '0 4px 24px rgba(0, 0, 0, 0.45), inset 0 -1px 0 rgba(255, 255, 255, 0.02)',
         fontFamily: theme.fontSans,
         fontSize: '11px',
         alignItems: 'center',
+        position: 'relative',
+        zIndex: 40,
       }}
     >
       {indicators.map((ind) => (
-        <div key={ind.label} style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+        <div
+          key={ind.label}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '7px',
+            padding: '3px 10px',
+            borderRadius: '9999px',
+            background: 'rgba(255, 255, 255, 0.025)',
+            border: '1px solid rgba(255, 255, 255, 0.05)',
+            transition: 'all 0.2s ease',
+          }}
+        >
           <span
             className={ind.pulse ? 'omega-pulse' : undefined}
             style={{
@@ -139,12 +157,12 @@ export function AmbientBar(props: AmbientBarProps) {
               height: '6px',
               borderRadius: '50%',
               background: ind.color,
-              boxShadow: ind.pulse ? `0 0 8px ${ind.color}` : 'none',
-              opacity: ind.pulse ? 1 : 0.5,
+              boxShadow: `0 0 10px ${ind.color}`,
+              opacity: ind.pulse ? 1 : 0.85,
               flexShrink: 0,
             }}
           />
-          <span style={{ color: theme.textDim, fontWeight: 500 }}>{ind.label}</span>
+          <span style={{ color: theme.textDim, fontWeight: 500, letterSpacing: '0.02em' }}>{ind.label}</span>
           <span style={{ color: ind.color, fontWeight: 600 }}>{ind.value}</span>
         </div>
       ))}
