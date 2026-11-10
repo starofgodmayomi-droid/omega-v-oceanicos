@@ -77,6 +77,7 @@ export const API_ROUTE_INVENTORY = [
   'POST /v1/rea/inspect',
   'GET /v1/news',
   'POST /v1/news/compress',
+  'GET /v1/watcher',
   'GET /v1/knowledge/envelope/schema',
   'POST /v1/knowledge/envelope/validate',
   'GET /v1/voos/status',

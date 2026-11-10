@@ -2885,6 +2885,52 @@ async function handleExpand() {
   console.log(`\n  ${ANSI.green}✓ Maximum expansion block verified and sealed with satisfied proof-of-work.${ANSI.reset}\n`);
 }
 
+async function handleWatcher(extraArgs = []) {
+  printBanner();
+  const isJson = process.argv.includes('--json');
+  let data = null;
+  try {
+    const res = await fetch('http://localhost:5000/v1/watcher');
+    if (res.ok) {
+      const json = await res.json();
+      data = json.data;
+    }
+  } catch {
+    // offline fallback
+  }
+
+  if (!data) {
+    const { getWatcherSnapshot } = await import('../apps/api/dist/watcher-route.js');
+    data = getWatcherSnapshot();
+  }
+
+  if (isJson) {
+    console.log(JSON.stringify(data, null, 2));
+    return;
+  }
+
+  console.log(`\n${ANSI.bold}=== 🕷️ WATCHER; 01 // KAI SEMANTIC CORRIDOR PROBE ===${ANSI.reset}`);
+  console.log(`  ${ANSI.cyan}Watcher ID${ANSI.reset}         : ${ANSI.bold}${data.watcherId}${ANSI.reset}`);
+  console.log(`  ${ANSI.cyan}Status${ANSI.reset}             : ${ANSI.green}${data.status}${ANSI.reset}`);
+  console.log(`  ${ANSI.cyan}Facts Probed${ANSI.reset}       : ${ANSI.bold}${data.factsCount.toLocaleString()}${ANSI.reset} invariant facts`);
+  console.log(`  ${ANSI.cyan}Current Tokens${ANSI.reset}     : [ ${data.currentTokens.join(' | ')} ]`);
+  console.log(`  ${ANSI.cyan}Active Depth${ANSI.reset}       : ${data.activeDepth}`);
+  console.log(`  ${ANSI.cyan}Corridor${ANSI.reset}           : ${data.corridor.name} (Vanishing Point: ${data.corridor.vanishingPointRecession})`);
+
+  console.log(`\n${ANSI.bold}=== 📊 SOVEREIGN LIQUIDITY & ORDER BLOCKS (${data.marketLiquidity.primaryAsset}) ===${ANSI.reset}`);
+  console.log(`  ${ANSI.cyan}Price${ANSI.reset}              : ${ANSI.bold}$${data.marketLiquidity.price.toLocaleString('en-US', { minimumFractionDigits: 2 })}${ANSI.reset} (${data.marketLiquidity.changePercent}%)`);
+  console.log(`  ${ANSI.cyan}Bullish OBs${ANSI.reset}        : ${data.marketLiquidity.orderBlocks.bullish.map(b => `${b.level} [$${b.range[0]}-$${b.range[1]}] (${b.status})`).join(', ')}`);
+  console.log(`  ${ANSI.cyan}Bearish OBs${ANSI.reset}        : ${data.marketLiquidity.orderBlocks.bearish.map(b => `${b.level} [$${b.range[0]}-$${b.range[1]}] (${b.status})`).join(', ')}`);
+  console.log(`  ${ANSI.cyan}Key Facts${ANSI.reset}          : ${data.marketLiquidity.keyFacts}`);
+
+  console.log(`\n${ANSI.bold}=== 🔴 RED LIST WATCHLIST ===${ANSI.reset}`);
+  for (const w of data.marketLiquidity.watchlist) {
+    const chgStr = w.chg < 0 ? `${w.chg}` : `+${w.chg}`;
+    console.log(`  • ${ANSI.bold}${w.symbol.padEnd(8)}${ANSI.reset} : $${w.last.toLocaleString()} (${chgStr} / ${w.chgPct}%)`);
+  }
+  console.log('');
+}
+
 function handleHelp() {
   printBanner();
   console.log(`
@@ -2930,6 +2976,7 @@ ${ANSI.bold}COMMANDS:${ANSI.reset}
   ${ANSI.green}rea${ANSI.reset}          Reverse Engineer Anything (morluto/rea) inspection & work mood engine
   ${ANSI.green}flow${ANSI.reset}         Execute Water Intelligence omnidirectional flow across 5 depth zones
   ${ANSI.green}expand${ANSI.reset}       Execute maximum total expansion consensus block minting with PoW
+  ${ANSI.green}watcher${ANSI.reset}      Inspect WATCHER; 01 semantic corridor crawler and institutional order blocks
   ${ANSI.green}envelope${ANSI.reset}     Inspect knowledge envelope schema or validate knowledge envelopes
   ${ANSI.green}help${ANSI.reset}        Display this help message
 
@@ -3083,6 +3130,11 @@ switch (command) {
   case 'expand':
   case 'expansion':
     await handleExpand();
+    break;
+  case 'watcher':
+  case 'probe':
+  case 'spider':
+    await handleWatcher(args.slice(1));
     break;
   case 'envelope':
   case 'knowledge':

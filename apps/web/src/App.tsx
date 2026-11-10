@@ -23,6 +23,7 @@ import { VoosEntityPanel } from './VoosEntityPanel';
 import { TradingDashboard } from './TradingDashboard';
 import { WealthActionPanel } from './WealthActionPanel';
 import { EchoframeWorkspace } from './EchoframeWorkspace';
+import { WatcherCorridorPanel } from './WatcherCorridorPanel';
 import {
   theme,
   statusColor,
@@ -139,7 +140,7 @@ export function App() {
   ]);
 
   const [openStageId, setOpenStageId] = useState<string | null>(null);
-  const [viewportMode, setViewportMode] = useState<'conversation' | 'trading' | 'work' | 'evidence' | 'catalog' | 'wealth' | 'ocean'>('conversation');
+  const [viewportMode, setViewportMode] = useState<'conversation' | 'trading' | 'watcher' | 'work' | 'evidence' | 'catalog' | 'wealth' | 'ocean'>('conversation');
   const [showCovenantPanel, setShowCovenantPanel] = useState<boolean>(false);
   const [showNewsPanel, setShowNewsPanel] = useState<boolean>(false);
   const [showCompressionPulse, setShowCompressionPulse] = useState<boolean>(false);
@@ -907,6 +908,28 @@ export function App() {
             <span>XAU/USD AI Trader</span>
           </button>
           <button
+            onClick={() => setViewportMode('watcher')}
+            style={{
+              padding: '8px 18px',
+              borderRadius: theme.radiusPill,
+              border: viewportMode === 'watcher' ? '1px solid rgba(239, 68, 68, 0.5)' : 'none',
+              background: viewportMode === 'watcher' ? 'rgba(239, 68, 68, 0.2)' : 'transparent',
+              color: viewportMode === 'watcher' ? '#f87171' : theme.textMuted,
+              boxShadow: viewportMode === 'watcher' ? '0 0 16px rgba(239, 68, 68, 0.3)' : 'none',
+              fontFamily: theme.fontSans,
+              fontSize: '12.5px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '7px',
+            }}
+          >
+            <span>🕷️</span>
+            <span>WATCHER; 01</span>
+          </button>
+          <button
             onClick={() => setViewportMode('catalog')}
             style={{
               padding: '8px 18px',
@@ -1068,6 +1091,18 @@ export function App() {
           }}
         >
           <TradingDashboard />
+        </div>
+      ) : viewportMode === 'watcher' ? (
+        <div
+          style={{
+            maxWidth: '1440px',
+            width: '100%',
+            margin: '0 auto',
+            padding: '24px 24px 60px',
+            flex: 1,
+          }}
+        >
+          <WatcherCorridorPanel />
         </div>
       ) : viewportMode === 'wealth' ? (
         <div

@@ -45,6 +45,7 @@ import { registerTradingRoute } from './trading-route.js';
 import { registerWealthRoute } from './wealth-route.js';
 import { registerReaRoute } from './rea-route.js';
 import { registerNewsRoute } from './news-route.js';
+import { registerWatcherRoute } from './watcher-route.js';
 import { registerKnowledgeRoute } from './knowledge-route.js';
 import { registerVoosRoute } from './voos-route.js';
 import { registerContinuumRoute, getContinuumEcosystemStatus } from './continuum-route.js';
@@ -310,6 +311,7 @@ export function createApp(
   registerWealthRoute(fastify);
   registerReaRoute(fastify);
   registerNewsRoute(fastify);
+  registerWatcherRoute(fastify);
   registerKnowledgeRoute(fastify);
   registerVoosRoute(fastify);
   fastify.get('/v1/continuum', async () => getContinuumEcosystemStatus());
