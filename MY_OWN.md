@@ -55,7 +55,7 @@ the ledger, or deploy. It reports upgrade execution as `NOT_EXECUTED`. Run it
 with:
 
 ```bash
-bash scripts/elion-veral.sh
+pnpm elion:veral
 ```
 
 ### 4. The memory — use the implemented ledger

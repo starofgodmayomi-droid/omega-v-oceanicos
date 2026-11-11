@@ -19,6 +19,7 @@
     "verify": "pnpm build && node --input-type=module -e \"const { executeOceanicosMaxExpansion } = await import('./packages/mini/dist/index.js'); executeOceanicosMaxExpansion();\"",
     "predev": "pnpm build",
     "mood": "node bin/oceanicos.mjs mood",
+    "elion:veral": "bash scripts/elion-veral.sh",
     "worker": "node scripts/oceanicos-worker.mjs",
     "worker:verify": "node scripts/oceanicos-worker.mjs --verify",
     "worker:continuous": "node scripts/oceanicos-worker.mjs --verify --continuous",
