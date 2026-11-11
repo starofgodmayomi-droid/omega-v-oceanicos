@@ -118,4 +118,5 @@ test('VERAL serial gate failure stops later verification gates', () => {
   ]);
   assert.deepEqual(calls.slice(2), ['lint']);
   assert.doesNotMatch(result.stdout, /VERIFIED:/);
+  assert.match(result.stderr, /DIVERGENT: lint failed \(exit 17\); subsequent gates were not run/);
 });

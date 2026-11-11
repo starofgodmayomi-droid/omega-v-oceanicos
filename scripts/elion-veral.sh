@@ -53,9 +53,24 @@ if (( web_status != 0 || api_status != 0 )); then
 fi
 
 printf '%s\n' '[VERAL] Parallel builds passed. Starting serial verification gates.'
-pnpm lint
-pnpm test
-pnpm validate:swarm
+
+run_gate() {
+  local gate="$1"
+  shift
+
+  if "$@"; then
+    printf '[VERAL] %s passed.\n' "$gate"
+  else
+    local gate_status=$?
+    printf '[VERAL] DIVERGENT: %s failed (exit %d); subsequent gates were not run.\n' \
+      "$gate" "$gate_status" >&2
+    exit "$gate_status"
+  fi
+}
+
+run_gate lint pnpm lint
+run_gate test pnpm test
+run_gate validate:swarm pnpm validate:swarm
 
 printf '%s\n' '[VERAL] VERIFIED: builds, lint, test, and swarm validation passed.'
 printf '%s\n' '[VERAL] Ledger mutation: NONE. Upgrade execution: NOT_EXECUTED.'
