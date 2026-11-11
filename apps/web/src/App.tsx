@@ -907,6 +907,7 @@ export function App() {
         }}
       >
         <div
+          className="oceanic-dock"
           style={{
             display: 'inline-flex',
             alignItems: 'center',

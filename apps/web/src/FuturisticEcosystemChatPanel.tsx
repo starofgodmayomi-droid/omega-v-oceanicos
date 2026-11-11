@@ -1029,6 +1029,7 @@ export function FuturisticEcosystemChatPanel() {
 
       {/* ═══ MAIN 3-COLUMN COCKPIT ═══ */}
       <div
+        className="cockpit-grid"
         style={{
           display: 'grid',
           gridTemplateColumns: sidePanel ? '260px 1fr 280px' : '1fr',

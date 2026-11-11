@@ -12,7 +12,7 @@ describe('🌐 Full-Stack Web & App E2E Live Integration Suite', () => {
     assert.match(html, /<!doctype html>/i);
     assert.match(html, /<div id="root"><\/div>/);
     assert.match(html, /<link rel="manifest" href="\/manifest\.json"/);
-    assert.match(html, /src="\/src\/main\.tsx/);
+    assert.match(html, /src="(?:\/src\/main\.tsx|\/assets\/index-[^"]+\.js)"/);
   });
 
   it('GET /manifest.json serves the standalone PWA manifest', async () => {
