@@ -83,6 +83,19 @@
       "evidence_hash": "37ed4eb1ca29ff56d3e7aa47c6552e6d46a5f2f2825528211e130c7aa27df35a",
       "next_delta": "Open a PR for human review after checking this feature branch alongside the unrelated working-tree changes.",
       "timestamp": "2026-11-11T12:05:02Z"
+    },
+    {
+      "agent_id": "copilot",
+      "branch": "agent/copilot/invisible-computer-workspace-ui",
+      "status": "UNKNOWN",
+      "files_touched": [
+        "MY_OWN.md",
+        "kai_ledger.json"
+      ],
+      "tests_passed": null,
+      "evidence_hash": "ae0a59afb2cf65003476cbd94bd9c4305adda23626a1672a40d0122ec43b8baa",
+      "next_delta": "Human-review MY_OWN.md and explicitly authorize any proposed repository action.",
+      "timestamp": "2026-11-11T12:08:13Z"
     }
   ]
 }
