@@ -120,3 +120,27 @@ test('VERAL serial gate failure stops later verification gates', () => {
   assert.doesNotMatch(result.stdout, /VERIFIED:/);
   assert.match(result.stderr, /DIVERGENT: lint failed \(exit 17\); subsequent gates were not run/);
 });
+
+test('VERAL test failure skips swarm validation and reports earlier gates', () => {
+  const { result, calls } = runOrchestrator({ failOn: 'test' });
+
+  assert.equal(result.status, 17);
+  assert.deepEqual(calls.slice(2), ['lint', 'test']);
+  assert.match(result.stdout, /\[VERAL\] lint passed\./);
+  assert.doesNotMatch(result.stdout, /VERIFIED:/);
+  assert.match(result.stderr, /DIVERGENT: test failed \(exit 17\); subsequent gates were not run/);
+});
+
+test('VERAL swarm validation failure preserves earlier results and does not report success', () => {
+  const { result, calls } = runOrchestrator({ failOn: 'validate:swarm' });
+
+  assert.equal(result.status, 17);
+  assert.deepEqual(calls.slice(2), ['lint', 'test', 'validate:swarm']);
+  assert.match(result.stdout, /\[VERAL\] lint passed\./);
+  assert.match(result.stdout, /\[VERAL\] test passed\./);
+  assert.doesNotMatch(result.stdout, /VERIFIED:/);
+  assert.match(
+    result.stderr,
+    /DIVERGENT: validate:swarm failed \(exit 17\); subsequent gates were not run/
+  );
+});
