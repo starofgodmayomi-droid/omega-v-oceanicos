@@ -24,7 +24,7 @@ import { ObserverEngine } from '@oceanicos/observer';
 import { AttestationService } from '@oceanicos/attestation';
 import { InferenceClient } from '@oceanicos/inference';
 import { VectorMemory } from '@oceanicos/vector';
-import { PluralisticRealityMatrix, PluralismConvergenceMatrix, PluralisticDualityTensor, evaluateOmegaLambda, executeMatrixTransition, executeContinuumCompressionTransition, evaluateProactiveMoodMatrix, executeLucidLoop, OCEANIC_BODY_MEMBERS, EXPANDED_BODY_MEMBERS, LUCID_LOOP_PHASES } from '@oceanicos/pluralism';
+import { PluralisticRealityMatrix, PluralismConvergenceMatrix, PluralisticDualityTensor, evaluateOmegaLambda, executeMatrixTransition, executeContinuumCompressionTransition, evaluateProactiveMoodMatrix, executeLucidLoop, evaluate8x8x8x8HyperTensor, OCEANIC_BODY_MEMBERS, EXPANDED_BODY_MEMBERS, LUCID_LOOP_PHASES } from '@oceanicos/pluralism';
 import { AutopilotMoodEngine } from '@oceanicos/mood';
 import { OceanicosKernel } from '@omega-v/kernel';
 import { evaluateAuthorization } from '@oceanicos/authorization';
@@ -491,6 +491,15 @@ export function createApp(
       };
     },
   );
+
+  // ─── 🌊 MATHxMATRIXx8X8X8X8 HYPER-TORUS TENSOR (4096-D) ───────────
+  fastify.get('/v1/matrix/8x8x8x8', async () => {
+    const tensor = evaluate8x8x8x8HyperTensor();
+    return {
+      success: true,
+      tensor,
+    };
+  });
 
   // ─── 🔮 LUCID OPERATING LOOP (7-phase state machine) ─────────────
   // Implements Ω∞v := VERIFY(ΔREALITY) as a live matrix transition

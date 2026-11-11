@@ -107,7 +107,7 @@ export function AmbientBar(props: AmbientBarProps) {
     },
     {
       label: 'Matrix M_Ω',
-      value: '⁴√det=2.0305 · ‖M‖=4 · Ψ=0 · 7-Notion',
+      value: '8×8×8×8 (4096-D) · ⁴√det=2.03 · ‖M‖=59.15 · Ψ=0',
       color: '#38bdf8',
     },
     {
