@@ -155,6 +155,46 @@ test('KAI Shield halts a fraud pattern with DIVERGENT and remembers nothing', as
   }
 });
 
+test('KAI Shield blocks compatibility-normalized fraud intent before execution', async () => {
+  const app = createApp(':memory:', false);
+  const intent = 'ＵＲＧＥＮＴ: ｓｅｎｄ ｍｏｎｅｙ for guaranteed returns';
+  try {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/execute',
+      payload: { intent },
+    });
+    const body = response.json();
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(body.status, 'DIVERGENT');
+    assert.equal(body.response, null);
+    assert.equal(body.evidence_hash, null);
+    assert.ok(body.matched_patterns.includes('artificial urgency'));
+    assert.deepEqual(body.steps.map((step: any) => `${step.actor}:${step.phase}`), ['KAI:OBSERVE']);
+
+    const transition = await app.inject({
+      method: 'POST',
+      url: '/v1/therapeutic/transition',
+      payload: { intent },
+    });
+    const transitionBody = transition.json();
+    assert.equal(transition.statusCode, 200);
+    assert.equal(transitionBody.status, 'DIVERGENT');
+    assert.equal(transitionBody.commandId, null);
+    assert.equal(transitionBody.evidence.commandStatus, 'NOT_CREATED');
+    assert.equal(transitionBody.transition.elion.status, 'NOT_EXECUTED');
+
+    const commands = await app.inject({ method: 'GET', url: '/v1/omega/commands' });
+    assert.equal(commands.json().commands.length, 0);
+
+    const memory = await app.inject({ method: 'GET', url: '/api/kai/memory' });
+    assert.equal(memory.json().total, 0);
+  } finally {
+    await app.close();
+  }
+});
+
 test('therapeutic transition blocks known patterns before creating a command', async () => {
   const app = createApp(':memory:', false);
   try {

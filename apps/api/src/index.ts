@@ -275,7 +275,7 @@ export function createApp(
     resolveAdmissionEvidence: options.connectorAdmissionEvidence,
   });
   registerMeshValidationRoute(fastify, ledgerMemory, requireReadAccess, jsonError);
-  registerExecuteRoute(fastify, kaiMemory, jsonError);
+  registerExecuteRoute(fastify, kaiMemory, jsonError, attestationSigningKey);
 
   fastify.get('/health', async (_request, reply) => {
     let ledgerIntegrity;
