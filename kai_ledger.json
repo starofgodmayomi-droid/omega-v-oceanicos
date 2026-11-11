@@ -136,6 +136,20 @@
       "evidence_hash": "d3e866b1616c5c92f62c04f8fc2a96fdd287d41a274f568de774476e79c60697",
       "next_delta": "Human-review the feature branch before merge; preserve the verified fail-closed regression.",
       "timestamp": "2026-11-11T12:20:40Z"
+    },
+    {
+      "agent_id": "copilot",
+      "branch": "agent/copilot/invisible-computer-workspace-ui",
+      "status": "VERIFIED",
+      "files_touched": [
+        "scripts/elion-veral.sh",
+        "scripts/elion-veral.test.mjs",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "eab816028bfb5901e1846b86ede5826e537aea9652bdaf1a66278968432fed17",
+      "next_delta": "Human-review the feature branch; do not merge to main from this worker node.",
+      "timestamp": "2026-11-11T12:31:24Z"
     }
   ]
 }
