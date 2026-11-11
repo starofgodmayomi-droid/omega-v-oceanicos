@@ -69,6 +69,20 @@
       "tests_passed": true,
       "evidence_hash": "67f9d87b84009f577339fb3a4ce8ea2e2f959edf3add88398ef2315d71a707dc",
       "next_delta": "Keep the attestation guard in place and rerun the repo's API contract suite before any additional Alpha expansion."
+    },
+    {
+      "agent_id": "copilot",
+      "branch": "agent/copilot/invisible-computer-workspace-ui",
+      "status": "VERIFIED",
+      "files_touched": [
+        "scripts/elion-veral.sh",
+        "scripts/elion-veral.test.mjs",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "37ed4eb1ca29ff56d3e7aa47c6552e6d46a5f2f2825528211e130c7aa27df35a",
+      "next_delta": "Open a PR for human review after checking this feature branch alongside the unrelated working-tree changes.",
+      "timestamp": "2026-11-11T12:05:02Z"
     }
   ]
 }
