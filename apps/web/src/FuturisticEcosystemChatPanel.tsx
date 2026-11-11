@@ -1027,6 +1027,60 @@ export function FuturisticEcosystemChatPanel() {
         </div>
       </div>
 
+      {/* ═══ MOBILE ACCORDION DRAWER ═══ */}
+      {mobilePanel && (
+        <div
+          className="omega-fade-in"
+          style={{
+            borderBottom: '1px solid rgba(105, 231, 185, 0.2)',
+            padding: '16px',
+            background: 'rgba(5, 16, 22, 0.98)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--omega-current)', letterSpacing: '0.1em' }}>
+              📱 MOBILE ECOSYSTEM DRAWER
+            </span>
+            <button
+              onClick={() => setMobilePanel(false)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#8ba8a0',
+                fontSize: '16px',
+                cursor: 'pointer',
+              }}
+            >
+              ✕
+            </button>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
+            {(['organs', 'workers', 'equation'] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setSidePanel(sidePanel === tab ? null : tab)}
+                style={{
+                  padding: '8px 10px',
+                  fontSize: '10.5px',
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  borderRadius: '8px',
+                  border: sidePanel === tab ? '1px solid rgba(105, 231, 185, 0.4)' : '1px solid rgba(10, 31, 40, 0.8)',
+                  background: sidePanel === tab ? 'rgba(105, 231, 185, 0.15)' : 'rgba(10, 31, 40, 0.6)',
+                  color: sidePanel === tab ? 'var(--omega-current)' : '#8ba8a0',
+                  cursor: 'pointer',
+                }}
+              >
+                {tab === 'organs' ? '🏛️ Organs' : tab === 'workers' ? '⚡ Swarm' : '📐 Max Eq'}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* ═══ MAIN 3-COLUMN COCKPIT ═══ */}
       <div
         className="cockpit-grid"
