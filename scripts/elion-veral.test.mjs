@@ -107,3 +107,15 @@ test('ELION build failure stops before serial verification', () => {
   assert.deepEqual(calls.slice(2), []);
   assert.match(result.stderr, /DIVERGENT: parallel build failed/);
 });
+
+test('VERAL serial gate failure stops later verification gates', () => {
+  const { result, calls } = runOrchestrator({ failOn: 'lint' });
+
+  assert.equal(result.status, 17);
+  assert.deepEqual(calls.slice(0, 2).sort(), [
+    '--filter api... run build',
+    '--filter web run build',
+  ]);
+  assert.deepEqual(calls.slice(2), ['lint']);
+  assert.doesNotMatch(result.stdout, /VERIFIED:/);
+});
