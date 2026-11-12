@@ -64,8 +64,9 @@ export type ShieldVerdict = {
 export function scanIntent(intent: string): ShieldVerdict {
   const matchedPatternIds: string[] = [];
   const matchedLabels: string[] = [];
+  const normalizedIntent = intent.normalize('NFKC');
   for (const entry of KAI_SHIELD_PATTERNS) {
-    if (entry.pattern.test(intent)) {
+    if (entry.pattern.test(normalizedIntent)) {
       matchedPatternIds.push(entry.id);
       if (!matchedLabels.includes(entry.label)) matchedLabels.push(entry.label);
     }

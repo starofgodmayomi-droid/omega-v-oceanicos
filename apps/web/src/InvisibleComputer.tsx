@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { theme } from './oceanicosTheme';
+import './InvisibleComputer.css';
 
 /*
  * ECHOFRAME — the face of the Invisible Online Computer.
@@ -38,6 +39,18 @@ type ExecutionResult = {
   };
 };
 
+type WitnessSnapshot = {
+  capturedAt: string;
+  source: string;
+  status: Verdict;
+  intent: string;
+  evidenceHash: string | null;
+  contractId: string | null;
+  engine: string | null;
+  recordedStepCount: number;
+  attestation: 'NOT_REQUESTED';
+};
+
 type MemoryRecord = {
   id: string;
   timestamp: string;
@@ -45,6 +58,25 @@ type MemoryRecord = {
   evidence_hash: string;
   status: string;
 };
+
+type LocalActionId = 'repo-status' | 'web-build' | 'web-tests';
+
+type LocalActionRun = {
+  id: string;
+  actionId: LocalActionId;
+  label: string;
+  status: 'SUCCEEDED' | 'FAILED' | 'TIMED_OUT' | 'OUTPUT_LIMIT';
+  durationMs: number;
+  exitCode: number | null;
+  output: string;
+  outputTruncated: boolean;
+};
+
+const LOCAL_ACTIONS: Array<{ id: LocalActionId; label: string }> = [
+  { id: 'repo-status', label: 'Check Status' },
+  { id: 'web-build', label: 'Build Web' },
+  { id: 'web-tests', label: 'Run Web Tests' },
+];
 
 const STATUS_TONE: Record<Verdict, string> = {
   VERIFIED: '#22c55e',
@@ -72,14 +104,28 @@ function shortHash(hash: string | null): string {
 }
 
 export function InvisibleComputer() {
+  return <OmegaConsole />;
+}
+
+export function OmegaConsole() {
   const [intent, setIntent] = useState('');
   const [useExternalModel, setUseExternalModel] = useState(false);
+  const [commandsOpen, setCommandsOpen] = useState(false);
+  const [inspectorOpen, setInspectorOpen] = useState(false);
   const [running, setRunning] = useState(false);
   const [verdict, setVerdict] = useState<Verdict>('NOT_EXECUTED');
   const [result, setResult] = useState<ExecutionResult | null>(null);
+  const [witnessSnapshot, setWitnessSnapshot] = useState<WitnessSnapshot | null>(null);
   const [visibleSteps, setVisibleSteps] = useState<ExecutionStep[]>([]);
   const [memoryTotal, setMemoryTotal] = useState<number | null>(null);
   const [memoryRecords, setMemoryRecords] = useState<MemoryRecord[]>([]);
+  const [localActionsEnabled, setLocalActionsEnabled] = useState<boolean | null>(null);
+  const [localActionRuns, setLocalActionRuns] = useState<LocalActionRun[]>([]);
+  const [activeLocalAction, setActiveLocalAction] = useState<LocalActionId | null>(null);
+  const [localActionError, setLocalActionError] = useState<string | null>(null);
+  const [localActionAccessError, setLocalActionAccessError] = useState<string | null>(null);
+  const [readToken, setReadToken] = useState('');
+  const [adminToken, setAdminToken] = useState('');
   const [error, setError] = useState<string | null>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
@@ -100,10 +146,38 @@ export function InvisibleComputer() {
     }
   }, []);
 
+  const loadLocalActions = useCallback(async (readCredential = '') => {
+    const headers = readCredential.trim()
+      ? { authorization: `Bearer ${readCredential.trim()}` }
+      : undefined;
+    try {
+      const response = await fetch(`${API_BASE_URL}/v1/local-actions`, { headers });
+      if (!response.ok) throw new Error(`Local action access failed (${response.status})`);
+      const payload = await response.json();
+      setLocalActionsEnabled(payload?.enabled === true);
+      setLocalActionAccessError(
+        payload?.enabled === true ? null : 'Enable the local runner with required API auth to use these actions.'
+      );
+    } catch (err) {
+      setLocalActionsEnabled(null);
+      setLocalActionAccessError(err instanceof Error ? err.message : 'Local action access is unknown.');
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/v1/local-actions/runs`, { headers });
+      if (!response.ok) return;
+      const payload = await response.json();
+      if (Array.isArray(payload?.runs)) setLocalActionRuns(payload.runs);
+    } catch {
+      /* recent local runs are optional evidence */
+    }
+  }, []);
+
   useEffect(() => {
     void loadMemory();
+    void loadLocalActions();
     return clearTimers;
-  }, [loadMemory]);
+  }, [loadMemory, loadLocalActions]);
 
   const execute = async () => {
     const trimmed = intent.trim();
@@ -112,6 +186,7 @@ export function InvisibleComputer() {
     setRunning(true);
     setError(null);
     setResult(null);
+    setWitnessSnapshot(null);
     setVerdict('NOT_EXECUTED');
     setVisibleSteps([]);
 
@@ -156,52 +231,191 @@ export function InvisibleComputer() {
     }
   };
 
+  const witness = () => {
+    if (!result || running) return;
+    setWitnessSnapshot({
+      capturedAt: new Date().toISOString(),
+      source: `${API_BASE_URL}/execute response`,
+      status: result.status,
+      intent: result.intent,
+      evidenceHash: result.evidence_hash,
+      contractId: result.contract?.id ?? null,
+      engine: result.engine,
+      recordedStepCount: result.steps.length,
+      attestation: 'NOT_REQUESTED',
+    });
+  };
+
+  const runLocalAction = async (actionId: LocalActionId) => {
+    if (!canRunLocalActions || activeLocalAction) return;
+    setActiveLocalAction(actionId);
+    setLocalActionError(null);
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/v1/local-actions/${encodeURIComponent(actionId)}/run`,
+        {
+          method: 'POST',
+          headers: { authorization: `Bearer ${adminToken.trim()}` },
+        }
+      );
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload?.error || `Action failed (${response.status})`);
+      if (payload?.run) {
+        setLocalActionRuns((previous) => [
+          payload.run,
+          ...previous.filter((run) => run.id !== payload.run.id),
+        ].slice(0, 20));
+      }
+    } catch (err) {
+      setLocalActionError(err instanceof Error ? err.message : 'Local action failed');
+    } finally {
+      setActiveLocalAction(null);
+    }
+  };
+
   const badgeTone = STATUS_TONE[verdict];
+  const canRunLocalActions = localActionsEnabled && Boolean(adminToken.trim());
+  const inspectorState = {
+    'Σ': {
+      verdict,
+      localActions: localActionsEnabled === true ? 'enabled' : localActionsEnabled === false ? 'disabled' : 'unknown',
+    },
+    'Δ': { intent: intent || null, activeLocalAction },
+    Evidence: {
+      responseHash: result?.evidence_hash ?? null,
+      latestLocalAction: localActionRuns[0]
+        ? {
+            id: localActionRuns[0].id,
+            actionId: localActionRuns[0].actionId,
+            status: localActionRuns[0].status,
+            exitCode: localActionRuns[0].exitCode,
+          }
+        : null,
+    },
+    Witness: witnessSnapshot,
+  };
 
   return (
-    <section
-      aria-label="Invisible Online Computer"
-      style={{
-        position: 'relative',
-        overflow: 'hidden',
-        background:
-          'radial-gradient(ellipse 120% 90% at 50% -30%, rgba(6, 182, 212, 0.20) 0%, rgba(2, 6, 23, 0.94) 62%), #030a18',
-        border: `1px solid ${theme.borderBright}`,
-        borderRadius: '20px',
-        boxShadow: '0 0 0 1px rgba(245, 158, 11, 0.08), 0 24px 60px rgba(2, 6, 23, 0.7)',
-        padding: '26px 22px 0',
-        marginBottom: '28px',
-      }}
-    >
-      <div
-        style={{
-          fontSize: '10px',
-          fontWeight: 700,
-          letterSpacing: '0.28em',
-          color: theme.accent,
-          textAlign: 'center',
-          textTransform: 'uppercase',
-          marginBottom: '14px',
-        }}
-      >
-        Ω∞v OCEANICOS · Invisible Online Computer
+    <section aria-label="Invisible Online Computer" className="invisible-computer">
+      <header className="ioc-header">
+        <div>
+          <div className="ioc-eyebrow">Ω∞v OCEANICOS · OmegaConsole</div>
+          <h2 className="ioc-title">WHAT SHALL WE MAKE REAL?</h2>
+        </div>
+        <div className="ioc-header-actions">
+          <button
+            type="button"
+            className="ioc-command-toggle"
+            aria-expanded={commandsOpen}
+            aria-controls="ioc-command-drawer"
+            onClick={() => setCommandsOpen((open) => !open)}
+          >
+            <span aria-hidden="true">⌘</span> Prompts
+          </button>
+          <button
+            type="button"
+            className="ioc-command-toggle"
+            aria-expanded={inspectorOpen}
+            aria-controls="ioc-state-inspector"
+            onClick={() => setInspectorOpen((open) => !open)}
+          >
+            <span aria-hidden="true">{`{ }`}</span> State
+          </button>
+        </div>
+      </header>
+
+      <div className="ioc-quick-actions" aria-label="Allowlisted local actions">
+        <span className={`ioc-action-status${canRunLocalActions ? ' is-enabled' : ''}`} role="status">
+          LOCAL ACTIONS · {localActionsEnabled === null
+            ? 'UNKNOWN'
+            : !localActionsEnabled
+              ? 'DISABLED'
+              : adminToken.trim()
+                ? 'ENABLED'
+                : 'ADMIN TOKEN REQUIRED'}
+        </span>
+        {LOCAL_ACTIONS.map((action) => (
+          <button
+            key={action.id}
+            type="button"
+            className="ioc-action-chip"
+            disabled={!canRunLocalActions || activeLocalAction !== null}
+            onClick={() => void runLocalAction(action.id)}
+          >
+            {activeLocalAction === action.id ? 'RUNNING…' : action.label}
+          </button>
+        ))}
+      </div>
+      <div className="ioc-action-access" aria-label="Local action access">
+        <label>
+          <span>Read token</span>
+          <input
+            aria-label="API read token"
+            type="password"
+            autoComplete="off"
+            value={readToken}
+            onChange={(event) => setReadToken(event.target.value)}
+          />
+        </label>
+        <label>
+          <span>Admin token</span>
+          <input
+            aria-label="API admin token"
+            type="password"
+            autoComplete="off"
+            value={adminToken}
+            onChange={(event) => setAdminToken(event.target.value)}
+          />
+        </label>
+        <button
+          type="button"
+          className="ioc-connect"
+          disabled={!readToken.trim()}
+          onClick={() => void loadLocalActions(readToken)}
+        >
+          Connect
+        </button>
+        {localActionAccessError && <span className="ioc-access-note">{localActionAccessError}</span>}
       </div>
 
-      <h2
-        style={{
-          fontSize: '24px',
-          fontWeight: 600,
-          letterSpacing: '0.04em',
-          textAlign: 'center',
-          color: theme.text,
-          margin: '0 0 20px',
-        }}
+      <aside
+        id="ioc-state-inspector"
+        aria-label="JSON state inspector"
+        aria-hidden={!inspectorOpen}
+        className={`ioc-inspector${inspectorOpen ? ' is-open' : ''}`}
       >
-        WHAT SHALL WE MAKE REAL?
-      </h2>
+        <div className="ioc-inspector-header">
+          <h3>State inspection</h3>
+          <button type="button" className="ioc-inspector-close" onClick={() => setInspectorOpen(false)}>
+            Close
+          </button>
+        </div>
+        <pre>{JSON.stringify(inspectorState, null, 2)}</pre>
+      </aside>
 
-      <div style={{ display: 'flex', gap: '8px', alignItems: 'stretch' }}>
+      {commandsOpen && (
+        <div id="ioc-command-drawer" className="ioc-command-drawer" aria-label="Prompt starters">
+          {[
+            ['Create', 'Create a new '],
+            ['Explore', 'Explore the current state of '],
+            ['Build', 'Build and test '],
+            ['Change', 'Change '],
+          ].map(([label, prompt]) => (
+            <button
+              key={label}
+              type="button"
+              className="ioc-command"
+              onClick={() => setIntent(prompt)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="ioc-composer">
         <input
+          className="ioc-input"
           aria-label="What shall we make real?"
           value={intent}
           onChange={(event) => setIntent(event.target.value)}
@@ -211,58 +425,37 @@ export function InvisibleComputer() {
           maxLength={2000}
           disabled={running}
           placeholder="Describe the intent you want verified…"
-          style={{
-            flex: 1,
-            minWidth: 0,
-            padding: '15px 18px',
-            background: 'rgba(2, 6, 23, 0.82)',
-            border: `1px solid ${theme.borderBright}`,
-            borderRadius: theme.radiusSmall,
-            color: theme.text,
-            fontFamily: theme.fontSans,
-            fontSize: '15px',
-            outline: 'none',
-          }}
         />
         <button
           type="button"
+          className="ioc-witness"
+          onClick={witness}
+          disabled={!result || running}
+          title="Capture the latest API response in the state inspector; no signed attestation is requested."
+        >
+          [Witness]
+        </button>
+        <button
+          type="button"
+          className="ioc-submit"
           onClick={() => void execute()}
           disabled={running || !intent.trim()}
-          style={{
-            padding: '0 20px',
-            borderRadius: theme.radiusSmall,
-            border: '1px solid rgba(245, 158, 11, 0.45)',
-            background:
-              running || !intent.trim() ? 'rgba(245, 158, 11, 0.10)' : 'rgba(245, 158, 11, 0.18)',
-            color: theme.accentWarm,
-            fontFamily: theme.fontSans,
-            fontSize: '12px',
-            fontWeight: 700,
-            letterSpacing: '0.14em',
-            cursor: running || !intent.trim() ? 'not-allowed' : 'pointer',
-            opacity: running || !intent.trim() ? 0.6 : 1,
-          }}
         >
-          {running ? 'EXECUTING' : 'EXECUTE'}
+          {running ? '[Executing…]' : '[Execute]'}
         </button>
       </div>
+      <p className="ioc-witness-note" role="note">
+        Witness captures the latest API response for inspection. It is not a signed attestation or
+        independent verification.
+      </p>
       <label
-        style={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          gap: '8px',
-          marginTop: '10px',
-          color: theme.textMuted,
-          fontSize: '12px',
-          lineHeight: 1.5,
-        }}
+        className="ioc-model-toggle"
       >
         <input
           type="checkbox"
           checked={useExternalModel}
           onChange={(event) => setUseExternalModel(event.target.checked)}
           disabled={running}
-          style={{ marginTop: '2px' }}
         />
         <span>
           Send this intent to the server-configured external model. Leave unchecked to use the
@@ -271,24 +464,28 @@ export function InvisibleComputer() {
         </span>
       </label>
 
+      {(localActionRuns.length > 0 || localActionError) && (
+        <section className="ioc-action-results" aria-label="Local action results">
+          {localActionError && <p role="alert" className="ioc-action-error">{localActionError}</p>}
+          {localActionRuns.map((run) => (
+            <article key={run.id} className="ioc-action-result">
+              <header>
+                <strong>{run.label}</strong>
+                <span data-status={run.status}>{run.status}</span>
+                <small>{run.durationMs} ms · exit {run.exitCode ?? 'unknown'}</small>
+              </header>
+              <pre>{run.output || '(no output)'}{run.outputTruncated ? '\n[output capped at 64 KiB]' : ''}</pre>
+            </article>
+          ))}
+        </section>
+      )}
+
       {/* Live execution terminal */}
       <div
         role="log"
         aria-live="polite"
         aria-label="Execution terminal"
-        style={{
-          marginTop: '16px',
-          minHeight: '128px',
-          maxHeight: '248px',
-          overflowY: 'auto',
-          padding: '12px 14px',
-          background: '#01060f',
-          border: `1px solid ${theme.border}`,
-          borderRadius: theme.radiusSmall,
-          fontFamily: theme.fontMono,
-          fontSize: '11.5px',
-          lineHeight: 1.6,
-        }}
+        className="ioc-execution-log"
       >
         <div style={{ color: theme.textDim }}>
           KAI idle · awaiting intent · ledger memory {memoryTotal ?? '—'}
@@ -317,21 +514,16 @@ export function InvisibleComputer() {
       {/* Verified answer */}
       {result && (
         <div style={{ marginTop: '16px' }}>
+          {witnessSnapshot && (
+            <p className="ioc-witness-captured" role="status">
+              Witness snapshot captured · {witnessSnapshot.status} ·{' '}
+              {witnessSnapshot.evidenceHash ? shortHash(witnessSnapshot.evidenceHash) : 'no evidence hash'}
+              {' '}· unsigned
+            </p>
+          )}
           {result.response && (
             <pre
-              style={{
-                margin: 0,
-                padding: '14px 16px',
-                background: 'rgba(6, 182, 212, 0.06)',
-                border: `1px solid ${theme.border}`,
-                borderRadius: theme.radiusSmall,
-                color: theme.text,
-                fontFamily: theme.fontSans,
-                fontSize: '13px',
-                lineHeight: 1.65,
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word',
-              }}
+              className="ioc-response"
             >
               {result.response}
             </pre>
@@ -423,16 +615,7 @@ export function InvisibleComputer() {
 
       {/* Bottom status bar */}
       <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '12px',
-          margin: '20px -22px 0',
-          padding: '12px 22px',
-          borderTop: `1px solid ${theme.border}`,
-          background: 'rgba(2, 6, 23, 0.72)',
-        }}
+        className="ioc-footer"
       >
         <span
           data-state={verdict}

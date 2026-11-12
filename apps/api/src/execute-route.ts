@@ -1,4 +1,6 @@
 import type { FastifyInstance } from 'fastify';
+import { AttestationService } from '@oceanicos/attestation';
+import type { Attestation } from '@oceanicos/types';
 import {
   authoritySatisfies,
   compressTowardUpgrade,
@@ -17,6 +19,51 @@ import type { KaiMemoryStore, KaiMemoryRecord, OmegaContract } from './kai-memor
 type JsonError = (reply: any, status: number, error: string, extra?: Record<string, unknown>) => unknown;
 
 const MAX_INTENT_LENGTH = 2000;
+const MIN_ATTESTATION_KEY_LENGTH = 32;
+
+type ExecutionAttestationStatus = 'SIGNED' | 'NOT_CONFIGURED' | 'KEY_TOO_WEAK' | 'NOT_ELIGIBLE';
+
+function attestExecution(input: {
+  status: string;
+  evidenceHash: string | null;
+  contractId: string | null;
+  checks: Array<{ passed: boolean }>;
+  signingKey: string | undefined;
+}): { status: ExecutionAttestationStatus; attestation: Attestation | null } {
+  if (
+    input.status !== 'VERIFIED' ||
+    !input.evidenceHash ||
+    !input.contractId ||
+    input.checks.length === 0
+  ) {
+    return { status: 'NOT_ELIGIBLE', attestation: null };
+  }
+  if (!input.signingKey) return { status: 'NOT_CONFIGURED', attestation: null };
+  if (input.signingKey.length < MIN_ATTESTATION_KEY_LENGTH) {
+    return { status: 'KEY_TOO_WEAK', attestation: null };
+  }
+
+  const passedChecks = input.checks.filter((check) => check.passed).length;
+  const service = new AttestationService({
+    signingKey: input.signingKey,
+    algorithm: 'HMAC-SHA256',
+  });
+  const attestation = service.attest({
+    id: input.contractId,
+    observationId: input.evidenceHash,
+    timestamp: new Date().toISOString(),
+    summary: {
+      passed: true,
+      confidence: passedChecks / input.checks.length,
+      rulesApplied: input.checks.length,
+      rulesPassed: passedChecks,
+      rulesFailed: input.checks.length - passedChecks,
+    },
+    ruleVersions: { 'omega-execution': 'v1' },
+    status: 'completed',
+  });
+  return { status: 'SIGNED', attestation };
+}
 
 export type ExecutionStep = {
   actor: 'KAI' | 'ELION' | 'OMEGA';
@@ -44,7 +91,8 @@ function parseObject(body: unknown): Record<string, unknown> | null {
 export function registerExecuteRoute(
   fastify: FastifyInstance,
   store: KaiMemoryStore,
-  jsonError: JsonError
+  jsonError: JsonError,
+  attestationSigningKey?: string
 ): void {
   const executeHandler = async (request: any, reply: any) => {
     const body = parseObject(request.body);
@@ -97,6 +145,8 @@ export function registerExecuteRoute(
         engine: null,
         model_error: null,
         evaluated_at: new Date().toISOString(),
+        attestation: null,
+        attestation_status: 'NOT_ELIGIBLE',
         upgrade: compressTowardUpgrade({ cycleStatus: 'DIVERGENT', evidenceHash: null }),
       });
     }
@@ -126,6 +176,8 @@ export function registerExecuteRoute(
         engine: null,
         model_error: null,
         evaluated_at: new Date().toISOString(),
+        attestation: null,
+        attestation_status: 'NOT_ELIGIBLE',
         upgrade: compressTowardUpgrade({ cycleStatus: 'NOT_EXECUTED', evidenceHash: null }),
       });
     }
@@ -181,6 +233,14 @@ export function registerExecuteRoute(
       );
     }
 
+    const executionAttestation = attestExecution({
+      status: omega.status,
+      evidenceHash: elion.output ? evidenceHash : null,
+      contractId: contract.id,
+      checks: omega.checks,
+      signingKey: attestationSigningKey,
+    });
+
     return reply.status(200).send({
       success: true,
       status: omega.status,
@@ -196,6 +256,8 @@ export function registerExecuteRoute(
       engine: elion.engine,
       model_error: elion.error,
       evaluated_at: new Date().toISOString(),
+      attestation: executionAttestation.attestation,
+      attestation_status: executionAttestation.status,
       upgrade: compressTowardUpgrade({
         cycleStatus: omega.status,
         evidenceHash: elion.output ? evidenceHash : null,
