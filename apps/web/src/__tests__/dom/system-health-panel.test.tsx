@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { SystemHealthPanel } from '../../SystemHealthPanel';
 
 const response = (body: unknown, status = 200) => ({
@@ -125,7 +125,7 @@ describe('SystemHealthPanel evidence availability', () => {
     expect(screen.queryByText(/evidence unavailable/)).toBeNull();
   });
 
-  it('labels retained evidence stale when a later refresh fails', async () => {
+  it('labels retained polled evidence stale when a later refresh fails', async () => {
     jest.useFakeTimers();
     let failRefresh = false;
     const command = {
@@ -151,8 +151,6 @@ describe('SystemHealthPanel evidence availability', () => {
           url.endsWith('/v1/therapeutic/state')
           || url.endsWith('/v1/omega/commands')
           || url.endsWith('/v1/omega/divergences')
-          || url.endsWith('/v1/omega/commands/cmd-1')
-          || url.endsWith('/v1/omega/commands/cmd-1/safety-boundary')
         )) {
           return response({ error: 'refresh unavailable' }, 503);
         }
@@ -181,7 +179,7 @@ describe('SystemHealthPanel evidence availability', () => {
     });
 
     render(<SystemHealthPanel />);
-    expect(await screen.findByText('Check the bounded transition')).toBeTruthy();
+    expect(await screen.findAllByText('Check the bounded transition')).toHaveLength(2);
 
     failRefresh = true;
     await act(async () => {
@@ -194,7 +192,6 @@ describe('SystemHealthPanel evidence availability', () => {
     expect(await screen.findByText('Showing last successful command response; refresh failed.')).toBeTruthy();
     expect(screen.getByText('Showing last successful divergence response; refresh failed.')).toBeTruthy();
     expect(screen.getByText('Showing last successful state response; refresh failed.')).toBeTruthy();
-    expect(screen.getByText('Showing last successful details response; refresh failed.')).toBeTruthy();
   });
 
   it('ignores a late response for a command that is no longer selected', async () => {
