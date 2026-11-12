@@ -176,6 +176,22 @@
       "evidence_hash": "ed9cc5e9f16c47fe348fa9f2450d121dfee1e682772200e048b06d9f5293ab00",
       "next_delta": "Human-review the branch before any merge or deployment.",
       "timestamp": "2026-11-11T12:47:07Z"
+    },
+    {
+      "agent_id": "copilot",
+      "branch": "agent/copilot/ledger-append-only-guard",
+      "status": "VERIFIED",
+      "files_touched": [
+        ".github/workflows/verify.yml",
+        "package.json",
+        "scripts/validate-swarm-ledger.mjs",
+        "scripts/validate-swarm-ledger.test.mjs",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "2bcc91035adb0c8a69be1d29ea387b6b3c73ff0a5c30562e0f58bd8d0418147d",
+      "next_delta": "Human-review the append-only guard; resolve the separate local ledger truncation only with its owner's direction.",
+      "timestamp": "2026-11-12T06:53:38Z"
     }
   ]
 }
