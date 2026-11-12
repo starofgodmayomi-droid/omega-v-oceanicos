@@ -77,3 +77,44 @@ test('release validator rejects a deployment claim or commit mismatch', () => {
     fs.rmSync(mismatched, { recursive: true, force: true });
   }
 });
+
+test('deployment summary preserves commit and environment as literal Markdown code', () => {
+  const workflow = fs.readFileSync(
+    path.join(repoRoot, '.github', 'workflows', 'deploy.yml'),
+    'utf8',
+  );
+  const summaryLines = workflow
+    .split('\n')
+    .filter((line) => line.includes('echo "- Commit:') || line.includes('echo "- Environment:'))
+    .map((line) =>
+      line
+        .trim()
+        .replace(/\$\{\{ github\.event\.inputs\.environment \|\| 'staging' \}\}/, 'staging'),
+    );
+  assert.equal(summaryLines.length, 2);
+
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'omega-deploy-summary-test-'));
+  const summaryPath = path.join(root, 'summary.md');
+  try {
+    execFileSync(
+      'bash',
+      ['-e', '-c', `{\n${summaryLines.join('\n')}\n} >> "$GITHUB_STEP_SUMMARY"`],
+      {
+        cwd: repoRoot,
+        env: {
+          ...process.env,
+          GITHUB_SHA: commit,
+          GITHUB_STEP_SUMMARY: summaryPath,
+        },
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+      },
+    );
+
+    const summary = fs.readFileSync(summaryPath, 'utf8');
+    assert.match(summary, new RegExp(`- Commit: \`${commit}\``));
+    assert.match(summary, /- Environment: `staging`/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});

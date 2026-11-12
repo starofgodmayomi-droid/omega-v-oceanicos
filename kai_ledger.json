@@ -176,6 +176,20 @@
       "evidence_hash": "ed9cc5e9f16c47fe348fa9f2450d121dfee1e682772200e048b06d9f5293ab00",
       "next_delta": "Human-review the branch before any merge or deployment.",
       "timestamp": "2026-11-11T12:47:07Z"
+    },
+    {
+      "agent_id": "copilot",
+      "branch": "agent/copilot/deployment-summary-escaping",
+      "status": "VERIFIED",
+      "files_touched": [
+        ".github/workflows/deploy.yml",
+        "tests/integration/release-bundle.integration.test.ts",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "5e939ce0249f04ad76b38f50a88eda6e76717ea665596391a8e0148658a929b3",
+      "next_delta": "Human-review the workflow summary fix before merging; production publishing remains operator-controlled.",
+      "timestamp": "2026-11-12T05:44:05Z"
     }
   ]
 }
