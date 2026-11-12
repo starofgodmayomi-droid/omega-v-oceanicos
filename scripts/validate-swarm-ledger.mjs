@@ -7,6 +7,8 @@
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { isDeepStrictEqual } from 'node:util';
 
 const root = process.cwd();
 const read = (path) => readFileSync(join(root, path), 'utf8');
@@ -42,6 +44,23 @@ for (const entry of ['AGENTS.md', '.cursorrules', 'CLAUDE.md']) {
 }
 
 const ledger = JSON.parse(read('kai_ledger.json'));
+const baselineRef = process.env.SWARM_LEDGER_BASELINE_REF?.trim() || 'HEAD';
+const baselineSource = execFileSync('git', ['show', `${baselineRef}:kai_ledger.json`], {
+  cwd: root,
+  encoding: 'utf8',
+});
+const baseline = JSON.parse(baselineSource);
+if (!Array.isArray(baseline.entries)) {
+  throw new Error(`kai_ledger.json: append-only baseline ${baselineRef} has no entries array`);
+}
+for (let index = 0; index < baseline.entries.length; index += 1) {
+  if (!isDeepStrictEqual(ledger.entries?.[index], baseline.entries[index])) {
+    throw new Error(
+      `kai_ledger.json: append-only baseline ${baselineRef} entry ${index} was removed or modified`
+    );
+  }
+}
+
 if (ledger.protocol !== 'ΩVØØS-SWARM/1') {
   throw new Error('kai_ledger.json: protocol must be ΩVØØS-SWARM/1');
 }

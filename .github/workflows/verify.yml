@@ -49,6 +49,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Enable pnpm
         uses: pnpm/action-setup@v6
@@ -83,6 +85,8 @@ jobs:
       # The swarm ledger is the cross-agent record. A missing check here is how
       # an unverified receipt becomes an accepted claim.
       - name: Validate swarm ledger
+        env:
+          SWARM_LEDGER_BASELINE_REF: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before || 'HEAD' }}
         run: pnpm validate:swarm
 
       # Runs on every matrix version. ESLint 10 calls util.styleText, added in
@@ -155,6 +159,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Enable pnpm
         uses: pnpm/action-setup@v6
@@ -184,6 +190,8 @@ jobs:
       # The swarm ledger is the cross-agent record. A missing check here is how
       # an unverified receipt becomes an accepted claim.
       - name: Validate swarm ledger
+        env:
+          SWARM_LEDGER_BASELINE_REF: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before || 'HEAD' }}
         run: pnpm validate:swarm
 
       - name: Run type checking

@@ -179,6 +179,22 @@
     },
     {
       "agent_id": "copilot",
+      "branch": "agent/copilot/ledger-append-only-guard",
+      "status": "VERIFIED",
+      "files_touched": [
+        ".github/workflows/verify.yml",
+        "package.json",
+        "scripts/validate-swarm-ledger.mjs",
+        "scripts/validate-swarm-ledger.test.mjs",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "2bcc91035adb0c8a69be1d29ea387b6b3c73ff0a5c30562e0f58bd8d0418147d",
+      "next_delta": "Human-review the append-only guard; resolve the separate local ledger truncation only with its owner's direction.",
+      "timestamp": "2026-11-12T06:53:38Z"
+    },
+    {
+      "agent_id": "copilot",
       "branch": "agent/copilot/deployment-summary-escaping",
       "status": "VERIFIED",
       "files_touched": [
@@ -189,7 +205,7 @@
       "tests_passed": true,
       "evidence_hash": "5e939ce0249f04ad76b38f50a88eda6e76717ea665596391a8e0148658a929b3",
       "next_delta": "Human-review the workflow summary fix before merging; production publishing remains operator-controlled.",
-      "timestamp": "2026-11-12T05:44:05Z"
+      "timestamp": "2026-11-12T08:05:12Z"
     }
   ]
 }
