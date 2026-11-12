@@ -104,8 +104,8 @@ jobs:
         run: |
           {
             echo '## Ω∞v deployment bundle staged'
-            echo "- Commit: \\`${GITHUB_SHA}\\`"
-            echo "- Environment: \\`${{ github.event.inputs.environment || 'staging' }}\\`"
+            echo "- Commit: \`${GITHUB_SHA}\`"
+            echo "- Environment: \`${{ github.event.inputs.environment || 'staging' }}\`"
             echo '- Status: `VERIFIED / STAGED_ONLY`'
             echo '- Divergence alerts: informational only; no automatic authorization or execution'
             echo '- Final provider publish remains an explicit operator-controlled step'
