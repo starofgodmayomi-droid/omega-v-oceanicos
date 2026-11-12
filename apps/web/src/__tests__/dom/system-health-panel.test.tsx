@@ -344,6 +344,60 @@ describe('SystemHealthPanel evidence availability', () => {
     expect(firstDetailsRequests).toHaveBeenCalledTimes(1);
   });
 
+  it('withholds lifecycle actions when safety-boundary evidence is unavailable', async () => {
+    const command = {
+      commandId: 'cmd-boundary-failure',
+      intent: 'Review a proposed command',
+      requestedBy: 'operator',
+      status: 'PROPOSED',
+      createdAt: '2026-11-01T00:00:00.000Z',
+      workers: ['planner'],
+      decision: null,
+      authority: null,
+      policy: null,
+      execution: null,
+      reality: null,
+    };
+
+    Object.defineProperty(globalThis, 'fetch', {
+      configurable: true,
+      writable: true,
+      value: jest.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.endsWith('/health')) return response(healthyResponse());
+        if (url.endsWith('/v1/therapeutic/state')) {
+          return response({
+            success: true,
+            model: 'omega.therapeutic-state-machine.v1',
+            status: 'READY',
+            evaluatedAt: '2026-11-01T00:00:00.000Z',
+            state: {
+              kai: { status: 'READY', authority: 'bounded', summary: 'ready' },
+              elion: { status: 'READY', authority: 'bounded', summary: 'ready' },
+              omega: { status: 'READY', authority: 'bounded', summary: 'ready' },
+            },
+            loop: ['observe', 'bound', 'execute', 'reconcile', 'remember'],
+          });
+        }
+        if (url.endsWith('/v1/omega/commands')) return response({ commands: [command] });
+        if (url.endsWith('/v1/omega/divergences')) return response({ alerts: [] });
+        if (url.endsWith('/v1/omega/commands/cmd-boundary-failure/safety-boundary')) {
+          return response({ error: 'safety boundary unavailable' }, 503);
+        }
+        if (url.endsWith('/v1/omega/commands/cmd-boundary-failure')) return response(command);
+        return response({ error: 'not found' }, 404);
+      }),
+    });
+
+    render(<SystemHealthPanel />);
+
+    expect(await screen.findByText(
+      'Selected command details unavailable: safety boundary unavailable',
+    )).toBeTruthy();
+    expect(screen.queryByText(/Selected Command Evidence · cmd-boundary-failure/)).toBeNull();
+    expect(screen.queryByRole('button', { name: 'ADMIT' })).toBeNull();
+  });
+
   it('only offers lifecycle actions allowed by the selected command status', async () => {
     const divergentCommand = {
       commandId: 'cmd-divergent',
