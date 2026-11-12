@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { SystemHealthPanel } from '../../SystemHealthPanel';
 
 const response = (body: unknown, status = 200) => ({
@@ -125,7 +125,7 @@ describe('SystemHealthPanel evidence availability', () => {
     expect(screen.queryByText(/evidence unavailable/)).toBeNull();
   });
 
-  it('labels retained evidence stale when a later refresh fails', async () => {
+  it('labels retained polled evidence stale when a later refresh fails', async () => {
     jest.useFakeTimers();
     let failRefresh = false;
     const command = {
@@ -151,8 +151,6 @@ describe('SystemHealthPanel evidence availability', () => {
           url.endsWith('/v1/therapeutic/state')
           || url.endsWith('/v1/omega/commands')
           || url.endsWith('/v1/omega/divergences')
-          || url.endsWith('/v1/omega/commands/cmd-1')
-          || url.endsWith('/v1/omega/commands/cmd-1/safety-boundary')
         )) {
           return response({ error: 'refresh unavailable' }, 503);
         }
@@ -181,7 +179,7 @@ describe('SystemHealthPanel evidence availability', () => {
     });
 
     render(<SystemHealthPanel />);
-    expect(await screen.findByText('Check the bounded transition')).toBeTruthy();
+    expect(await screen.findAllByText('Check the bounded transition')).toHaveLength(2);
 
     failRefresh = true;
     await act(async () => {
@@ -194,7 +192,6 @@ describe('SystemHealthPanel evidence availability', () => {
     expect(await screen.findByText('Showing last successful command response; refresh failed.')).toBeTruthy();
     expect(screen.getByText('Showing last successful divergence response; refresh failed.')).toBeTruthy();
     expect(screen.getByText('Showing last successful state response; refresh failed.')).toBeTruthy();
-    expect(screen.getByText('Showing last successful details response; refresh failed.')).toBeTruthy();
   });
 
   it('ignores a late response for a command that is no longer selected', async () => {
@@ -345,6 +342,60 @@ describe('SystemHealthPanel evidence availability', () => {
 
     expect(screen.getByText(/Selected Command Evidence · cmd-2/)).toBeTruthy();
     expect(firstDetailsRequests).toHaveBeenCalledTimes(1);
+  });
+
+  it('withholds lifecycle actions when safety-boundary evidence is unavailable', async () => {
+    const command = {
+      commandId: 'cmd-boundary-failure',
+      intent: 'Review a proposed command',
+      requestedBy: 'operator',
+      status: 'PROPOSED',
+      createdAt: '2026-11-01T00:00:00.000Z',
+      workers: ['planner'],
+      decision: null,
+      authority: null,
+      policy: null,
+      execution: null,
+      reality: null,
+    };
+
+    Object.defineProperty(globalThis, 'fetch', {
+      configurable: true,
+      writable: true,
+      value: jest.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.endsWith('/health')) return response(healthyResponse());
+        if (url.endsWith('/v1/therapeutic/state')) {
+          return response({
+            success: true,
+            model: 'omega.therapeutic-state-machine.v1',
+            status: 'READY',
+            evaluatedAt: '2026-11-01T00:00:00.000Z',
+            state: {
+              kai: { status: 'READY', authority: 'bounded', summary: 'ready' },
+              elion: { status: 'READY', authority: 'bounded', summary: 'ready' },
+              omega: { status: 'READY', authority: 'bounded', summary: 'ready' },
+            },
+            loop: ['observe', 'bound', 'execute', 'reconcile', 'remember'],
+          });
+        }
+        if (url.endsWith('/v1/omega/commands')) return response({ commands: [command] });
+        if (url.endsWith('/v1/omega/divergences')) return response({ alerts: [] });
+        if (url.endsWith('/v1/omega/commands/cmd-boundary-failure/safety-boundary')) {
+          return response({ error: 'safety boundary unavailable' }, 503);
+        }
+        if (url.endsWith('/v1/omega/commands/cmd-boundary-failure')) return response(command);
+        return response({ error: 'not found' }, 404);
+      }),
+    });
+
+    render(<SystemHealthPanel />);
+
+    expect(await screen.findByText(
+      'Selected command details unavailable: safety boundary unavailable',
+    )).toBeTruthy();
+    expect(screen.queryByText(/Selected Command Evidence · cmd-boundary-failure/)).toBeNull();
+    expect(screen.queryByRole('button', { name: 'ADMIT' })).toBeNull();
   });
 
   it('only offers lifecycle actions allowed by the selected command status', async () => {

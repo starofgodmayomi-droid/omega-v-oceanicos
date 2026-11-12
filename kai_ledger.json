@@ -206,6 +206,34 @@
       "evidence_hash": "5e939ce0249f04ad76b38f50a88eda6e76717ea665596391a8e0148658a929b3",
       "next_delta": "Human-review the workflow summary fix before merging; production publishing remains operator-controlled.",
       "timestamp": "2026-11-12T08:05:12Z"
+    },
+    {
+      "timestamp": "2026-11-12T08:22:09Z",
+      "agent_id": "copilot",
+      "branch": "agent/copilot/gamma-web-health-tests",
+      "status": "VERIFIED",
+      "files_touched": [
+        "apps/web/src/__tests__/dom/App.test.tsx",
+        "apps/web/src/__tests__/dom/runtime-health-panel.test.tsx",
+        "apps/web/src/__tests__/dom/system-health-panel.test.tsx",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "d3375465a64ea666a11f5a2ac5da77c7aaeec134d1f6a2c0cbb69bb8a67e8ff3",
+      "next_delta": "Human-review the issue #494 test migration; do not merge to main from this worker node."
+    },
+    {
+      "timestamp": "2026-11-12T08:58:49Z",
+      "agent_id": "copilot",
+      "branch": "agent/copilot/gamma-web-health-tests",
+      "status": "VERIFIED",
+      "files_touched": [
+        "apps/web/src/__tests__/dom/system-health-panel.test.tsx",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "e28dba4b7386278663388ed7838e586107234e66e21759a2234fe64bdb1f0a07",
+      "next_delta": "Wait for human review and PR CI after the safety-boundary regression test update; do not merge to main."
     }
   ]
 }
