@@ -453,6 +453,19 @@
       "tests_passed": true,
       "evidence_hash": "29c92995847ff7209e8918bc4c96de52038aeba60a5b5826adbdd79a3632c1f9",
       "next_delta": "Verify the Auth0 SPA callback and API access token with one real non-production account; only then set the connector policy digest."
+    },
+    {
+      "timestamp": "2026-11-13T22:51:06Z",
+      "agent_id": "copilot",
+      "branch": "agent/copilot/self-hosted-oidc-identity",
+      "status": "VERIFIED",
+      "files_touched": [
+        "tests/integration/web-api-proxy.integration.test.ts",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "5b967608ea1b5d861a770f2e89699266c490fc9e8a8a028d7935ef59ae32fd0d",
+      "next_delta": "Confirm whether the verified follow-up should update the open PR 602 branch; PR 591 is already merged."
     }
   ]
 }
