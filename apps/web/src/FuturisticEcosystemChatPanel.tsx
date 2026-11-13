@@ -401,6 +401,190 @@ function TypingIndicator() {
   );
 }
 
+/* ── Message formatting & interactive code blocks ── */
+function CodeCard({ language, code }: { language: string; code: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    try {
+      navigator.clipboard.writeText(code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback if clipboard API is restricted
+    }
+  };
+
+  return (
+    <div
+      style={{
+        margin: '10px 0',
+        borderRadius: '10px',
+        overflow: 'hidden',
+        background: 'rgba(5, 14, 20, 0.95)',
+        border: '1px solid rgba(105, 231, 185, 0.25)',
+        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.5), inset 0 0 12px rgba(105, 231, 185, 0.05)',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '6px 12px',
+          background: 'rgba(10, 25, 35, 0.9)',
+          borderBottom: '1px solid rgba(105, 231, 185, 0.15)',
+          fontSize: '11px',
+          fontWeight: 700,
+          letterSpacing: '0.05em',
+          color: 'var(--omega-current, #69e7b9)',
+          fontFamily: theme.fontMono,
+        }}
+      >
+        <span>{language ? language.toUpperCase() : 'PAYLOAD'}</span>
+        <button
+          onClick={handleCopy}
+          style={{
+            background: copied ? 'rgba(105, 231, 185, 0.25)' : 'rgba(255, 255, 255, 0.06)',
+            border: '1px solid rgba(105, 231, 185, 0.3)',
+            borderRadius: '6px',
+            color: copied ? '#69e7b9' : '#a0c4ba',
+            fontSize: '10px',
+            padding: '3px 8px',
+            cursor: 'pointer',
+            fontWeight: 600,
+            transition: 'all 0.2s ease',
+          }}
+        >
+          {copied ? '✓ Copied!' : '📋 Copy'}
+        </button>
+      </div>
+      <pre
+        style={{
+          margin: 0,
+          padding: '12px 14px',
+          overflowX: 'auto',
+          fontSize: '12px',
+          fontFamily: theme.fontMono,
+          lineHeight: 1.5,
+          color: '#d1fae5',
+        }}
+      >
+        <code>{code}</code>
+      </pre>
+    </div>
+  );
+}
+
+function renderInlineSpans(text: string): React.ReactNode {
+  const tokenRegex = /(`[^`]+`|\*\*[^*]+\*\*)/g;
+  const parts = text.split(tokenRegex);
+
+  return parts.map((part, i) => {
+    if (part.startsWith('`') && part.endsWith('`') && part.length > 2) {
+      return (
+        <code
+          key={i}
+          style={{
+            background: 'rgba(105, 231, 185, 0.12)',
+            border: '1px solid rgba(105, 231, 185, 0.25)',
+            color: '#a5f3fc',
+            padding: '1px 5px',
+            borderRadius: '4px',
+            fontSize: '11.5px',
+            fontFamily: theme.fontMono,
+          }}
+        >
+          {part.slice(1, -1)}
+        </code>
+      );
+    }
+    if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
+      return (
+        <strong key={i} style={{ color: '#69e7b9', fontWeight: 700 }}>
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+    return part;
+  });
+}
+
+function renderTextChunk(text: string, keyPrefix: string): React.ReactNode {
+  const lines = text.split('\n');
+  return (
+    <div key={keyPrefix}>
+      {lines.map((line, idx) => {
+        if (line.startsWith('### ')) {
+          return (
+            <h4 key={`${keyPrefix}-${idx}`} style={{ margin: '8px 0 4px', color: '#69e7b9', fontSize: '13px', fontWeight: 700 }}>
+              {renderInlineSpans(line.slice(4))}
+            </h4>
+          );
+        }
+        if (line.startsWith('## ')) {
+          return (
+            <h3 key={`${keyPrefix}-${idx}`} style={{ margin: '10px 0 4px', color: '#a5f3fc', fontSize: '14px', fontWeight: 800 }}>
+              {renderInlineSpans(line.slice(3))}
+            </h3>
+          );
+        }
+        if (line.startsWith('# ')) {
+          return (
+            <h2 key={`${keyPrefix}-${idx}`} style={{ margin: '12px 0 6px', color: '#e0f2fe', fontSize: '15px', fontWeight: 800 }}>
+              {renderInlineSpans(line.slice(2))}
+            </h2>
+          );
+        }
+        if (line.startsWith('• ') || line.startsWith('- ') || line.startsWith('* ')) {
+          return (
+            <div key={`${keyPrefix}-${idx}`} style={{ display: 'flex', gap: '8px', margin: '3px 0', alignItems: 'flex-start' }}>
+              <span style={{ color: 'var(--omega-current, #69e7b9)', fontSize: '14px', lineHeight: 1 }}>•</span>
+              <span style={{ flex: 1 }}>{renderInlineSpans(line.slice(2))}</span>
+            </div>
+          );
+        }
+        if (line.trim() === '') {
+          return <div key={`${keyPrefix}-${idx}`} style={{ height: '6px' }} />;
+        }
+        return (
+          <div key={`${keyPrefix}-${idx}`} style={{ margin: '2px 0' }}>
+            {renderInlineSpans(line)}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function FormattedMessageContent({ content, isUser }: { content: string; isUser: boolean }) {
+  if (isUser) {
+    return <span>{content}</span>;
+  }
+
+  const codeBlockRegex = /```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g;
+  const elements: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = codeBlockRegex.exec(content)) !== null) {
+    if (match.index > lastIndex) {
+      const textChunk = content.slice(lastIndex, match.index);
+      elements.push(renderTextChunk(textChunk, `text-${lastIndex}`));
+    }
+    const lang = match[1] || '';
+    const code = match[2] || '';
+    elements.push(<CodeCard key={`code-${match.index}`} language={lang} code={code.trimEnd()} />);
+    lastIndex = match.index + match[0].length;
+  }
+
+  if (lastIndex < content.length) {
+    elements.push(renderTextChunk(content.slice(lastIndex), `text-${lastIndex}`));
+  }
+
+  return <div>{elements}</div>;
+}
+
 /* ── Message bubble — water-behavior-mapped ── */
 function MessageBubble({ msg }: { msg: ChatMessage }) {
   const isUser = msg.sender === 'user';
@@ -461,7 +645,6 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
           borderRadius: isUser ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
           fontSize: '13.5px',
           lineHeight: 1.65,
-          whiteSpace: 'pre-wrap',
           wordBreak: 'break-word',
           background: isUser
             ? 'linear-gradient(135deg, rgba(105, 231, 185, 0.12) 0%, rgba(96, 145, 135, 0.08) 100%)'
@@ -476,7 +659,7 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
             : '0 4px 24px rgba(0, 0, 0, 0.25), inset 0 0 20px rgba(105, 231, 185, 0.02)',
         }}
       >
-        {msg.content}
+        <FormattedMessageContent content={msg.content} isUser={isUser} />
         {msg.isStreaming && (
           <span
             style={{
