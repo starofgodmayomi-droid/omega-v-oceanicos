@@ -1,10 +1,15 @@
 {
-  "protocol": "ΩVØØS-SWARM/1",
+  "protocol": "\u03a9V\u00d8\u00d8S-SWARM/1",
   "checksum": "30013030",
   "doctrine": "ATTEST, DON'T ASSERT. UNKNOWN PRESERVED.",
   "append_only": true,
-  "status_values": ["VERIFIED", "DIVERGENT", "UNKNOWN", "NOT_EXECUTED"],
-  "rule": "Append only. Never rewrite or delete an entry. On conflict keep both receipts, ordered by timestamp. See SWARM_PROTOCOL.md §VI.",
+  "status_values": [
+    "VERIFIED",
+    "DIVERGENT",
+    "UNKNOWN",
+    "NOT_EXECUTED"
+  ],
+  "rule": "Append only. Never rewrite or delete an entry. On conflict keep both receipts, ordered by timestamp. See SWARM_PROTOCOL.md \u00a7VI.",
   "entries": [
     {
       "timestamp": "2026-11-08T16:03:00Z",
@@ -20,7 +25,7 @@
       ],
       "tests_passed": null,
       "evidence_hash": null,
-      "next_delta": "Claim one domain from SWARM_PROTOCOL.md §III, branch as agent/<platform>/<task>, and append your own receipt."
+      "next_delta": "Claim one domain from SWARM_PROTOCOL.md \u00a7III, branch as agent/<platform>/<task>, and append your own receipt."
     },
     {
       "timestamp": "2026-11-11T08:18:22Z",
@@ -31,7 +36,7 @@
         "apps/web/src/InvisibleComputer.tsx",
         "apps/web/src/InvisibleComputer.css",
         "apps/web/src/__tests__/dom/InvisibleComputer.test.tsx",
-        "ΩVØØS/ASSIGNMENTS/002-beta-invisible-computer-workspace.md",
+        "\u03a9V\u00d8\u00d8S/ASSIGNMENTS/002-beta-invisible-computer-workspace.md",
         "kai_ledger.json"
       ],
       "tests_passed": true,
@@ -276,6 +281,19 @@
       "tests_passed": true,
       "evidence_hash": "f3511fc2675064bc21dec30565910c72d81cff8777f5bffe00843c54d424b3f1",
       "next_delta": "Wire a concrete command-admission provider only after its trusted authority and policy source are documented; keep the default unconfigured and fail closed."
+    },
+    {
+      "timestamp": "2026-11-13T16:22:29Z",
+      "agent_id": "grok",
+      "branch": "agent/grok/wire-passing-mini-boundary-tests",
+      "status": "UNKNOWN",
+      "files_touched": [
+        "package.json",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "4ee3d1a33b4e435bf91e4e63b4bdbc3bdef1ad339281e6f9dde0d29ed12d7428",
+      "next_delta": "Human-review wiring the three passing mini boundary suites into pnpm test and pnpm test:e2e. Do not merge from the worker. Full pnpm lint and pnpm test were not run."
     }
   ]
 }
