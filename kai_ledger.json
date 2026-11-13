@@ -404,6 +404,26 @@
       "tests_passed": true,
       "evidence_hash": "f9b19a51f9c8aecb0461fd0dc0ce345758c018452164fab4eb9ff737cb222a63",
       "next_delta": "Create the Auth0 API using the documented audience and configure the one verified subject outside the repository; keep connector policy digests empty until a non-production token is checked."
+    },
+    {
+      "timestamp": "2026-11-13T13:26:29Z",
+      "agent_id": "copilot",
+      "branch": "agent/copilot/self-hosted-oidc-identity",
+      "status": "VERIFIED",
+      "files_touched": [
+        "apps/web/package.json",
+        "apps/web/src/App.tsx",
+        "apps/web/src/ConnectorPanel.tsx",
+        "apps/web/src/__tests__/dom/ConnectorPanel.test.tsx",
+        "apps/web/src/css.d.ts",
+        "apps/web/src/main.tsx",
+        "docs/GOVERNANCE.md",
+        "pnpm-lock.yaml",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "45a0695410b099f4d6c95c08feb8a1b649716a9410d710b75169b7b0d94d89aa",
+      "next_delta": "Configure the Auth0 SPA and API in non-production; verify the real callback, API token, allowlisted subject, and exact connector digest before enabling the policy."
     }
   ]
 }

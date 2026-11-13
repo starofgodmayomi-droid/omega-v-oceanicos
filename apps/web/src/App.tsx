@@ -12,7 +12,7 @@ import { OreadConsole } from './OreadConsole';
 import { MoodCodexPanel } from './MoodCodexPanel';
 import { DivergenceAlertsPanel } from './DivergenceAlertsPanel';
 import { ValueNavigatorPanel } from './ValueNavigatorPanel';
-import { ConnectorPanel } from './ConnectorPanel';
+import { ConnectorPanel, type ConnectorAuth } from './ConnectorPanel';
 import { WholeEcosystemDashboard } from './WholeEcosystemDashboard';
 import { InvisibleComputer } from './InvisibleComputer';
 import { WaterFlowPanel } from './WaterFlowPanel';
@@ -60,7 +60,7 @@ const MODE_BUTTONS = [
   { icon: '◎', label: 'Change', template: 'Change ' },
 ];
 
-export function App() {
+export function App({ connectorAuth }: { connectorAuth?: ConnectorAuth } = {}) {
   const [tip, setTip] = useState<any>(null);
   const [ledgerIntegrity, setLedgerIntegrity] = useState<{
     valid: boolean;
@@ -1002,7 +1002,7 @@ export function App() {
           <MoodCodexPanel />
           <DivergenceAlertsPanel />
           <ValueNavigatorPanel />
-          <ConnectorPanel />
+          <ConnectorPanel auth={connectorAuth} />
 
           <IntentFlow
             command={omegaCommand}

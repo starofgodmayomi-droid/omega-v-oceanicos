@@ -159,6 +159,26 @@ a non-production environment. The profile JSON alone does not authenticate a
 request. Keep `OMEGA_CONNECTOR_POLICY_DIGESTS` empty until the identity and
 exact connector declaration are reviewed.
 
+For the browser connector panel, create an Auth0 Single Page Application and
+provide these public Vite settings at build time:
+
+```text
+VITE_AUTH0_DOMAIN=<Auth0 tenant domain, without https://>
+VITE_AUTH0_CLIENT_ID=<Auth0 SPA client ID>
+VITE_AUTH0_AUDIENCE=urn:omega-v-oceanicos:connector-api
+```
+
+Use only the Auth0 tenant host for `VITE_AUTH0_DOMAIN`; do not use the
+Management API URL ending in `/api/v2/`.
+Allow the web app's origin as an Auth0 callback, logout, and web origin (for
+local development, `http://localhost:3000`). The UI requests an API access
+token through Authorization Code with PKCE, keeps the token in memory, displays
+the exact fixed GitHub read target, and separates approval from execution.
+These Vite values are public configuration, not secrets; never put an Auth0
+client secret or API bearer token in a `VITE_*` setting. Missing settings keep
+the connector unavailable. A successful sign-in alone does not satisfy the
+server's subject allowlist or connector policy digest.
+
 ## Ω command lifecycle governance
 
 The `/v1/omega/commands` lifecycle records human intent, worker attribution, ΩIR, evidence, authority, policy, approval, execution, attestation, provenance, and reality observation as separate states. `DENY` and `REVIEW` never execute. Approval does not claim success; execution does not claim reality; observation does not become proof without defined evidence.
