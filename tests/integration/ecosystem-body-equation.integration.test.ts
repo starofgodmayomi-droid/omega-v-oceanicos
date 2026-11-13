@@ -144,6 +144,9 @@ test('the declared outward ring stays inside this repository', () => {
   assert.ok(REPO_OUTWARD_RING.length > 0);
   assert.ok(REPO_OUTWARD_RING.length <= MAX_EQUATION_SURFACES);
   assert.ok(REPO_OUTWARD_RING.some((surface) => surface.path === 'ECOSYSTEM_BODY.md'));
+  assert.ok(REPO_OUTWARD_RING.some((surface) => surface.id === 'water-skill' && surface.path === 'skills/omega-mirror-water-universal-body/SKILL.md'));
+  assert.ok(REPO_OUTWARD_RING.some((surface) => surface.id === 'water-flow' && surface.path === 'packages/mini/src/water-flow.ts'));
+  assert.ok(REPO_OUTWARD_RING.some((surface) => surface.id === 'water-web' && surface.path === 'apps/web/src/WaterFlowPanel.tsx'));
   for (const surface of REPO_OUTWARD_RING) {
     assert.equal(surface.path.includes('..'), false);
     assert.equal(surface.path.startsWith('/'), false);

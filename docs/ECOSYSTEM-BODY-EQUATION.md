@@ -34,7 +34,7 @@ Code removed from a change must still be explainable as a return to this equatio
 
 ## Outward ring
 
-`REPO_OUTWARD_RING` is the declared expansion: contract, kernel, API, web, CLI, docs, and the verified-upgrade skill. The list is not evidence. `pnpm compress:repo` is the observation.
+`REPO_OUTWARD_RING` is the declared expansion: contract, kernel, API, web, CLI, docs, the verified-upgrade skill, the mirror-water skill, `packages/mini/src/water-flow.ts`, and `apps/web/src/WaterFlowPanel.tsx`. The list is not evidence. `pnpm compress:repo` is the observation. Naming the water surfaces does not execute a flow and does not set `upgrade.execution`.
 
 ## API
 

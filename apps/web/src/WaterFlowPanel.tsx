@@ -59,7 +59,7 @@ export function WaterFlowPanel({ frames = null }: WaterFlowPanelProps) {
       <div
         role="list"
         aria-label="Canonical water-flow stages"
-        style={{ display: 'grid', gridTemplateColumns: 'repeat(8, minmax(0, 1fr))', gap: '4px', marginTop: '16px' }}
+        style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(72px, 1fr))', gap: '4px', marginTop: '16px' }}
       >
         {WATER_FLOW_STAGES.map((stage) => {
           const observed = summary.stages.includes(stage);

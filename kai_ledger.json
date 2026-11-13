@@ -1,10 +1,15 @@
 {
-  "protocol": "ΩVØØS-SWARM/1",
+  "protocol": "\u03a9V\u00d8\u00d8S-SWARM/1",
   "checksum": "30013030",
   "doctrine": "ATTEST, DON'T ASSERT. UNKNOWN PRESERVED.",
   "append_only": true,
-  "status_values": ["VERIFIED", "DIVERGENT", "UNKNOWN", "NOT_EXECUTED"],
-  "rule": "Append only. Never rewrite or delete an entry. On conflict keep both receipts, ordered by timestamp. See SWARM_PROTOCOL.md §VI.",
+  "status_values": [
+    "VERIFIED",
+    "DIVERGENT",
+    "UNKNOWN",
+    "NOT_EXECUTED"
+  ],
+  "rule": "Append only. Never rewrite or delete an entry. On conflict keep both receipts, ordered by timestamp. See SWARM_PROTOCOL.md \u00a7VI.",
   "entries": [
     {
       "timestamp": "2026-11-08T16:03:00Z",
@@ -20,7 +25,7 @@
       ],
       "tests_passed": null,
       "evidence_hash": null,
-      "next_delta": "Claim one domain from SWARM_PROTOCOL.md §III, branch as agent/<platform>/<task>, and append your own receipt."
+      "next_delta": "Claim one domain from SWARM_PROTOCOL.md \u00a7III, branch as agent/<platform>/<task>, and append your own receipt."
     },
     {
       "timestamp": "2026-11-11T08:18:22Z",
@@ -31,7 +36,7 @@
         "apps/web/src/InvisibleComputer.tsx",
         "apps/web/src/InvisibleComputer.css",
         "apps/web/src/__tests__/dom/InvisibleComputer.test.tsx",
-        "ΩVØØS/ASSIGNMENTS/002-beta-invisible-computer-workspace.md",
+        "\u03a9V\u00d8\u00d8S/ASSIGNMENTS/002-beta-invisible-computer-workspace.md",
         "kai_ledger.json"
       ],
       "tests_passed": true,
@@ -276,6 +281,24 @@
       "tests_passed": true,
       "evidence_hash": "f3511fc2675064bc21dec30565910c72d81cff8777f5bffe00843c54d424b3f1",
       "next_delta": "Wire a concrete command-admission provider only after its trusted authority and policy source are documented; keep the default unconfigured and fail closed."
+    },
+    {
+      "timestamp": "2026-11-13T17:20:00Z",
+      "agent_id": "grok",
+      "branch": "agent/grok/water-outward-compress",
+      "status": "UNKNOWN",
+      "files_touched": [
+        "packages/mini/src/ecosystem-body-equation.ts",
+        "apps/web/src/App.tsx",
+        "apps/web/src/WaterFlowPanel.tsx",
+        "docs/ECOSYSTEM-BODY-EQUATION.md",
+        "OMEGA_UPGRADE_MAX_COMPRESS.md",
+        "tests/integration/ecosystem-body-equation.integration.test.ts",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "1d9c888403e9384e6a7209757a53f64042f8c2e293b7a817fa9c321e9dce29cb",
+      "next_delta": "Human-review the water ring. Recompute git diff origin/main...HEAD before trusting evidence_hash: it is the pre-ledger cached diff, not the full branch diff. Full pnpm build and pnpm test were not run. Do not merge from this node. upgrade.execution stays NOT_EXECUTED."
     }
   ]
 }
