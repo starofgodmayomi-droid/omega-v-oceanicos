@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { test } from 'node:test';
+import { createApp } from '../../apps/api/dist/index.js';
 import {
   CHECKSUM_SYMBOL,
   ease,
@@ -85,4 +88,28 @@ test('the supplied directive is stored and the fixpoint law remains', () => {
   assert.match(law, /NOT_EXECUTED/);
   assert.match(law, /ΩVØØS\/CORE\/ECOSYSTEM_BODY\.md/);
   assert.match(law, /self-hash of a local sentence stays `UNKNOWN`/);
+});
+
+test('the compiled API exposes the same bounded receipt without execution', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'omega-ovoos-api-'));
+  const app = createApp(join(directory, 'ledger.db'), false, { allowUnsignedCycle: true });
+  try {
+    await app.listen({ port: 0, host: '127.0.0.1' });
+    const address = app.server.address();
+    assert.ok(address && typeof address === 'object');
+    const response = await fetch(`http://127.0.0.1:${address.port}/v1/ovoos/receipt`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ intent: 'Map one observable local step.', phaseT: 0 }),
+    });
+    const payload = await response.json() as { success: boolean; receipt: { status: string }; execution: string; verified: boolean };
+    assert.equal(response.status, 200);
+    assert.equal(payload.success, true);
+    assert.equal(payload.receipt.status, 'UNKNOWN');
+    assert.equal(payload.execution, 'NOT_EXECUTED');
+    assert.equal(payload.verified, false);
+  } finally {
+    await app.close();
+    rmSync(directory, { recursive: true, force: true });
+  }
 });
