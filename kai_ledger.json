@@ -303,6 +303,27 @@
       "tests_passed": null,
       "evidence_hash": null,
       "next_delta": "Resume #486 only after a human selects a trusted authority, policy, and approval source; keep connector admission fail-closed in the meantime."
+    },
+    {
+      "timestamp": "2026-11-13T12:01:17Z",
+      "agent_id": "copilot",
+      "branch": "agent/copilot/self-hosted-oidc-identity",
+      "status": "VERIFIED",
+      "files_touched": [
+        "apps/api/package.json",
+        "apps/api/src/__tests__/connector-admission-resolver.integration.test.mjs",
+        "apps/api/src/__tests__/oidc-identity.integration.test.mjs",
+        "apps/api/src/connector-observation-route.ts",
+        "apps/api/src/index.ts",
+        "apps/api/src/oidc-identity.ts",
+        "apps/api/src/runtime-globals.d.ts",
+        "docs/GOVERNANCE.md",
+        "kai_ledger.json",
+        "pnpm-lock.yaml"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "4a941c518c953edbf29c82d016e5a647f4b67ec55cc1a8d28cc159fb3a06108a",
+      "next_delta": "Add durable one-time human approvals bound to verified OIDC issuer/subject and exact connector/action/target, with explicit policy, expiry, and revocation; keep missing evidence denied."
     }
   ]
 }
