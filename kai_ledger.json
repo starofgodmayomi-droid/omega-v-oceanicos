@@ -343,6 +343,19 @@
       "tests_passed": true,
       "evidence_hash": "4da9449149edc538449bb6d30b1f9ad1ad71481185c17b5db87c68600e357bfc",
       "next_delta": "Configure a trusted OIDC issuer and explicitly reviewed connector declaration digests before enabling any deployment connector."
+    },
+    {
+      "timestamp": "2026-11-13T12:28:00Z",
+      "agent_id": "copilot",
+      "branch": "agent/copilot/self-hosted-oidc-identity",
+      "status": "VERIFIED",
+      "files_touched": [
+        "docs/GOVERNANCE.md",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "23d4e4a2a328d659b4cf5ff3523b7dbf51f60232fc252082eba8c74c5a1b130b",
+      "next_delta": "Verify the documented issuer, audience, JWKS, and groups mapping with a real non-production Keycloak access token before setting connector policy digests."
     }
   ]
 }
