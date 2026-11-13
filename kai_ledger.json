@@ -424,6 +424,35 @@
       "tests_passed": true,
       "evidence_hash": "45a0695410b099f4d6c95c08feb8a1b649716a9410d710b75169b7b0d94d89aa",
       "next_delta": "Configure the Auth0 SPA and API in non-production; verify the real callback, API token, allowlisted subject, and exact connector digest before enabling the policy."
+    },
+    {
+      "timestamp": "2026-11-13T22:39:50Z",
+      "agent_id": "copilot",
+      "branch": "agent/copilot/self-hosted-oidc-identity",
+      "status": "VERIFIED",
+      "files_touched": [
+        "apps/api/package.json",
+        "apps/api/src/__tests__/connector-admission-resolver.integration.test.mjs",
+        "apps/api/src/__tests__/connector-approval-store.unit.test.mjs",
+        "apps/api/src/__tests__/oidc-identity.integration.test.mjs",
+        "apps/api/src/connector-approval-store.ts",
+        "apps/api/src/connector-observation-route.ts",
+        "apps/api/src/index.ts",
+        "apps/api/src/oidc-identity.ts",
+        "apps/api/src/runtime-globals.d.ts",
+        "apps/web/package.json",
+        "apps/web/src/App.tsx",
+        "apps/web/src/ConnectorPanel.tsx",
+        "apps/web/src/__tests__/dom/ConnectorPanel.test.tsx",
+        "apps/web/src/css.d.ts",
+        "apps/web/src/main.tsx",
+        "docs/GOVERNANCE.md",
+        "kai_ledger.json",
+        "pnpm-lock.yaml"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "29c92995847ff7209e8918bc4c96de52038aeba60a5b5826adbdd79a3632c1f9",
+      "next_delta": "Verify the Auth0 SPA callback and API access token with one real non-production account; only then set the connector policy digest."
     }
   ]
 }
