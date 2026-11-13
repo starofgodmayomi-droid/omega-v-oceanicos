@@ -7,7 +7,10 @@ import {
   createOidcIdentityVerifier,
   oidcIdentityConfigFromEnvironment,
 } from '../../dist/oidc-identity.js';
-import { connectorDeclarationDigest } from '../../dist/connector-approval-store.js';
+import {
+  connectorApproverSubjectFromEnvironment,
+  connectorDeclarationDigest,
+} from '../../dist/connector-approval-store.js';
 
 const connector = {
   id: 'github.read-repository',
@@ -41,19 +44,15 @@ test('OIDC identity is verified but does not grant connector admission', async (
   const issuer = `http://127.0.0.1:${address.port}`;
   const audience = 'omega-api';
   const jwksUri = `${issuer}/jwks`;
-  const auth0GroupsClaim = 'urn:omega-v-oceanicos:connector-groups';
   const signToken = ({
     tokenIssuer = issuer,
     tokenAudience = audience,
     expiresAt = '5m',
     authorizedParty,
-    groups = ['connector-approvers'],
     subject = 'operator-123',
-    groupsClaim = 'groups',
   } = {}) => {
     let token = new SignJWT({
       ...(authorizedParty ? { azp: authorizedParty } : {}),
-      [groupsClaim]: groups,
     })
       .setProtectedHeader({ alg: 'RS256', kid: 'test-key' })
       .setIssuer(tokenIssuer)
@@ -71,12 +70,15 @@ test('OIDC identity is verified but does not grant connector admission', async (
     OMEGA_AUTH_MODE: process.env.OMEGA_AUTH_MODE,
     OMEGA_READ_TOKEN: process.env.OMEGA_READ_TOKEN,
     OMEGA_ADMIN_TOKEN: process.env.OMEGA_ADMIN_TOKEN,
+    OMEGA_CONNECTOR_APPROVER_SUBJECT: process.env.OMEGA_CONNECTOR_APPROVER_SUBJECT,
   };
   process.env.OMEGA_AUTH_MODE = 'required';
   process.env.OMEGA_READ_TOKEN = 'test-read-token';
   process.env.OMEGA_ADMIN_TOKEN = 'test-admin-token';
+  delete process.env.OMEGA_CONNECTOR_APPROVER_SUBJECT;
   const app = createApp(':memory:', false, {
     oidcIdentity: { issuer, audience, jwksUri },
+    connectorApproverSubject: 'operator-123',
     connectorPolicyDigests: [connectorDeclarationDigest(connector)],
     connectorAdmissionEvidence: (request) => {
       resolverCalls += 1;
@@ -107,7 +109,8 @@ test('OIDC identity is verified but does not grant connector admission', async (
 
     let approvalFetchCalls = 0;
     const approvalApp = createApp(':memory:', false, {
-      oidcIdentity: { issuer, audience, jwksUri, groupsClaim: auth0GroupsClaim },
+      oidcIdentity: { issuer, audience, jwksUri },
+      connectorApproverSubject: 'operator-123',
       connectorPolicyDigests: [connectorDeclarationDigest(connector)],
       githubFetch: async () => {
         approvalFetchCalls += 1;
@@ -115,20 +118,10 @@ test('OIDC identity is verified but does not grant connector admission', async (
       },
     });
     try {
-      const wrongClaimResponse = await approvalApp.inject({
-        method: 'POST',
-        url: '/v1/omega/connectors/approvals',
-        headers: { authorization: `Bearer ${validToken}` },
-        payload: { connector },
-      });
-      assert.equal(wrongClaimResponse.statusCode, 403);
-      assert.equal(wrongClaimResponse.json().error, 'CONNECTOR_APPROVER_GROUP_REQUIRED');
-
-      const auth0Token = await signToken({ groupsClaim: auth0GroupsClaim });
       const approvalResponse = await approvalApp.inject({
         method: 'POST',
         url: '/v1/omega/connectors/approvals',
-        headers: { authorization: `Bearer ${auth0Token}` },
+        headers: { authorization: `Bearer ${validToken}` },
         payload: { connector },
       });
       assert.equal(approvalResponse.statusCode, 201);
@@ -139,7 +132,7 @@ test('OIDC identity is verified but does not grant connector admission', async (
       const otherSubjectResponse = await approvalApp.inject({
         method: 'POST',
         url: '/v1/omega/connectors/observe',
-        headers: { authorization: `Bearer ${await signToken({ subject: 'operator-456', groupsClaim: auth0GroupsClaim })}` },
+        headers: { authorization: `Bearer ${await signToken({ subject: 'operator-456' })}` },
         payload: { connector, approvalId: approval.id, liveAdapter: 'github-public-repository' },
       });
       assert.equal(otherSubjectResponse.json().admission.admitted, false);
@@ -148,7 +141,7 @@ test('OIDC identity is verified but does not grant connector admission', async (
       const admittedResponse = await approvalApp.inject({
         method: 'POST',
         url: '/v1/omega/connectors/observe',
-        headers: { authorization: `Bearer ${auth0Token}` },
+        headers: { authorization: `Bearer ${validToken}` },
         payload: { connector, approvalId: approval.id, liveAdapter: 'github-public-repository' },
       });
       assert.equal(admittedResponse.statusCode, 200);
@@ -160,7 +153,7 @@ test('OIDC identity is verified but does not grant connector admission', async (
       const replayResponse = await approvalApp.inject({
         method: 'POST',
         url: '/v1/omega/connectors/observe',
-        headers: { authorization: `Bearer ${auth0Token}` },
+        headers: { authorization: `Bearer ${validToken}` },
         payload: { connector, approvalId: approval.id, liveAdapter: 'github-public-repository' },
       });
       assert.equal(replayResponse.json().admission.admitted, false);
@@ -169,20 +162,20 @@ test('OIDC identity is verified but does not grant connector admission', async (
       const revokeCandidate = await approvalApp.inject({
         method: 'POST',
         url: '/v1/omega/connectors/approvals',
-        headers: { authorization: `Bearer ${auth0Token}` },
+        headers: { authorization: `Bearer ${validToken}` },
         payload: { connector },
       });
       const revokeId = revokeCandidate.json().approval.id;
       const revokeResponse = await approvalApp.inject({
         method: 'POST',
         url: `/v1/omega/connectors/approvals/${revokeId}/revoke`,
-        headers: { authorization: `Bearer ${auth0Token}` },
+        headers: { authorization: `Bearer ${validToken}` },
       });
       assert.equal(revokeResponse.json().revoked, true);
       const revokedUseResponse = await approvalApp.inject({
         method: 'POST',
         url: '/v1/omega/connectors/observe',
-        headers: { authorization: `Bearer ${auth0Token}` },
+        headers: { authorization: `Bearer ${validToken}` },
         payload: { connector, approvalId: revokeId, liveAdapter: 'github-public-repository' },
       });
       assert.equal(revokedUseResponse.json().admission.admitted, false);
@@ -191,17 +184,35 @@ test('OIDC identity is verified but does not grant connector admission', async (
       const nonApproverResponse = await approvalApp.inject({
         method: 'POST',
         url: '/v1/omega/connectors/approvals',
-        headers: { authorization: `Bearer ${await signToken({ groups: ['other-group'], groupsClaim: auth0GroupsClaim })}` },
+        headers: { authorization: `Bearer ${await signToken({ subject: 'operator-456' })}` },
         payload: { connector },
       });
       assert.equal(nonApproverResponse.statusCode, 403);
-      assert.equal(nonApproverResponse.json().error, 'CONNECTOR_APPROVER_GROUP_REQUIRED');
+      assert.equal(nonApproverResponse.json().error, 'CONNECTOR_APPROVER_NOT_ALLOWED');
     } finally {
       await approvalApp.close();
     }
 
+    const noApproverApp = createApp(':memory:', false, {
+      oidcIdentity: { issuer, audience, jwksUri },
+      connectorPolicyDigests: [connectorDeclarationDigest(connector)],
+    });
+    try {
+      const missingApproverConfig = await noApproverApp.inject({
+        method: 'POST',
+        url: '/v1/omega/connectors/approvals',
+        headers: { authorization: `Bearer ${validToken}` },
+        payload: { connector },
+      });
+      assert.equal(missingApproverConfig.statusCode, 403);
+      assert.equal(missingApproverConfig.json().error, 'CONNECTOR_APPROVER_NOT_ALLOWED');
+    } finally {
+      await noApproverApp.close();
+    }
+
     const noPolicyApp = createApp(':memory:', false, {
       oidcIdentity: { issuer, audience, jwksUri },
+      connectorApproverSubject: 'operator-123',
       connectorPolicyDigests: [],
     });
     try {
@@ -250,12 +261,15 @@ test('OIDC identity is verified but does not grant connector admission', async (
       OMEGA_OIDC_AUDIENCE: audience,
       OMEGA_OIDC_JWKS_URI: jwksUri,
     }), { issuer, audience, jwksUri });
-    assert.deepEqual(oidcIdentityConfigFromEnvironment({
-      OMEGA_OIDC_ISSUER: issuer,
-      OMEGA_OIDC_AUDIENCE: audience,
-      OMEGA_OIDC_JWKS_URI: jwksUri,
-      OMEGA_OIDC_GROUPS_CLAIM: auth0GroupsClaim,
-    }), { issuer, audience, jwksUri, groupsClaim: auth0GroupsClaim });
+    assert.equal(connectorApproverSubjectFromEnvironment({}), undefined);
+    assert.equal(
+      connectorApproverSubjectFromEnvironment({ OMEGA_CONNECTOR_APPROVER_SUBJECT: ' operator-123 ' }),
+      'operator-123',
+    );
+    assert.throws(
+      () => connectorApproverSubjectFromEnvironment({ OMEGA_CONNECTOR_APPROVER_SUBJECT: ' ' }),
+      /non-empty Auth0 subject identifier/,
+    );
     assert.throws(
       () => oidcIdentityConfigFromEnvironment({ OMEGA_OIDC_ISSUER: issuer }),
       /must be configured together/,

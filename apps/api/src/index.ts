@@ -29,7 +29,9 @@ import {
 } from './oidc-identity.js';
 import {
   ConnectorApprovalStore,
+  connectorApproverSubjectFromEnvironment,
   connectorPolicyDigestsFromEnvironment,
+  validateConnectorApproverSubject,
   validateConnectorPolicyDigests,
 } from './connector-approval-store.js';
 import {
@@ -76,6 +78,7 @@ export type CreateAppOptions = {
   githubFetch?: typeof fetch;
   connectorAdmissionEvidence?: ConnectorAdmissionEvidenceResolver;
   oidcIdentity?: OidcIdentityConfig;
+  connectorApproverSubject?: string;
   connectorPolicyDigests?: readonly string[];
   pipelineAdmissionEvidence?: PipelineAdmissionEvidenceResolver;
   omegaCommandAdmissionEvidence?: OmegaCommandAdmissionEvidenceResolver;
@@ -161,6 +164,9 @@ export function createApp(
       ? validateConnectorPolicyDigests(options.connectorPolicyDigests)
       : connectorPolicyDigestsFromEnvironment(),
   );
+  const connectorApproverSubject = options.connectorApproverSubject === undefined
+    ? connectorApproverSubjectFromEnvironment()
+    : validateConnectorApproverSubject(options.connectorApproverSubject);
   const connectorApprovalStore = verifyOidcIdentity ? new ConnectorApprovalStore(dbPath) : undefined;
   const corsOrigin = parseCorsOrigins(process.env.OMEGA_CORS_ORIGINS, authMode);
 
@@ -321,6 +327,7 @@ export function createApp(
     githubFetch: options.githubFetch,
     resolveAdmissionEvidence: options.connectorAdmissionEvidence,
     oidcIdentityEnabled: Boolean(verifyOidcIdentity),
+    approverSubject: connectorApproverSubject,
     policyDigests: connectorPolicyDigests,
     approvalStore: connectorApprovalStore,
   });

@@ -3,7 +3,6 @@ import type { OmegaConnectorDeclaration } from '@oceanicos/mini';
 import type { VerifiedOidcIdentity } from './oidc-identity.js';
 import { openDatabase, type SqliteDb } from './sqlite.js';
 
-export const CONNECTOR_APPROVER_GROUP = 'connector-approvers';
 export const CONNECTOR_APPROVAL_TTL_SECONDS = 300;
 
 export interface ConnectorApproval {
@@ -44,6 +43,20 @@ export function validateConnectorPolicyDigests(digests: readonly string[]): stri
     throw new Error('OMEGA_CONNECTOR_POLICY_DIGESTS must contain only comma-separated SHA-256 digests');
   }
   return [...new Set(normalized)];
+}
+
+export function connectorApproverSubjectFromEnvironment(env: NodeJS.ProcessEnv = process.env): string | undefined {
+  const raw = env.OMEGA_CONNECTOR_APPROVER_SUBJECT;
+  if (raw === undefined) return undefined;
+  return validateConnectorApproverSubject(raw);
+}
+
+export function validateConnectorApproverSubject(subject: string): string {
+  const normalized = subject.trim();
+  if (!normalized || normalized.length > 512 || /[\u0000-\u001f\u007f]/.test(normalized)) {
+    throw new Error('OMEGA_CONNECTOR_APPROVER_SUBJECT must be a non-empty Auth0 subject identifier');
+  }
+  return normalized;
 }
 
 export class ConnectorApprovalStore {

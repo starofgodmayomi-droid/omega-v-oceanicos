@@ -114,15 +114,17 @@ When `OMEGA_ADMIN_OPERATOR_ALLOWLIST` is configured, the three persistence/revoc
 
 `POST /v1/pipeline` is open when auth mode is local. Fields named authorityVerified or policySatisfied inside the request admission object are not authority. If either is present the route returns 400 PIPELINE_ADMISSION_EVIDENCE_NOT_ACCEPTED and does not run. With those fields absent, admission evidence comes only from the server pipelineAdmissionEvidence option supplied to createApp. That option is not read from the request, the environment, or an admin bearer token. When it is absent, the route still compiles and can return a water-flow prefix, then the existing gate returns DENY. The response is halted at ADMIT with haltReason DENIED, authorized false, and no execution, attestation, or reality verification. A thrown or malformed server resolver returns 403 PIPELINE_ADMISSION_EVIDENCE_UNAVAILABLE and does not run. The HTTP route does not use caller-supplied `handlerStateAfter`, `handlerConsequence`, or `observedState` as execution or reality evidence. Without a server-owned execution and independent observation adapter, execution and reality attestation remain absent and reality status is `UNKNOWN`, even if request fields match the expected state. A dry run is a kernel execution barrier: `resolveBoundedWorkerHandler` returns DRY_RUN before a caller-supplied handler or the local default handler can run. Compile, validate, admit, and the bounded water-flow prefix still run. A dry run is not an external simulation.
 
-`POST /v1/omega/connectors/observe` follows the same rule for connector admission and execution. Request fields named authorityVerified, policySatisfied, or approvalVerified are not authority. If any of them is present the route returns 400 CONNECTOR_ADMISSION_EVIDENCE_NOT_ACCEPTED and does not observe. A request field named execution is not an observation. If it is present the route returns 400 CONNECTOR_EXECUTION_NOT_ACCEPTED and does not call the admission resolver, the live adapter, or the journal. A configured resolver that throws returns 503 CONNECTOR_ADMISSION_EVIDENCE_UNAVAILABLE; malformed or incomplete evidence returns 503 CONNECTOR_ADMISSION_EVIDENCE_INVALID. Neither failure calls the live adapter or appends to the journal. The optional self-hosted OIDC identity check is configured with `OMEGA_OIDC_ISSUER`, `OMEGA_OIDC_AUDIENCE`, and `OMEGA_OIDC_JWKS_URI`; all three are required together. Optional `OMEGA_OIDC_GROUPS_CLAIM` selects the signed group-membership claim and defaults to `groups`. The verifier accepts only a signed RS256 or ES256 JWT with the configured issuer and API audience plus non-empty `sub`, `iat`, and `exp`. This authenticates the token subject only; it is not itself policy or approval. Without OIDC, admission still requires a server-side evidence resolver and defaults to deny. The API does not implement the browser sign-in/session flow. The only HTTP execution is the server-side github-public-repository adapter, and only after admission. A degraded local journal still fails before the client-field checks.
+`POST /v1/omega/connectors/observe` follows the same rule for connector admission and execution. Request fields named authorityVerified, policySatisfied, or approvalVerified are not authority. If any of them is present the route returns 400 CONNECTOR_ADMISSION_EVIDENCE_NOT_ACCEPTED and does not observe. A request field named execution is not an observation. If it is present the route returns 400 CONNECTOR_EXECUTION_NOT_ACCEPTED and does not call the admission resolver, the live adapter, or the journal. A configured resolver that throws returns 503 CONNECTOR_ADMISSION_EVIDENCE_UNAVAILABLE; malformed or incomplete evidence returns 503 CONNECTOR_ADMISSION_EVIDENCE_INVALID. Neither failure calls the live adapter or appends to the journal. The optional self-hosted OIDC identity check is configured with `OMEGA_OIDC_ISSUER`, `OMEGA_OIDC_AUDIENCE`, and `OMEGA_OIDC_JWKS_URI`; all three are required together. The verifier accepts only a signed RS256 or ES256 JWT with the configured issuer and API audience plus non-empty `sub`, `iat`, and `exp`. This authenticates the token subject only; it is not itself policy or approval. Without OIDC, admission still requires a server-side evidence resolver and defaults to deny. The API does not implement the browser sign-in/session flow. The only HTTP execution is the server-side github-public-repository adapter, and only after admission. A degraded local journal still fails before the client-field checks.
 
 When OIDC is configured, `OMEGA_CONNECTOR_POLICY_DIGESTS` is a comma-separated
 allowlist of SHA-256 digests of canonical connector declarations; it defaults
 to empty, so approvals are denied by default. The digest includes the
 connector's capability, mode, action-related fields, and scope/target. Compute
 it with `connectorDeclarationDigest` from the built API module. A valid OIDC
-token whose signed `groups` claim contains `connector-approvers` may create
+token whose verified `sub` exactly matches the configured
+`OMEGA_CONNECTOR_APPROVER_SUBJECT` may create
 `POST /v1/omega/connectors/approvals` only for an allowlisted declaration.
+If that subject is unset, nobody can approve.
 The approval records the verified issuer and subject, expires after five
 minutes, and is single-use. The same issuer and subject must present that
 approval ID with the identical declaration to `/observe`; a different
@@ -143,42 +145,19 @@ obtaining the access token. Copy the issuer and `jwks_uri` exactly from the
 Auth0 tenant's OIDC discovery document; the API accepts signed RS256 or ES256
 tokens.
 
-Auth0 recommends namespaced custom claims and restricts several unnamespaced
-claims, including `groups`, for API access tokens
-([Auth0 custom-claims guidance](https://auth0.com/docs/secure/tokens/json-web-tokens/create-custom-claims)).
-For this custom API, the recommended API identifier is
-`urn:omega-v-oceanicos:connector-api`; use it as `OMEGA_OIDC_AUDIENCE`, unless
-it conflicts with an identifier already in the Auth0 tenant. Use the
-URN-namespaced claim `urn:omega-v-oceanicos:connector-groups` as
-`OMEGA_OIDC_GROUPS_CLAIM`. Auth0 permits URN namespaces for custom APIs; do not
-use its reserved `urn:auth0` namespace. The claim value must be an array
-containing the exact string `connector-approvers`. Derive it from Auth0-managed
-roles or another server-controlled assignment, not user-editable profile data.
+For this personal setup, use the API identifier
+`urn:omega-v-oceanicos:connector-api` as `OMEGA_OIDC_AUDIENCE`, unless that
+identifier already exists in the Auth0 tenant. Set
+`OMEGA_CONNECTOR_APPROVER_SUBJECT` to the exact `sub` for the one account
+allowed to approve. The signed access token must contain that same subject.
+This avoids groups, custom claims, and Auth0 Actions; the account allowlist is
+server configuration, not a value accepted from a request.
 
-For example, an Auth0 Post Login Action can map an assigned role into that
-claim:
-
-```js
-const groupsClaim = 'urn:omega-v-oceanicos:connector-groups';
-
-exports.onExecutePostLogin = async (event, api) => {
-  const roles = event.authorization?.roles ?? [];
-  const groups = roles.includes('connector-approvers') ? ['connector-approvers'] : [];
-  api.accessToken.setCustomClaim(groupsClaim, groups);
-};
-```
-
-Auth0 documents the role field in the
-[Post Login event object](https://auth0.com/docs/actions/reference/post-login/post-login-event-object).
-
-`OMEGA_OIDC_GROUPS_CLAIM` is optional and defaults to `groups` for providers
-that issue that claim directly. Verify issuer, API audience, JWKS, and the
-namespaced group claim with a real Auth0 access token in a non-production
-environment. The profile JSON alone does not establish a signed identity or
-approver membership. The repository does not provision Auth0, configure its
-API or Actions, or store its credentials. Keep
-`OMEGA_CONNECTOR_POLICY_DIGESTS` empty until the identity mapping and exact
-connector declaration have been reviewed.
+The repo does not provision Auth0, configure its API, or store its credentials.
+Verify issuer, audience, JWKS, and the signed subject using an access token in
+a non-production environment. The profile JSON alone does not authenticate a
+request. Keep `OMEGA_CONNECTOR_POLICY_DIGESTS` empty until the identity and
+exact connector declaration are reviewed.
 
 ## Ω command lifecycle governance
 

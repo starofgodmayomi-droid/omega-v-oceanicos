@@ -9,7 +9,6 @@ import {
   type OmegaConnectorDeclaration,
 } from '@oceanicos/mini';
 import {
-  CONNECTOR_APPROVER_GROUP,
   connectorDeclarationDigest,
   ConnectorApprovalStore,
 } from './connector-approval-store.js';
@@ -108,6 +107,7 @@ export interface ConnectorObservationRouteOptions {
   /** Trusted server-side evidence source. Missing resolver means deny by default. */
   readonly resolveAdmissionEvidence?: ConnectorAdmissionEvidenceResolver;
   readonly oidcIdentityEnabled?: boolean;
+  readonly approverSubject?: string;
   readonly policyDigests?: ReadonlySet<string>;
   readonly approvalStore?: ConnectorApprovalStore;
 }
@@ -140,8 +140,8 @@ export function registerConnectorObservationRoute(
     if (!options.oidcIdentityEnabled || !identity) {
       return jsonError(reply, 401, 'CONNECTOR_IDENTITY_REQUIRED');
     }
-    if (!identity.groups.includes(CONNECTOR_APPROVER_GROUP)) {
-      return jsonError(reply, 403, 'CONNECTOR_APPROVER_GROUP_REQUIRED');
+    if (identity.subject !== options.approverSubject) {
+      return jsonError(reply, 403, 'CONNECTOR_APPROVER_NOT_ALLOWED');
     }
     const body = parseObject(request.body);
     if (!body || Object.keys(body).some((field) => field !== 'connector')) {
@@ -186,8 +186,8 @@ export function registerConnectorObservationRoute(
     if (!options.oidcIdentityEnabled || !identity) {
       return jsonError(reply, 401, 'CONNECTOR_IDENTITY_REQUIRED');
     }
-    if (!identity.groups.includes(CONNECTOR_APPROVER_GROUP)) {
-      return jsonError(reply, 403, 'CONNECTOR_APPROVER_GROUP_REQUIRED');
+    if (identity.subject !== options.approverSubject) {
+      return jsonError(reply, 403, 'CONNECTOR_APPROVER_NOT_ALLOWED');
     }
     if (!options.approvalStore) {
       return jsonError(reply, 503, 'CONNECTOR_APPROVAL_STORE_UNAVAILABLE');
@@ -246,10 +246,10 @@ export function registerConnectorObservationRoute(
 
     const identity = request.omegaIdentity;
     const connectorDigest = connectorDeclarationDigest(connector);
-    const approverGroupMember = Boolean(identity?.groups.includes(CONNECTOR_APPROVER_GROUP));
+    const approverAuthorized = Boolean(identity && identity.subject === options.approverSubject);
     const policySatisfied = Boolean(options.policyDigests?.has(connectorDigest));
     let resolverEvidence: ConnectorAdmissionEvidence | undefined;
-    if (options.resolveAdmissionEvidence && (!options.oidcIdentityEnabled || (approverGroupMember && policySatisfied))) {
+    if (options.resolveAdmissionEvidence && (!options.oidcIdentityEnabled || (approverAuthorized && policySatisfied))) {
       let resolvedEvidence: unknown;
       try {
         resolvedEvidence = await options.resolveAdmissionEvidence(request, connector);
@@ -268,7 +268,7 @@ export function registerConnectorObservationRoute(
     if (
       options.oidcIdentityEnabled &&
       identity &&
-      approverGroupMember &&
+      approverAuthorized &&
       policySatisfied &&
       typeof approvalId === 'string' &&
       liveAdapter === GITHUB_PUBLIC_REPOSITORY_ADAPTER &&
@@ -290,7 +290,7 @@ export function registerConnectorObservationRoute(
 
     const admissionEvidence: ConnectorAdmissionEvidence = options.oidcIdentityEnabled
       ? {
-          authorityVerified: approverGroupMember && (resolverEvidence?.authorityVerified ?? true),
+          authorityVerified: approverAuthorized && (resolverEvidence?.authorityVerified ?? true),
           policySatisfied: policySatisfied && (resolverEvidence?.policySatisfied ?? true),
           approvalVerified: approvalVerified && (resolverEvidence?.approvalVerified ?? true),
         }
