@@ -22,6 +22,12 @@ import { registerDependencyRoute } from './dependency-route.js';
 import { registerValueNavigatorRoute } from './value-navigator-route.js';
 import { registerConnectorObservationRoute, type ConnectorAdmissionEvidenceResolver } from './connector-observation-route.js';
 import {
+  createOidcIdentityVerifier,
+  oidcIdentityConfigFromEnvironment,
+  OidcIdentityProviderUnavailableError,
+  type OidcIdentityConfig,
+} from './oidc-identity.js';
+import {
   OmegaCommandStore,
   OmegaIdempotencyConflictError,
   registerOmegaRoutes,
@@ -64,6 +70,7 @@ export type CreateAppOptions = {
   connectorObservationPath?: string;
   githubFetch?: typeof fetch;
   connectorAdmissionEvidence?: ConnectorAdmissionEvidenceResolver;
+  oidcIdentity?: OidcIdentityConfig;
   pipelineAdmissionEvidence?: PipelineAdmissionEvidenceResolver;
   omegaCommandAdmissionEvidence?: OmegaCommandAdmissionEvidenceResolver;
 };
@@ -139,6 +146,10 @@ export function createApp(
   const attestationSigningKey = options.attestationSigningKey ?? process.env.OMEGA_SIGNING_KEY;
   const authMode = parseAuthMode(process.env.OMEGA_AUTH_MODE ?? (process.env.NODE_ENV === 'production' ? 'required' : 'local'));
   const { readToken, adminToken } = configuredBearerTokens(authMode);
+  const oidcIdentityConfig = options.oidcIdentity ?? oidcIdentityConfigFromEnvironment();
+  const verifyOidcIdentity = oidcIdentityConfig
+    ? createOidcIdentityVerifier(oidcIdentityConfig)
+    : undefined;
   const corsOrigin = parseCorsOrigins(process.env.OMEGA_CORS_ORIGINS, authMode);
 
   const persistenceEnabled = process.env.OMEGA_PERSISTENCE
@@ -252,6 +263,23 @@ export function createApp(
   });
   fastify.addHook('onRequest', async (request, reply) => {
     if (request.method === 'OPTIONS' || request.url.split('?')[0] === '/health') return;
+    if (
+      request.method === 'POST' &&
+      request.url.split('?')[0] === '/v1/omega/connectors/observe' &&
+      verifyOidcIdentity
+    ) {
+      const token = bearer(request.headers.authorization);
+      if (!token) return jsonError(reply, 401, 'CONNECTOR_IDENTITY_REQUIRED');
+      try {
+        request.omegaIdentity = await verifyOidcIdentity(token);
+      } catch (error) {
+        if (error instanceof OidcIdentityProviderUnavailableError) {
+          return jsonError(reply, 503, 'CONNECTOR_IDENTITY_UNAVAILABLE');
+        }
+        return jsonError(reply, 401, 'CONNECTOR_IDENTITY_INVALID');
+      }
+      return;
+    }
     if (authMode === 'local') {
       request.omegaAuthorization = { mode: 'local', principal: 'local-development' };
       return;

@@ -1,4 +1,4 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 import {
   admitOmegaConnector,
   createGithubPublicRepositoryHandler,
@@ -94,7 +94,7 @@ function isConnectorAdmissionEvidence(value: unknown): value is ConnectorAdmissi
 }
 
 export type ConnectorAdmissionEvidenceResolver = (
-  request: unknown,
+  request: FastifyRequest,
   connector: OmegaConnectorDeclaration,
 ) => ConnectorAdmissionEvidence | Promise<ConnectorAdmissionEvidence>;
 

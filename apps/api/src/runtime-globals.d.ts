@@ -1,4 +1,5 @@
 import 'fastify';
+import type { VerifiedOidcIdentity } from './oidc-identity.js';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -6,6 +7,7 @@ declare module 'fastify' {
       mode: 'local' | 'required';
       principal: 'local-development' | 'read-bearer' | 'admin-bearer';
     };
+    omegaIdentity?: VerifiedOidcIdentity;
   }
 }
 
