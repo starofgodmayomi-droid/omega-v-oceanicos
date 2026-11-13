@@ -239,3 +239,4 @@ export function executeOceanicosMaxExpansion(): CryptographicBlock {
 if (typeof require !== 'undefined' && require.main === module) {
   executeOceanicosMaxExpansion();
 }
+export * from './reality-bound-cycle.js';
