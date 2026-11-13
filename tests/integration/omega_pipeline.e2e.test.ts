@@ -105,6 +105,45 @@ describe('Ω∞v unified change pipeline', () => {
     assert.ok(memory.length >= 1);
   });
 
+  it('halts a dry-run before invoking an explicit handler or reality observer', () => {
+    let handlerCalls = 0;
+    let observationCalls = 0;
+    const result = runOmegaChangePipeline({
+      compile: {
+        ...compileBase,
+        transition: { ...compileBase.transition, dryRun: true },
+      },
+      admission: { authorityVerified: true, policySatisfied: true },
+      authority: 'human:pipeline',
+      policy: 'policy:pipeline',
+      handler: () => {
+        handlerCalls += 1;
+        return { stateAfter: 'S1' };
+      },
+      observeState: () => {
+        observationCalls += 1;
+        return 'S1';
+      },
+      waterFlowMaxSteps: 3,
+      changeId: 'change-pipeline-dry-run-explicit-handler',
+    });
+
+    assert.equal(result.halted, true);
+    assert.equal(result.stage, 'EXECUTE');
+    assert.equal(result.haltReason, 'DRY_RUN');
+    assert.equal(handlerCalls, 0);
+    assert.equal(observationCalls, 0);
+    assert.equal(result.execution, undefined);
+    assert.equal(result.lineage.some((entry) => entry.startsWith('attestation-')), false);
+    assert.equal(result.reality, undefined);
+    assert.equal(result.realityAttestation, undefined);
+    assert.equal(result.statusVector.executed, 'NO');
+    assert.equal(result.statusVector.verified, 'UNKNOWN');
+    assert.equal(result.statusVector.attested, 'UNKNOWN');
+    assert.equal(result.waterFlow.length, 3);
+    assert.equal(result.waterFlow.every((frame) => frame.provenance.verified === false), true);
+  });
+
   it('exposes a deterministic finite water-flow prefix without changing execution semantics', () => {
     const result = runOmegaChangePipeline({
       compile: compileBase,
