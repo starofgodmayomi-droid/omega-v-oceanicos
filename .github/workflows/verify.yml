@@ -82,6 +82,37 @@ jobs:
       - name: Validate README ecosystem alignment
         run: pnpm validate:docs
 
+      # Exercise the checkout, not only the in-process equation tests.
+      # A compressed ring may name a review candidate. It must not execute it.
+      # Ring length stays whatever this checkout declares.
+      - name: Compress repository ring and full-stack water
+        run: |
+          pnpm --silent compress:repo > /tmp/repo-compression.json
+          pnpm --silent flow:water > /tmp/water-flow.json
+          node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs';
+          const repo = JSON.parse(readFileSync('/tmp/repo-compression.json', 'utf8'));
+          const water = JSON.parse(readFileSync('/tmp/water-flow.json', 'utf8'));
+          const failures = [];
+          if (repo.status !== 'COMPRESSED') failures.push(`repo.status=${repo.status}`);
+          if (repo.reconciliation !== 'VERIFIED') failures.push(`repo.reconciliation=${repo.reconciliation}`);
+          if (repo.remembered !== repo.ring) failures.push(`remembered=${repo.remembered}, ring=${repo.ring}`);
+          if (repo.upgrade?.execution !== 'NOT_EXECUTED') failures.push(`repo.upgrade.execution=${repo.upgrade?.execution}`);
+          if (!repo.upgrade?.selected?.evidenceHash) failures.push('repo upgrade evidenceHash is missing');
+          if (repo.upgrade?.selected?.evidenceHash !== repo.digest) failures.push('repo evidenceHash does not match digest');
+          if (water.status !== 'COMPRESSED') failures.push(`water.status=${water.status}`);
+          if (water.current !== 'FULL_STACK_WATER') failures.push(`water.current=${water.current}`);
+          if (water.skills !== 8) failures.push(`water.skills=${water.skills}`);
+          if (water.halt !== null) failures.push('water halt was not null');
+          if (water.upgrade?.execution !== 'NOT_EXECUTED') failures.push(`water.upgrade.execution=${water.upgrade?.execution}`);
+          if (water.upgrade?.selected?.evidenceHash !== water.digest) failures.push('water evidenceHash does not match digest');
+          if (failures.length) {
+            console.error(`Repository flow contract failed: ${failures.join(', ')}`);
+            process.exit(1);
+          }
+          console.log(`Flow held: ${repo.remembered} outward surfaces and ${water.skills} skills compressed; upgrade remains NOT_EXECUTED.`);
+          NODE
+
       # The swarm ledger is the cross-agent record. A missing check here is how
       # an unverified receipt becomes an accepted claim.
       - name: Validate swarm ledger
