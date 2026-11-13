@@ -13,6 +13,7 @@ export interface OidcIdentityConfig {
   readonly issuer: string;
   readonly audience: string;
   readonly jwksUri: string;
+  readonly groupsClaim?: string;
 }
 
 export interface VerifiedOidcIdentity {
@@ -48,11 +49,12 @@ export function oidcIdentityConfigFromEnvironment(
   const issuer = env.OMEGA_OIDC_ISSUER?.trim();
   const audience = env.OMEGA_OIDC_AUDIENCE?.trim();
   const jwksUri = env.OMEGA_OIDC_JWKS_URI?.trim();
+  const groupsClaim = env.OMEGA_OIDC_GROUPS_CLAIM?.trim();
   if (!issuer && !audience && !jwksUri) return undefined;
   if (!issuer || !audience || !jwksUri) {
     throw new Error('OMEGA_OIDC_ISSUER, OMEGA_OIDC_AUDIENCE, and OMEGA_OIDC_JWKS_URI must be configured together');
   }
-  return { issuer, audience, jwksUri };
+  return groupsClaim ? { issuer, audience, jwksUri, groupsClaim } : { issuer, audience, jwksUri };
 }
 
 export function createOidcIdentityVerifier(config: OidcIdentityConfig) {
@@ -61,7 +63,9 @@ export function createOidcIdentityVerifier(config: OidcIdentityConfig) {
   const jwksUri = configuredEndpoint(config.jwksUri, 'OIDC JWKS URI');
   const jwks = createRemoteJWKSet(jwksUri);
   const audience = config.audience.trim();
+  const groupsClaim = config.groupsClaim === undefined ? 'groups' : config.groupsClaim.trim();
   if (!audience) throw new Error('OIDC audience must be a non-empty string');
+  if (!groupsClaim) throw new Error('OIDC groups claim must be a non-empty string');
 
   return async (token: string): Promise<VerifiedOidcIdentity> => {
     if (!token || token.length > 16_384) throw new Error('OIDC bearer token is invalid');
@@ -102,12 +106,13 @@ export function createOidcIdentityVerifier(config: OidcIdentityConfig) {
       throw new OidcTokenInvalidError('OIDC authorized party does not match the API audience');
     }
 
+    const groupsValue = payload[groupsClaim];
     return {
       issuer,
       subject: payload.sub,
       audience,
-      groups: Array.isArray(payload.groups)
-        ? payload.groups.filter((group): group is string => typeof group === 'string' && Boolean(group.trim()))
+      groups: Array.isArray(groupsValue)
+        ? groupsValue.filter((group: unknown): group is string => typeof group === 'string' && Boolean(group.trim()))
         : [],
       issuedAt: payload.iat,
       expiresAt: payload.exp,

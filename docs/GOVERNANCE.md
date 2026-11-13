@@ -114,7 +114,7 @@ When `OMEGA_ADMIN_OPERATOR_ALLOWLIST` is configured, the three persistence/revoc
 
 `POST /v1/pipeline` is open when auth mode is local. Fields named authorityVerified or policySatisfied inside the request admission object are not authority. If either is present the route returns 400 PIPELINE_ADMISSION_EVIDENCE_NOT_ACCEPTED and does not run. With those fields absent, admission evidence comes only from the server pipelineAdmissionEvidence option supplied to createApp. That option is not read from the request, the environment, or an admin bearer token. When it is absent, the route still compiles and can return a water-flow prefix, then the existing gate returns DENY. The response is halted at ADMIT with haltReason DENIED, authorized false, and no execution, attestation, or reality verification. A thrown or malformed server resolver returns 403 PIPELINE_ADMISSION_EVIDENCE_UNAVAILABLE and does not run. The HTTP route does not use caller-supplied `handlerStateAfter`, `handlerConsequence`, or `observedState` as execution or reality evidence. Without a server-owned execution and independent observation adapter, execution and reality attestation remain absent and reality status is `UNKNOWN`, even if request fields match the expected state. A dry run is a kernel execution barrier: `resolveBoundedWorkerHandler` returns DRY_RUN before a caller-supplied handler or the local default handler can run. Compile, validate, admit, and the bounded water-flow prefix still run. A dry run is not an external simulation.
 
-`POST /v1/omega/connectors/observe` follows the same rule for connector admission and execution. Request fields named authorityVerified, policySatisfied, or approvalVerified are not authority. If any of them is present the route returns 400 CONNECTOR_ADMISSION_EVIDENCE_NOT_ACCEPTED and does not observe. A request field named execution is not an observation. If it is present the route returns 400 CONNECTOR_EXECUTION_NOT_ACCEPTED and does not call the admission resolver, the live adapter, or the journal. A configured resolver that throws returns 503 CONNECTOR_ADMISSION_EVIDENCE_UNAVAILABLE; malformed or incomplete evidence returns 503 CONNECTOR_ADMISSION_EVIDENCE_INVALID. Neither failure calls the live adapter or appends to the journal. The optional self-hosted OIDC identity check is configured with `OMEGA_OIDC_ISSUER`, `OMEGA_OIDC_AUDIENCE`, and `OMEGA_OIDC_JWKS_URI`; all three are required together. It accepts only a signed RS256 or ES256 JWT with the configured issuer and API audience plus non-empty `sub`, `iat`, and `exp`. This authenticates the token subject only; it is not itself policy or approval. Without OIDC, admission still requires a server-side evidence resolver and defaults to deny. The API does not implement the browser sign-in/session flow. The only HTTP execution is the server-side github-public-repository adapter, and only after admission. A degraded local journal still fails before the client-field checks.
+`POST /v1/omega/connectors/observe` follows the same rule for connector admission and execution. Request fields named authorityVerified, policySatisfied, or approvalVerified are not authority. If any of them is present the route returns 400 CONNECTOR_ADMISSION_EVIDENCE_NOT_ACCEPTED and does not observe. A request field named execution is not an observation. If it is present the route returns 400 CONNECTOR_EXECUTION_NOT_ACCEPTED and does not call the admission resolver, the live adapter, or the journal. A configured resolver that throws returns 503 CONNECTOR_ADMISSION_EVIDENCE_UNAVAILABLE; malformed or incomplete evidence returns 503 CONNECTOR_ADMISSION_EVIDENCE_INVALID. Neither failure calls the live adapter or appends to the journal. The optional self-hosted OIDC identity check is configured with `OMEGA_OIDC_ISSUER`, `OMEGA_OIDC_AUDIENCE`, and `OMEGA_OIDC_JWKS_URI`; all three are required together. Optional `OMEGA_OIDC_GROUPS_CLAIM` selects the signed group-membership claim and defaults to `groups`. The verifier accepts only a signed RS256 or ES256 JWT with the configured issuer and API audience plus non-empty `sub`, `iat`, and `exp`. This authenticates the token subject only; it is not itself policy or approval. Without OIDC, admission still requires a server-side evidence resolver and defaults to deny. The API does not implement the browser sign-in/session flow. The only HTTP execution is the server-side github-public-repository adapter, and only after admission. A degraded local journal still fails before the client-field checks.
 
 When OIDC is configured, `OMEGA_CONNECTOR_POLICY_DIGESTS` is a comma-separated
 allowlist of SHA-256 digests of canonical connector declarations; it defaults
@@ -134,24 +134,49 @@ resolver remains an additional gate. These routes rely on an access token from
 the configured OIDC provider; the implementation does not provision users,
 map provider groups, or establish that a real human completed a sign-in.
 
-### Keycloak deployment checklist
+### Auth0 deployment checklist
 
 The API is provider-neutral and does not discover OIDC metadata automatically.
-For Keycloak, set `OMEGA_OIDC_ISSUER` to the realm's exact public issuer URL,
-and set `OMEGA_OIDC_JWKS_URI` to that realm's public
-`/protocol/openid-connect/certs` endpoint. Set `OMEGA_OIDC_AUDIENCE` to the API
-audience and configure the Keycloak access token to contain that audience.
-Configure a Group Membership mapper to emit a `groups` array in the access
-token with the exact value `connector-approvers`; do not rely on defaults that
-may emit a group path such as `/connector-approvers`. The verifier intentionally
-uses exact group matching and accepts signed RS256 or ES256 tokens only.
+Use an Auth0 **JWT access token for the API**, not the user-profile JSON from
+`/userinfo` or an ID token. Configure an Auth0 API audience and request it when
+obtaining the access token. Copy the issuer and `jwks_uri` exactly from the
+Auth0 tenant's OIDC discovery document; the API accepts signed RS256 or ES256
+tokens.
 
-Before enabling an allowlist digest, verify the realm issuer, audience, JWKS
-endpoint, and group claim using a real Keycloak-issued access token in a
-non-production environment. The repository does not provision Keycloak,
-configure its clients or mappers, or store its credentials. Keep
-`OMEGA_CONNECTOR_POLICY_DIGESTS` empty until the exact connector declaration
-has been reviewed and the identity mapping has been verified.
+Auth0 recommends namespaced custom claims and restricts several unnamespaced
+claims, including `groups`, for API access tokens
+([Auth0 custom-claims guidance](https://auth0.com/docs/secure/tokens/json-web-tokens/create-custom-claims)).
+Use an Auth0 Action to add the approver group to a namespaced access-token claim, for example
+`https://claims.your-domain.example/connector-groups`, and set
+`OMEGA_OIDC_GROUPS_CLAIM` to that exact claim name. Replace the example with a
+namespace URL you control. The claim value must be an array containing the
+exact string `connector-approvers`. Derive it from Auth0-managed roles or
+another server-controlled assignment, not user-editable profile data.
+
+For example, an Auth0 Post Login Action can map an assigned role into that
+claim (replace the namespace with a URL you control):
+
+```js
+const groupsClaim = 'https://claims.your-domain.example/connector-groups';
+
+exports.onExecutePostLogin = async (event, api) => {
+  const roles = event.authorization?.roles ?? [];
+  const groups = roles.includes('connector-approvers') ? ['connector-approvers'] : [];
+  api.accessToken.setCustomClaim(groupsClaim, groups);
+};
+```
+
+Auth0 documents the role field in the
+[Post Login event object](https://auth0.com/docs/actions/reference/post-login/post-login-event-object).
+
+`OMEGA_OIDC_GROUPS_CLAIM` is optional and defaults to `groups` for providers
+that issue that claim directly. Verify issuer, API audience, JWKS, and the
+namespaced group claim with a real Auth0 access token in a non-production
+environment. The profile JSON alone does not establish a signed identity or
+approver membership. The repository does not provision Auth0, configure its
+API or Actions, or store its credentials. Keep
+`OMEGA_CONNECTOR_POLICY_DIGESTS` empty until the identity mapping and exact
+connector declaration have been reviewed.
 
 ## Ω command lifecycle governance
 
