@@ -84,6 +84,19 @@ export type ConnectorAdmissionEvidenceResolver = (
   connector: OmegaConnectorDeclaration,
 ) => ConnectorAdmissionEvidence | Promise<ConnectorAdmissionEvidence>;
 
+/**
+ * TypeScript types do not validate values returned by runtime adapters.
+ * Reject malformed evidence at the boundary so truthy strings/numbers can
+ * never satisfy an authority, policy, or approval predicate.
+ */
+function isConnectorAdmissionEvidence(value: unknown): value is ConnectorAdmissionEvidence {
+  const evidence = parseObject(value);
+  return evidence !== null &&
+    typeof evidence.authorityVerified === 'boolean' &&
+    typeof evidence.policySatisfied === 'boolean' &&
+    typeof evidence.approvalVerified === 'boolean';
+}
+
 export interface ConnectorObservationRouteOptions {
   readonly githubFetch?: typeof fetch;
   /** Trusted server-side evidence source. Missing resolver means deny by default. */
@@ -151,8 +164,11 @@ export function registerConnectorObservationRoute(
       return jsonError(reply, 400, 'CONNECTOR_EXECUTION_NOT_ACCEPTED');
     }
 
-    const admissionEvidence = options.resolveAdmissionEvidence
+    const resolvedAdmissionEvidence = options.resolveAdmissionEvidence
       ? await options.resolveAdmissionEvidence(request, connector)
+      : undefined;
+    const admissionEvidence = isConnectorAdmissionEvidence(resolvedAdmissionEvidence)
+      ? resolvedAdmissionEvidence
       : { authorityVerified: false, policySatisfied: false, approvalVerified: false };
     const admission = admitOmegaConnector({ connector, ...admissionEvidence });
 
