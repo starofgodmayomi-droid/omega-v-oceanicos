@@ -358,5 +358,203 @@
     "evidence_hash": "25280b52a12f2c8d8feff4a8c8706dcb2aad2f816625f1b03b83d5e1e7610976",
     "reason": "Sovereign execution verified via OMEGA hash equality",
     "authorized": true
+  },
+  {
+    "timestamp": "2026-11-13T07:20:44.371413+00:00",
+    "intent": "Verify local SQLite persistence invariants",
+    "phase_t": 0.5,
+    "status": "VERIFIED",
+    "evidence_hash": "3e85e3f908686c2a7dd6cd1cf99c08bd274708d828a6baee1fe6cbf1d7218c43",
+    "reason": "Sovereign execution verified via OMEGA hash equality",
+    "authorized": true
+  },
+  {
+    "timestamp": "2026-11-13T07:20:59.342343+00:00",
+    "intent": "Verify local SQLite persistence invariants",
+    "phase_t": 0.7,
+    "status": "VERIFIED",
+    "evidence_hash": "aef96a07b381f238b0fe2bb954874f29c86f0ccab436d6d764b5511063ba071e",
+    "reason": "Sovereign execution verified via OMEGA hash equality",
+    "authorized": true
+  },
+  {
+    "timestamp": "2026-11-13T07:21:00.523539+00:00",
+    "intent": "Verify local SQLite persistence invariants",
+    "phase_t": 0.7,
+    "status": "VERIFIED",
+    "evidence_hash": "aef96a07b381f238b0fe2bb954874f29c86f0ccab436d6d764b5511063ba071e",
+    "reason": "Sovereign execution verified via OMEGA hash equality",
+    "authorized": true
+  },
+  {
+    "timestamp": "2026-11-13T07:21:01.606304+00:00",
+    "intent": "Verify local SQLite persistence invariants",
+    "phase_t": 0.7,
+    "status": "VERIFIED",
+    "evidence_hash": "aef96a07b381f238b0fe2bb954874f29c86f0ccab436d6d764b5511063ba071e",
+    "reason": "Sovereign execution verified via OMEGA hash equality",
+    "authorized": true
+  },
+  {
+    "timestamp": "2026-11-13T07:21:02.071208+00:00",
+    "intent": "Verify local SQLite persistence invariants",
+    "phase_t": 0.7,
+    "status": "VERIFIED",
+    "evidence_hash": "aef96a07b381f238b0fe2bb954874f29c86f0ccab436d6d764b5511063ba071e",
+    "reason": "Sovereign execution verified via OMEGA hash equality",
+    "authorized": true
+  },
+  {
+    "timestamp": "2026-11-13T07:21:02.294059+00:00",
+    "intent": "Verify local SQLite persistence invariants",
+    "phase_t": 0.7,
+    "status": "VERIFIED",
+    "evidence_hash": "aef96a07b381f238b0fe2bb954874f29c86f0ccab436d6d764b5511063ba071e",
+    "reason": "Sovereign execution verified via OMEGA hash equality",
+    "authorized": true
+  },
+  {
+    "timestamp": "2026-11-13T07:21:02.668174+00:00",
+    "intent": "Verify local SQLite persistence invariants",
+    "phase_t": 0.7,
+    "status": "VERIFIED",
+    "evidence_hash": "aef96a07b381f238b0fe2bb954874f29c86f0ccab436d6d764b5511063ba071e",
+    "reason": "Sovereign execution verified via OMEGA hash equality",
+    "authorized": true
+  },
+  {
+    "timestamp": "2026-11-13T07:21:03.047727+00:00",
+    "intent": "Verify local SQLite persistence invariants",
+    "phase_t": 0.7,
+    "status": "VERIFIED",
+    "evidence_hash": "aef96a07b381f238b0fe2bb954874f29c86f0ccab436d6d764b5511063ba071e",
+    "reason": "Sovereign execution verified via OMEGA hash equality",
+    "authorized": true
+  },
+  {
+    "timestamp": "2026-11-13T07:21:03.290381+00:00",
+    "intent": "Verify local SQLite persistence invariants",
+    "phase_t": 0.7,
+    "status": "VERIFIED",
+    "evidence_hash": "aef96a07b381f238b0fe2bb954874f29c86f0ccab436d6d764b5511063ba071e",
+    "reason": "Sovereign execution verified via OMEGA hash equality",
+    "authorized": true
+  },
+  {
+    "timestamp": "2026-11-13T07:21:03.507614+00:00",
+    "intent": "Verify local SQLite persistence invariants",
+    "phase_t": 0.7,
+    "status": "VERIFIED",
+    "evidence_hash": "aef96a07b381f238b0fe2bb954874f29c86f0ccab436d6d764b5511063ba071e",
+    "reason": "Sovereign execution verified via OMEGA hash equality",
+    "authorized": true
+  },
+  {
+    "timestamp": "2026-11-13T07:21:03.981358+00:00",
+    "intent": "Verify local SQLite persistence invariants",
+    "phase_t": 0.7,
+    "status": "VERIFIED",
+    "evidence_hash": "aef96a07b381f238b0fe2bb954874f29c86f0ccab436d6d764b5511063ba071e",
+    "reason": "Sovereign execution verified via OMEGA hash equality",
+    "authorized": true
+  },
+  {
+    "timestamp": "2026-11-13T07:21:04.404096+00:00",
+    "intent": "Verify local SQLite persistence invariants",
+    "phase_t": 0.7,
+    "status": "VERIFIED",
+    "evidence_hash": "aef96a07b381f238b0fe2bb954874f29c86f0ccab436d6d764b5511063ba071e",
+    "reason": "Sovereign execution verified via OMEGA hash equality",
+    "authorized": true
+  },
+  {
+    "timestamp": "2026-11-13T07:21:19.865058+00:00",
+    "intent": "Verify local SQLite persistence invariants",
+    "phase_t": 0.7,
+    "status": "VERIFIED",
+    "evidence_hash": "aef96a07b381f238b0fe2bb954874f29c86f0ccab436d6d764b5511063ba071e",
+    "reason": "Sovereign execution verified via OMEGA hash equality",
+    "authorized": true
+  },
+  {
+    "timestamp": "2026-11-13T07:21:21.435998+00:00",
+    "intent": "Verify local SQLite persistence invariants",
+    "phase_t": 0.7,
+    "status": "VERIFIED",
+    "evidence_hash": "aef96a07b381f238b0fe2bb954874f29c86f0ccab436d6d764b5511063ba071e",
+    "reason": "Sovereign execution verified via OMEGA hash equality",
+    "authorized": true
+  },
+  {
+    "timestamp": "2026-11-13T07:21:21.803629+00:00",
+    "intent": "Verify local SQLite persistence invariants",
+    "phase_t": 0.7,
+    "status": "VERIFIED",
+    "evidence_hash": "aef96a07b381f238b0fe2bb954874f29c86f0ccab436d6d764b5511063ba071e",
+    "reason": "Sovereign execution verified via OMEGA hash equality",
+    "authorized": true
+  },
+  {
+    "timestamp": "2026-11-13T07:21:22.020428+00:00",
+    "intent": "Verify local SQLite persistence invariants",
+    "phase_t": 0.7,
+    "status": "VERIFIED",
+    "evidence_hash": "aef96a07b381f238b0fe2bb954874f29c86f0ccab436d6d764b5511063ba071e",
+    "reason": "Sovereign execution verified via OMEGA hash equality",
+    "authorized": true
+  },
+  {
+    "timestamp": "2026-11-13T07:21:22.340977+00:00",
+    "intent": "Verify local SQLite persistence invariants",
+    "phase_t": 0.7,
+    "status": "VERIFIED",
+    "evidence_hash": "aef96a07b381f238b0fe2bb954874f29c86f0ccab436d6d764b5511063ba071e",
+    "reason": "Sovereign execution verified via OMEGA hash equality",
+    "authorized": true
+  },
+  {
+    "timestamp": "2026-11-13T07:21:22.494947+00:00",
+    "intent": "Verify local SQLite persistence invariants",
+    "phase_t": 0.7,
+    "status": "VERIFIED",
+    "evidence_hash": "aef96a07b381f238b0fe2bb954874f29c86f0ccab436d6d764b5511063ba071e",
+    "reason": "Sovereign execution verified via OMEGA hash equality",
+    "authorized": true
+  },
+  {
+    "timestamp": "2026-11-13T07:21:24.861510+00:00",
+    "intent": "Verify local SQLite persistence invariants",
+    "phase_t": 0.55,
+    "status": "VERIFIED",
+    "evidence_hash": "618f4efbff8de6cd475314749a37e00b94712e68f854d5e2f6ab755fe23af796",
+    "reason": "Sovereign execution verified via OMEGA hash equality",
+    "authorized": true
+  },
+  {
+    "timestamp": "2026-11-13T07:21:25.382971+00:00",
+    "intent": "Verify local SQLite persistence invariants",
+    "phase_t": 0.55,
+    "status": "VERIFIED",
+    "evidence_hash": "618f4efbff8de6cd475314749a37e00b94712e68f854d5e2f6ab755fe23af796",
+    "reason": "Sovereign execution verified via OMEGA hash equality",
+    "authorized": true
+  },
+  {
+    "timestamp": "2026-11-13T07:21:25.583941+00:00",
+    "intent": "Verify local SQLite persistence invariants",
+    "phase_t": 0.55,
+    "status": "VERIFIED",
+    "evidence_hash": "618f4efbff8de6cd475314749a37e00b94712e68f854d5e2f6ab755fe23af796",
+    "reason": "Sovereign execution verified via OMEGA hash equality",
+    "authorized": true
+  },
+  {
+    "timestamp": "2026-11-13T07:21:25.810681+00:00",
+    "intent": "Verify local SQLite persistence invariants",
+    "phase_t": 0.55,
+    "status": "VERIFIED",
+    "evidence_hash": "618f4efbff8de6cd475314749a37e00b94712e68f854d5e2f6ab755fe23af796",
+    "reason": "Sovereign execution verified via OMEGA hash equality",
+    "authorized": true
   }
 ]
