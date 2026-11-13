@@ -292,7 +292,8 @@
         "kai_ledger.json"
       ],
       "tests_passed": true,
-      "next_delta": "Human-review CI on this branch. evidence_hash is the workflow diff only, because the ledger line cannot contain the hash of a diff that includes itself. pnpm build, pnpm lint, and the full pnpm test were not run. upgrade.execution stays NOT_EXECUTED. Do not merge from this node."
+      "next_delta": "Human-review CI on this branch. evidence_hash is the workflow diff only, because the ledger line cannot contain the hash of a diff that includes itself. pnpm build, pnpm lint, and the full pnpm test were not run. upgrade.execution stays NOT_EXECUTED. Do not merge from this node.",
+      "evidence_hash": "ee3589cf21ee718e4deb175c3a2d7f1893e8faab1561888aaa7bae3280cb8d08"
     }
   ]
 }
