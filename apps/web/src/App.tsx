@@ -805,6 +805,7 @@ export function App() {
               {backgroundWorkspaceOpen ? 'Close background workspace' : 'Open background full-stack'}
             </button>
           </div>
+          <WaterFlowPanel />
         </section>
 
         <section
@@ -824,7 +825,6 @@ export function App() {
             omegaCommand={omegaCommand}
             onFocusCommand={setOmegaIntent}
           />
-          <WaterFlowPanel />
         </section>
 
         {/* Prompt */}

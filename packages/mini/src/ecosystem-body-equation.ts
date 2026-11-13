@@ -742,4 +742,7 @@ export const REPO_OUTWARD_RING: readonly OutwardSurface[] = Object.freeze([
   Object.freeze({ id: 'equation-doc', path: 'docs/ECOSYSTEM-BODY-EQUATION.md', role: 'docs' as const }),
   Object.freeze({ id: 'body-doc', path: 'docs/SINGLE-BODY-4X4X4X4.md', role: 'docs' as const }),
   Object.freeze({ id: 'verified-upgrade-skill', path: 'skills/oceanicos-verified-upgrade/SKILL.md', role: 'skill' as const }),
+  Object.freeze({ id: 'water-skill', path: 'skills/omega-mirror-water-universal-body/SKILL.md', role: 'skill' as const }),
+  Object.freeze({ id: 'water-flow', path: 'packages/mini/src/water-flow.ts', role: 'kernel' as const }),
+  Object.freeze({ id: 'water-web', path: 'apps/web/src/WaterFlowPanel.tsx', role: 'web' as const }),
 ]);
