@@ -276,6 +276,21 @@
       "tests_passed": true,
       "evidence_hash": "f3511fc2675064bc21dec30565910c72d81cff8777f5bffe00843c54d424b3f1",
       "next_delta": "Wire a concrete command-admission provider only after its trusted authority and policy source are documented; keep the default unconfigured and fail closed."
+    },
+    {
+      "timestamp": "2026-11-13T10:58:59Z",
+      "agent_id": "copilot",
+      "branch": "agent/copilot/connector-resolver-fail-closed",
+      "status": "VERIFIED",
+      "files_touched": [
+        "apps/api/src/connector-observation-route.ts",
+        "apps/api/src/__tests__/connector-admission-resolver.integration.test.mjs",
+        "docs/GOVERNANCE.md",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "06e9facce4a10c3ae09e2e427bd67fa0f6de358984fff56f431e58f2a5c5c131",
+      "next_delta": "Select and document the trusted connector authority source, including actor/action/target binding, approval freshness, and revocation, before wiring a production resolver."
     }
   ]
 }
