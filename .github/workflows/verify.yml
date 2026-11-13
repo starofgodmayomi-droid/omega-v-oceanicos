@@ -82,6 +82,28 @@ jobs:
       - name: Validate README ecosystem alignment
         run: pnpm validate:docs
 
+      # Exercise the repository-level compression boundary against the checkout,
+      # not only the in-process equation tests. Compression may select a review
+      # candidate, but it must never execute or imply permission to upgrade.
+      - name: Compress and reconcile repository outward ring
+        run: |
+          pnpm --silent compress:repo > /tmp/repo-compression.json
+          node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs';
+          const report = JSON.parse(readFileSync('/tmp/repo-compression.json', 'utf8'));
+          const failures = [];
+          if (report.status !== 'COMPRESSED') failures.push(`status=${report.status}`);
+          if (report.reconciliation !== 'VERIFIED') failures.push(`reconciliation=${report.reconciliation}`);
+          if (report.remembered !== report.ring) failures.push(`remembered=${report.remembered}, ring=${report.ring}`);
+          if (report.upgrade?.execution !== 'NOT_EXECUTED') failures.push(`upgrade.execution=${report.upgrade?.execution}`);
+          if (!report.upgrade?.selected?.evidenceHash) failures.push('upgrade.selected.evidenceHash is missing');
+          if (failures.length) {
+            console.error(`Repository compression contract failed: ${failures.join(', ')}`);
+            process.exit(1);
+          }
+          console.log(`Repository compression verified: ${report.remembered} outward surfaces; upgrade remains NOT_EXECUTED.`);
+          NODE
+
       # The swarm ledger is the cross-agent record. A missing check here is how
       # an unverified receipt becomes an accepted claim.
       - name: Validate swarm ledger
