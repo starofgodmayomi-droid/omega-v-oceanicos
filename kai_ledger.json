@@ -298,6 +298,20 @@
       "tests_passed": true,
       "evidence_hash": "e55b01a3bc184474b3ee3ff583e4816ff25a8c767df4063dc38756d7113b522e",
       "next_delta": "Human-review the command water-flow panel. Full pnpm test, typecheck, mood CLI, and deployment were not run in this workspace."
+    },
+    {
+      "timestamp": "2026-11-13T23:17:12Z",
+      "agent_id": "grok",
+      "branch": "agent/grok/water-command-frames",
+      "status": "VERIFIED",
+      "files_touched": [
+        "package.json",
+        "tests/integration/full-stack-water.integration.test.ts",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "1f9b0c62c15b5606b37cedf61c6e3e0f4953d33844624ef1e0603f14f6f768d8",
+      "next_delta": "Human-review the boundary-suite wiring. Mood CLI was observed locally as UNKNOWN context, not health. Deployment was not run."
     }
   ]
 }
