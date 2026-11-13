@@ -1,0 +1,11 @@
+{
+  "name": "@oceanicos/attestation-node",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "SOURCE-ONLY 10-phase whole-memory engine. Not a workspace app until earned.",
+  "main": "./src/memory-engine.ts",
+  "dependencies": {
+    "zod": "^3.25.0"
+  }
+}
