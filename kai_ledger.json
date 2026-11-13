@@ -1,10 +1,15 @@
 {
-  "protocol": "ΩVØØS-SWARM/1",
+  "protocol": "\u03a9V\u00d8\u00d8S-SWARM/1",
   "checksum": "30013030",
   "doctrine": "ATTEST, DON'T ASSERT. UNKNOWN PRESERVED.",
   "append_only": true,
-  "status_values": ["VERIFIED", "DIVERGENT", "UNKNOWN", "NOT_EXECUTED"],
-  "rule": "Append only. Never rewrite or delete an entry. On conflict keep both receipts, ordered by timestamp. See SWARM_PROTOCOL.md §VI.",
+  "status_values": [
+    "VERIFIED",
+    "DIVERGENT",
+    "UNKNOWN",
+    "NOT_EXECUTED"
+  ],
+  "rule": "Append only. Never rewrite or delete an entry. On conflict keep both receipts, ordered by timestamp. See SWARM_PROTOCOL.md \u00a7VI.",
   "entries": [
     {
       "timestamp": "2026-11-08T16:03:00Z",
@@ -20,7 +25,7 @@
       ],
       "tests_passed": null,
       "evidence_hash": null,
-      "next_delta": "Claim one domain from SWARM_PROTOCOL.md §III, branch as agent/<platform>/<task>, and append your own receipt."
+      "next_delta": "Claim one domain from SWARM_PROTOCOL.md \u00a7III, branch as agent/<platform>/<task>, and append your own receipt."
     },
     {
       "timestamp": "2026-11-11T08:18:22Z",
@@ -31,7 +36,7 @@
         "apps/web/src/InvisibleComputer.tsx",
         "apps/web/src/InvisibleComputer.css",
         "apps/web/src/__tests__/dom/InvisibleComputer.test.tsx",
-        "ΩVØØS/ASSIGNMENTS/002-beta-invisible-computer-workspace.md",
+        "\u03a9V\u00d8\u00d8S/ASSIGNMENTS/002-beta-invisible-computer-workspace.md",
         "kai_ledger.json"
       ],
       "tests_passed": true,
@@ -276,6 +281,23 @@
       "tests_passed": true,
       "evidence_hash": "f3511fc2675064bc21dec30565910c72d81cff8777f5bffe00843c54d424b3f1",
       "next_delta": "Wire a concrete command-admission provider only after its trusted authority and policy source are documented; keep the default unconfigured and fail closed."
+    },
+    {
+      "timestamp": "2026-11-13T23:03:20Z",
+      "agent_id": "grok",
+      "branch": "agent/grok/water-command-frames",
+      "status": "VERIFIED",
+      "files_touched": [
+        "apps/web/src/App.tsx",
+        "apps/web/src/__tests__/water-flow-panel.test.ts",
+        "apps/web/src/water-flow-panel-model.ts",
+        "package.json",
+        "tests/__tests__/node-support.test.ts",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "e55b01a3bc184474b3ee3ff583e4816ff25a8c767df4063dc38756d7113b522e",
+      "next_delta": "Human-review the command water-flow panel. Full pnpm test, typecheck, mood CLI, and deployment were not run in this workspace."
     }
   ]
 }
