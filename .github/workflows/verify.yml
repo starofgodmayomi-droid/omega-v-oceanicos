@@ -82,6 +82,16 @@ jobs:
       - name: Validate README ecosystem alignment
         run: pnpm validate:docs
 
+      # The water current and the outward ring stay declarations until this
+      # job reads the checkout. A selected candidate is observed and is not run.
+      - name: Observe full-stack water and repository compression
+        shell: bash
+        run: |
+          pnpm --silent flow:water > "$RUNNER_TEMP/water-compression.json"
+          node scripts/assert-compression-boundary.mjs water "$RUNNER_TEMP/water-compression.json"
+          pnpm --silent compress:repo > "$RUNNER_TEMP/repo-compression.json"
+          node scripts/assert-compression-boundary.mjs repo "$RUNNER_TEMP/repo-compression.json"
+
       # The swarm ledger is the cross-agent record. A missing check here is how
       # an unverified receipt becomes an accepted claim.
       - name: Validate swarm ledger
@@ -186,6 +196,16 @@ jobs:
 
       - name: Validate README ecosystem alignment
         run: pnpm validate:docs
+
+      # The water current and the outward ring stay declarations until this
+      # job reads the checkout. A selected candidate is observed and is not run.
+      - name: Observe full-stack water and repository compression
+        shell: bash
+        run: |
+          pnpm --silent flow:water > "$RUNNER_TEMP/water-compression.json"
+          node scripts/assert-compression-boundary.mjs water "$RUNNER_TEMP/water-compression.json"
+          pnpm --silent compress:repo > "$RUNNER_TEMP/repo-compression.json"
+          node scripts/assert-compression-boundary.mjs repo "$RUNNER_TEMP/repo-compression.json"
 
       # The swarm ledger is the cross-agent record. A missing check here is how
       # an unverified receipt becomes an accepted claim.

@@ -34,7 +34,7 @@ Code removed from a change must still be explainable as a return to this equatio
 
 ## Outward ring
 
-`REPO_OUTWARD_RING` is the declared expansion: contract, kernel, API, web, CLI, docs, and `FULL_STACK_WATER`. The water is the eight full-stack skills in flow order, from the companion through computer mode. The list is not evidence. `pnpm compress:repo` observes the ring. `pnpm flow:water` observes only the skill current. Both leave `upgrade.execution` at `NOT_EXECUTED`.
+`REPO_OUTWARD_RING` is the declared expansion: contract, kernel, API, web, CLI, docs, and `FULL_STACK_WATER`. The water is the eight full-stack skills in flow order, from the companion through computer mode. The list is not evidence. `pnpm compress:repo` observes the ring. `pnpm flow:water` observes only the skill current. Both leave `upgrade.execution` at `NOT_EXECUTED`. `.github/workflows/verify.yml` runs both against the checkout and fails unless each fold is `COMPRESSED`, reconciled where a second read exists, and still `NOT_EXECUTED`. `scripts/assert-compression-boundary.mjs` is that gate.
 
 A skill that also exists under `.claude/skills/` is a published twin. The water test fails if those bytes drift. A skill with no twin is not invented one.
 
