@@ -41,7 +41,7 @@ test('OIDC identity is verified but does not grant connector admission', async (
   const issuer = `http://127.0.0.1:${address.port}`;
   const audience = 'omega-api';
   const jwksUri = `${issuer}/jwks`;
-  const auth0GroupsClaim = 'https://claims.example.test/connector-groups';
+  const auth0GroupsClaim = 'urn:omega-v-oceanicos:connector-groups';
   const signToken = ({
     tokenIssuer = issuer,
     tokenAudience = audience,

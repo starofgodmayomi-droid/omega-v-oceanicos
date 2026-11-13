@@ -146,18 +146,20 @@ tokens.
 Auth0 recommends namespaced custom claims and restricts several unnamespaced
 claims, including `groups`, for API access tokens
 ([Auth0 custom-claims guidance](https://auth0.com/docs/secure/tokens/json-web-tokens/create-custom-claims)).
-Use an Auth0 Action to add the approver group to a namespaced access-token claim, for example
-`https://claims.your-domain.example/connector-groups`, and set
-`OMEGA_OIDC_GROUPS_CLAIM` to that exact claim name. Replace the example with a
-namespace URL you control. The claim value must be an array containing the
-exact string `connector-approvers`. Derive it from Auth0-managed roles or
-another server-controlled assignment, not user-editable profile data.
+For this custom API, the recommended API identifier is
+`urn:omega-v-oceanicos:connector-api`; use it as `OMEGA_OIDC_AUDIENCE`, unless
+it conflicts with an identifier already in the Auth0 tenant. Use the
+URN-namespaced claim `urn:omega-v-oceanicos:connector-groups` as
+`OMEGA_OIDC_GROUPS_CLAIM`. Auth0 permits URN namespaces for custom APIs; do not
+use its reserved `urn:auth0` namespace. The claim value must be an array
+containing the exact string `connector-approvers`. Derive it from Auth0-managed
+roles or another server-controlled assignment, not user-editable profile data.
 
 For example, an Auth0 Post Login Action can map an assigned role into that
-claim (replace the namespace with a URL you control):
+claim:
 
 ```js
-const groupsClaim = 'https://claims.your-domain.example/connector-groups';
+const groupsClaim = 'urn:omega-v-oceanicos:connector-groups';
 
 exports.onExecutePostLogin = async (event, api) => {
   const roles = event.authorization?.roles ?? [];
