@@ -79,6 +79,20 @@ export interface ConnectorAdmissionEvidence {
   readonly approvalVerified: boolean;
 }
 
+function isConnectorAdmissionEvidence(value: unknown): value is ConnectorAdmissionEvidence {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  try {
+    const evidence = value as Record<string, unknown>;
+    return (
+      typeof evidence.authorityVerified === 'boolean' &&
+      typeof evidence.policySatisfied === 'boolean' &&
+      typeof evidence.approvalVerified === 'boolean'
+    );
+  } catch {
+    return false;
+  }
+}
+
 export type ConnectorAdmissionEvidenceResolver = (
   request: unknown,
   connector: OmegaConnectorDeclaration,
@@ -151,9 +165,25 @@ export function registerConnectorObservationRoute(
       return jsonError(reply, 400, 'CONNECTOR_EXECUTION_NOT_ACCEPTED');
     }
 
-    const admissionEvidence = options.resolveAdmissionEvidence
-      ? await options.resolveAdmissionEvidence(request, connector)
-      : { authorityVerified: false, policySatisfied: false, approvalVerified: false };
+    let admissionEvidence: ConnectorAdmissionEvidence;
+    if (options.resolveAdmissionEvidence) {
+      let resolvedEvidence: unknown;
+      try {
+        resolvedEvidence = await options.resolveAdmissionEvidence(request, connector);
+      } catch {
+        return jsonError(reply, 503, 'CONNECTOR_ADMISSION_EVIDENCE_UNAVAILABLE');
+      }
+      if (!isConnectorAdmissionEvidence(resolvedEvidence)) {
+        return jsonError(reply, 503, 'CONNECTOR_ADMISSION_EVIDENCE_INVALID');
+      }
+      admissionEvidence = resolvedEvidence;
+    } else {
+      admissionEvidence = {
+        authorityVerified: false,
+        policySatisfied: false,
+        approvalVerified: false,
+      };
+    }
     const admission = admitOmegaConnector({ connector, ...admissionEvidence });
 
     let execution: ConnectorExecutionObservation | undefined;
