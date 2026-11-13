@@ -385,6 +385,25 @@
       "tests_passed": true,
       "evidence_hash": "630c195bafeb1ab64dcc7a694d3863e5bb7f8fce24cb63958abbe7efd193c3ea",
       "next_delta": "Verify the Auth0 tenant issuer and JWKS against the selected API audience and namespaced approver claim using a real non-production access token."
+    },
+    {
+      "timestamp": "2026-11-13T13:06:49Z",
+      "agent_id": "copilot",
+      "branch": "agent/copilot/self-hosted-oidc-identity",
+      "status": "VERIFIED",
+      "files_touched": [
+        "apps/api/src/connector-approval-store.ts",
+        "apps/api/src/connector-observation-route.ts",
+        "apps/api/src/index.ts",
+        "apps/api/src/oidc-identity.ts",
+        "apps/api/src/__tests__/connector-approval-store.unit.test.mjs",
+        "apps/api/src/__tests__/oidc-identity.integration.test.mjs",
+        "docs/GOVERNANCE.md",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "f9b19a51f9c8aecb0461fd0dc0ce345758c018452164fab4eb9ff737cb222a63",
+      "next_delta": "Create the Auth0 API using the documented audience and configure the one verified subject outside the repository; keep connector policy digests empty until a non-production token is checked."
     }
   ]
 }
