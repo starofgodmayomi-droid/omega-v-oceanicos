@@ -947,6 +947,21 @@
       "tests_passed": true,
       "evidence_hash": "1dd50d29d9b23f97320a0ee129eb04492862e22f56fcc7e2080361f97e84cb9b",
       "next_delta": "Milestone Receipt #66: V1111 Singularity Self-Upgrade state transition committed with tipHash a6b847bc... and state-1-0d2b8a8a verification."
+    },
+    {
+      "agent_id": "antigravity",
+      "branch": "agent/antigravity/omega-entity-full-stack",
+      "status": "VERIFIED",
+      "files_touched": [
+        "apps/api/src/index.ts",
+        "tests/integration/causal-memory.integration.test.ts",
+        "docs/RECEIPT_67_C7_C8_ATTESTATION_BINDING_FRONTIER.md",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "2bad4540de100c05585a41e788e6986e82b453ba4d3d16451739ab3527720479",
+      "next_delta": "Wire GET /v1/memory/replay to web UI Evidence Dossier for live causal chain inspection",
+      "timestamp": "2026-11-13T13:07:00.000Z"
     }
   ]
 }

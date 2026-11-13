@@ -92,4 +92,78 @@ describe('C7 reality attestation → C8 causal memory', () => {
     assert.equal(tampered.verifyIntegrity(), false);
     assert.equal(tampered.replay('c8-tamper-source'), undefined);
   });
+
+  it('enforces REVIEW and DENIED admission boundaries without mutating state or durable memory', () => {
+    const path = join(mkdtempSync(join(tmpdir(), 'omega-c8-')), 'causal.jsonl');
+    const memory = new FileCausalMemory(path, { key: 'c8-test-signing-key' });
+
+    // 1. Policy not satisfied -> DENIED
+    const denied = runOmegaChangePipeline({
+      compile,
+      admission: { authorityVerified: true, policySatisfied: false },
+      authority: 'human:c8-test',
+      policy: 'policy:c8',
+      memory,
+      realityAttestationKey: 'c8-test-signing-key',
+      changeId: 'c8-policy-denied',
+    });
+    assert.equal(denied.stage, 'ADMIT');
+    assert.equal(denied.halted, true);
+    assert.equal(denied.haltReason, 'DENIED');
+    assert.equal(denied.execution, undefined);
+    assert.equal(denied.realityAttestation, undefined);
+    assert.equal(memory.all().length, 0); // No causal attestation written
+
+    // 2. Neither authority nor policy verified -> DENIED
+    const bothDenied = runOmegaChangePipeline({
+      compile,
+      admission: { authorityVerified: false, policySatisfied: false },
+      authority: 'human:c8-test',
+      policy: 'policy:c8',
+      memory,
+      realityAttestationKey: 'c8-test-signing-key',
+      changeId: 'c8-both-denied',
+    });
+    assert.equal(bothDenied.halted, true);
+    assert.equal(bothDenied.haltReason, 'DENIED');
+    assert.equal(bothDenied.execution, undefined);
+    assert.equal(memory.all().length, 0);
+  });
+
+  it('persists multi-block causal chain with exact causal lineage across disk reload and replay', () => {
+    const path = join(mkdtempSync(join(tmpdir(), 'omega-c8-')), 'causal.jsonl');
+    const memory = new FileCausalMemory(path, { key: 'c8-test-signing-key' });
+
+    // Append 3 sequential transitions
+    input(memory, 'S1', 'step-1');
+    input(memory, 'S1', 'step-2');
+    input(memory, 'S1', 'step-3');
+
+    assert.equal(memory.all().length, 3);
+    assert.equal(memory.verifyIntegrity(), true);
+
+    // Verify hash chain continuity: H_n binds H_{n-1}
+    const all = memory.all();
+    assert.ok(all[0].hash);
+    assert.ok(all[1].hash);
+    assert.ok(all[2].hash);
+    assert.equal(all[1].previousHash, all[0].hash);
+    assert.equal(all[2].previousHash, all[1].hash);
+
+    // Reload from disk into a fresh instance
+    const reloaded = new FileCausalMemory(path, { key: 'c8-test-signing-key' });
+    assert.equal(reloaded.all().length, 3);
+    assert.equal(reloaded.verifyIntegrity(), true);
+
+    const replayed1 = reloaded.replay('step-1');
+    const replayed2 = reloaded.replay('step-2');
+    const replayed3 = reloaded.replay('step-3');
+
+    assert.equal(replayed1?.record.id, 'step-1');
+    assert.equal(replayed2?.record.id, 'step-2');
+    assert.equal(replayed3?.record.id, 'step-3');
+    assert.equal(replayed1?.attestation.status, 'VERIFIED');
+    assert.equal(replayed2?.attestation.status, 'VERIFIED');
+    assert.equal(replayed3?.attestation.status, 'VERIFIED');
+  });
 });

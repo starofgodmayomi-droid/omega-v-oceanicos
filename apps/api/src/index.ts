@@ -915,7 +915,60 @@ export function createApp(
     const service = new AttestationService({ signingKey, algorithm: 'HMAC-SHA256' });
     const telemetry = ObserverEngine.generateTelemetry();
     const verificationResult = { id: `ver-${Date.now()}`, observationId: telemetry.uuid, timestamp: telemetry.timestamp, summary: { passed: true, confidence: 1, rulesApplied: 4, rulesPassed: 4, rulesFailed: 0 }, ruleVersions: { 'frontier-matrix': 'v1.0' } };
-    return { success: true, attestation: service.attest(verificationResult), tip: ledgerMemory.getTip() };
+    const attestation = service.attest(verificationResult);
+
+    // C7 Reality Attestation → C8 Durable Memory Binding (Issue #295)
+    let kaiRecordId: string | undefined = undefined;
+    if (kaiLedger) {
+      try {
+        const record = kaiLedger.append({
+          distinction: 'VERIFIED',
+          statement: `C7 Reality Attestation ${attestation.id} verified and bound to C8 durable ledger`,
+          subject: 'attestation:c7-reality',
+          source: 'api:/v1/attest',
+          author: 'ATTESTATION_SERVICE',
+          evidenceRef: attestation.id,
+          metadata: {
+            attestationId: attestation.id,
+            observationId: telemetry.uuid,
+            confidence: attestation.confidence,
+            algorithm: attestation.signingAlgorithm || 'HMAC-SHA256',
+            keyVersion: attestation.keyVersion,
+          },
+        });
+        kaiRecordId = record.id;
+      } catch {
+        // preserve non-blocking fail-safe
+      }
+    }
+
+    return { success: true, attestation, tip: ledgerMemory.getTip(), kaiRecordId };
+  });
+
+  fastify.post('/v1/attest/verify', async (request: any, reply) => {
+    const signingKey = resolvedOptions.attestationSigningKey ?? process.env.OMEGA_SIGNING_KEY;
+    if (!signingKey) return jsonError(reply, 503, 'ATTESTATION_SIGNING_KEY_REQUIRED');
+    const attestation = request.body?.attestation;
+    if (!attestation || typeof attestation !== 'object') {
+      return jsonError(reply, 400, 'MISSING_ATTESTATION_PAYLOAD');
+    }
+    const service = new AttestationService({ signingKey, algorithm: 'HMAC-SHA256' });
+    const isValid = service.verify(attestation);
+
+    let ledgerVerified = false;
+    if (kaiLedger && attestation.id) {
+      const records = kaiLedger.query({ subject: 'attestation:c7-reality' });
+      ledgerVerified = records.some((r) => r.evidenceRef === attestation.id || (r.metadata as any)?.attestationId === attestation.id);
+    }
+
+    return {
+      success: true,
+      verified: isValid,
+      attestationId: attestation.id,
+      ledgerVerified,
+      tamperDetected: !isValid,
+      algorithm: attestation.signingAlgorithm ?? 'HMAC-SHA256',
+    };
   });
 
   fastify.post('/v1/cycle', async (request: any, reply) => {
