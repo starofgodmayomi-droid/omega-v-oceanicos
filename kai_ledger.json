@@ -371,6 +371,20 @@
       "tests_passed": true,
       "evidence_hash": "2d5ab028a137fd3e03e89b43059a6e12e1b706bdeea9d05c79f871b733e0a491",
       "next_delta": "Verify the Auth0 issuer, API audience, JWKS, and namespaced approver claim using a real non-production access token; keep policy digests empty until then."
+    },
+    {
+      "timestamp": "2026-11-13T12:37:56Z",
+      "agent_id": "copilot",
+      "branch": "agent/copilot/self-hosted-oidc-identity",
+      "status": "VERIFIED",
+      "files_touched": [
+        "apps/api/src/__tests__/oidc-identity.integration.test.mjs",
+        "docs/GOVERNANCE.md",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "630c195bafeb1ab64dcc7a694d3863e5bb7f8fce24cb63958abbe7efd193c3ea",
+      "next_delta": "Verify the Auth0 tenant issuer and JWKS against the selected API audience and namespaced approver claim using a real non-production access token."
     }
   ]
 }
