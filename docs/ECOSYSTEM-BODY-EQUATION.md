@@ -34,7 +34,7 @@ Code removed from a change must still be explainable as a return to this equatio
 
 ## Outward ring
 
-`REPO_OUTWARD_RING` is the declared expansion: contract, kernel, API, web, CLI, docs, and `FULL_STACK_WATER`. The water is the eight full-stack skills in flow order, from the companion through computer mode. The list is not evidence. `pnpm compress:repo` observes the ring. `pnpm flow:water` observes only the skill current. Both leave `upgrade.execution` at `NOT_EXECUTED`.
+`REPO_OUTWARD_RING` is the declared expansion: contract, kernel, API, web, CLI, docs, and `FULL_STACK_WATER`. The water is the eight full-stack skills in flow order, from the companion through computer mode. The same ring also remembers the mirror-water skill, `packages/mini/src/water-flow.ts`, and `apps/web/src/WaterFlowPanel.tsx`. Those three are the local water runtime. The list is not evidence. `pnpm compress:repo` observes the ring. `pnpm flow:water` observes only the skill current. Both leave `upgrade.execution` at `NOT_EXECUTED`. A compressed trace on the dashboard stays `NOT_EXECUTED` until a pipeline receipt is supplied.
 
 A skill that also exists under `.claude/skills/` is a published twin. The water test fails if those bytes drift. A skill with no twin is not invented one.
 

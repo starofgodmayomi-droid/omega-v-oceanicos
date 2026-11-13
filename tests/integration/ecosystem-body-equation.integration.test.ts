@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';
 import {
   ECOSYSTEM_BODY_EQUATION_ID,
   EQUATION_LAW_OBSERVATION,
@@ -151,4 +152,26 @@ test('the declared outward ring stays inside this repository', () => {
   const source = readFileSync(new URL('../../packages/mini/src/ecosystem-body-equation.ts', import.meta.url), 'utf8');
   assert.match(source, /ECOSYSTEM_BODY\.md/);
   assert.match(source, /NOT_EXECUTED/);
+  for (const path of [
+    'skills/omega-mirror-water-universal-body/SKILL.md',
+    'packages/mini/src/water-flow.ts',
+    'apps/web/src/WaterFlowPanel.tsx',
+  ]) {
+    assert.equal(REPO_OUTWARD_RING.filter((entry) => entry.path === path).length, 1);
+  }
+});
+
+test('this checkout remembers the water runtime and does not execute the upgrade', () => {
+  const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '../..');
+  const water = REPO_OUTWARD_RING.filter((entry) =>
+    ['water-mirror', 'water-flow', 'water-panel'].includes(entry.id),
+  );
+  assert.equal(water.length, 3);
+  const observed = observeOutwardFiles(repoRoot, water);
+  const compression = compressRepoEquation(observed.surfaces);
+  assert.equal(compression.status, 'COMPRESSED');
+  assert.equal(compression.body?.memory.map((entry) => entry.id).join(','), 'water-mirror,water-flow,water-panel');
+  assert.equal(compression.upgrade.execution, 'NOT_EXECUTED');
+  assert.equal(compression.upgrade.selected?.kind, 'review-verified-repo');
+  assert.equal(compression.upgrade.selected?.evidenceHash, compression.body?.digest);
 });
