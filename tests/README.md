@@ -44,13 +44,13 @@ job is what proves the artifact runs.
 
 ## Known gaps
 
-- `apps/web/src/App.tsx` is excluded from the coverage denominator. Covering it
-  needs jsdom and a component testing setup that does not exist here. The
-  exclusion is explicit in `jest.config.js` so the reported percentage is not
-  read as covering more than it does.
-- `pnpm test:integration` matches no tests, because this directory is empty.
-  It passes rather than failing on an empty match, which is honest only for as
-  long as this note stays next to it.
+- Root Jest (`jest.config.js`) collects coverage from `*.ts` only and ignores
+  `apps/web/src/__tests__/dom/`. Web DOM coverage is not in that denominator.
+  `apps/web` has its own jsdom Jest config and `pnpm test:web` runs a named
+  subset of those DOM tests (`test:current-dom`). That is not full App coverage.
+- There is no `pnpm test:integration` script. `tests/integration/` is not empty:
+  `pnpm test` and `pnpm test:e2e` name the integration files they run. A file
+  in that directory is not executed unless a script lists it.
 
 ---
 
