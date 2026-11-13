@@ -13,6 +13,8 @@
     "type-check": "pnpm typecheck",
     "lint": "pnpm typecheck",
     "format:check": "git diff --check",
+    "elion:veral": "bash scripts/elion-veral.sh",
+    "test:elion-veral": "node --test ./scripts/elion-veral.test.mjs",
     "validate:swarm": "node scripts/validate-swarm-ledger.mjs",
     "compress:max": "node scripts/validate-swarm-ledger.mjs && node bin/oceanicos.mjs matrix 4x4 && node bin/oceanicos.mjs singularity && node bin/oceanicos.mjs cycle && pnpm run test:fast && pnpm test apps/web/src/__tests__/contract.test.ts",
     "self-upgrade": "pnpm run compress:max && pnpm run worker:verify",
