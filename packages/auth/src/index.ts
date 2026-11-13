@@ -77,6 +77,10 @@ export class OceanicosAuthEngine {
     );
   }
 
+  private cloneDocument(document: DIDDocument): DIDDocument {
+    return { ...document, capabilities: [...document.capabilities] };
+  }
+
   /**
    * Create a new DID identity with capabilities
    */
@@ -102,7 +106,7 @@ export class OceanicosAuthEngine {
       did,
       type,
       publicKey,
-      capabilities,
+      capabilities: [...capabilities],
       createdAt: new Date().toISOString(),
       revoked: false,
       epoch: 1,
@@ -114,7 +118,7 @@ export class OceanicosAuthEngine {
     return {
       did,
       secret: rawSecret,
-      document,
+      document: this.cloneDocument(document),
     };
   }
 
@@ -131,7 +135,7 @@ export class OceanicosAuthEngine {
     }
 
     const secretHash = this.hashSecret(secret);
-    if (this.secrets.get(did) !== secretHash) {
+    if (!this.constantTimeHexEqual(this.secrets.get(did) ?? '', secretHash)) {
       throw new Error('Authentication Failed: Invalid secret for DID');
     }
 
@@ -184,18 +188,18 @@ export class OceanicosAuthEngine {
       return { valid: false, error: 'DID not found', payload };
     }
     if (doc.revoked) {
-      return { valid: false, error: 'DID is revoked', payload, subject: doc };
+      return { valid: false, error: 'DID is revoked', payload, subject: this.cloneDocument(doc) };
     }
 
     // Verify cryptographic signature against secret hash
     const secretHash = this.secrets.get(payload.sub);
     if (!secretHash) {
-      return { valid: false, error: 'DID credentials not found', payload, subject: doc };
+      return { valid: false, error: 'DID credentials not found', payload, subject: this.cloneDocument(doc) };
     }
 
     const expectedSignature = this.signPayload(payloadBase64, secretHash);
-    if (signature !== expectedSignature) {
-      return { valid: false, error: 'Invalid token signature', payload, subject: doc };
+    if (!this.constantTimeHexEqual(signature, expectedSignature)) {
+      return { valid: false, error: 'Invalid token signature', payload, subject: this.cloneDocument(doc) };
     }
 
     // Enforce capability if specified
@@ -207,14 +211,14 @@ export class OceanicosAuthEngine {
           valid: false,
           error: `Insufficient capabilities: requires '${requiredCapability}'`,
           payload,
-          subject: doc,
+          subject: this.cloneDocument(doc),
         };
       }
     }
 
     return {
       valid: true,
-      subject: doc,
+      subject: this.cloneDocument(doc),
       payload,
     };
   }
@@ -239,7 +243,7 @@ export class OceanicosAuthEngine {
     }
 
     const oldSecretHash = this.hashSecret(oldSecret);
-    if (this.secrets.get(did) !== oldSecretHash) {
+    if (!this.constantTimeHexEqual(this.secrets.get(did) ?? '', oldSecretHash)) {
       throw new Error('Rotation Failed: Invalid current secret');
     }
 
@@ -260,14 +264,22 @@ export class OceanicosAuthEngine {
    * Get DID document by DID string
    */
   public getIdentity(did: string): DIDDocument | null {
-    return this.identities.get(did) || null;
+    const document = this.identities.get(did);
+    return document ? this.cloneDocument(document) : null;
   }
 
   /**
    * List all registered DID documents
    */
   public listIdentities(): DIDDocument[] {
-    return Array.from(this.identities.values());
+    return Array.from(this.identities.values(), document => this.cloneDocument(document));
+  }
+
+  private constantTimeHexEqual(left: string, right: string): boolean {
+    const isSha256Hex = (value: string): boolean =>
+      value.length === 64 && /^[0-9a-f]{64}$/i.test(value);
+    if (!isSha256Hex(left) || !isSha256Hex(right)) return false;
+    return crypto.timingSafeEqual(Buffer.from(left, 'hex'), Buffer.from(right, 'hex'));
   }
 
   private hashSecret(secret: string): string {
