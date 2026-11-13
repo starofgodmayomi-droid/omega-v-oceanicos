@@ -28,6 +28,11 @@ import {
   type OidcIdentityConfig,
 } from './oidc-identity.js';
 import {
+  ConnectorApprovalStore,
+  connectorPolicyDigestsFromEnvironment,
+  validateConnectorPolicyDigests,
+} from './connector-approval-store.js';
+import {
   OmegaCommandStore,
   OmegaIdempotencyConflictError,
   registerOmegaRoutes,
@@ -71,6 +76,7 @@ export type CreateAppOptions = {
   githubFetch?: typeof fetch;
   connectorAdmissionEvidence?: ConnectorAdmissionEvidenceResolver;
   oidcIdentity?: OidcIdentityConfig;
+  connectorPolicyDigests?: readonly string[];
   pipelineAdmissionEvidence?: PipelineAdmissionEvidenceResolver;
   omegaCommandAdmissionEvidence?: OmegaCommandAdmissionEvidenceResolver;
 };
@@ -150,6 +156,12 @@ export function createApp(
   const verifyOidcIdentity = oidcIdentityConfig
     ? createOidcIdentityVerifier(oidcIdentityConfig)
     : undefined;
+  const connectorPolicyDigests = new Set(
+    options.connectorPolicyDigests
+      ? validateConnectorPolicyDigests(options.connectorPolicyDigests)
+      : connectorPolicyDigestsFromEnvironment(),
+  );
+  const connectorApprovalStore = verifyOidcIdentity ? new ConnectorApprovalStore(dbPath) : undefined;
   const corsOrigin = parseCorsOrigins(process.env.OMEGA_CORS_ORIGINS, authMode);
 
   const persistenceEnabled = process.env.OMEGA_PERSISTENCE
@@ -189,6 +201,7 @@ export function createApp(
     ledgerMemory.close();
     omegaCommands.close();
     kaiMemory.close();
+    connectorApprovalStore?.close();
   });
 
   type RevocationRecord = { id: string; attestationId: string; reason: string; revokedBy: string; revokedAt: string };
@@ -263,11 +276,11 @@ export function createApp(
   });
   fastify.addHook('onRequest', async (request, reply) => {
     if (request.method === 'OPTIONS' || request.url.split('?')[0] === '/health') return;
-    if (
-      request.method === 'POST' &&
-      request.url.split('?')[0] === '/v1/omega/connectors/observe' &&
-      verifyOidcIdentity
-    ) {
+    const requestPath = request.url.split('?')[0] ?? '';
+    const oidcConnectorPath = requestPath === '/v1/omega/connectors/observe'
+      || requestPath === '/v1/omega/connectors/approvals'
+      || /^\/v1\/omega\/connectors\/approvals\/[^/]+\/revoke$/.test(requestPath);
+    if (request.method === 'POST' && oidcConnectorPath && verifyOidcIdentity) {
       const token = bearer(request.headers.authorization);
       if (!token) return jsonError(reply, 401, 'CONNECTOR_IDENTITY_REQUIRED');
       try {
@@ -307,6 +320,9 @@ export function createApp(
   registerConnectorObservationRoute(fastify, jsonError, connectorObservationStore, {
     githubFetch: options.githubFetch,
     resolveAdmissionEvidence: options.connectorAdmissionEvidence,
+    oidcIdentityEnabled: Boolean(verifyOidcIdentity),
+    policyDigests: connectorPolicyDigests,
+    approvalStore: connectorApprovalStore,
   });
   registerMeshValidationRoute(fastify, ledgerMemory, requireReadAccess, jsonError);
   registerExecuteRoute(fastify, kaiMemory, jsonError, attestationSigningKey);

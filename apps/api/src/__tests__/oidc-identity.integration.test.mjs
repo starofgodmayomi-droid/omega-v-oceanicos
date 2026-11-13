@@ -7,6 +7,7 @@ import {
   createOidcIdentityVerifier,
   oidcIdentityConfigFromEnvironment,
 } from '../../dist/oidc-identity.js';
+import { connectorDeclarationDigest } from '../../dist/connector-approval-store.js';
 
 const connector = {
   id: 'github.read-repository',
@@ -45,11 +46,16 @@ test('OIDC identity is verified but does not grant connector admission', async (
     tokenAudience = audience,
     expiresAt = '5m',
     authorizedParty,
+    groups = ['connector-approvers'],
+    subject = 'operator-123',
   } = {}) => {
-    let token = new SignJWT(authorizedParty ? { azp: authorizedParty } : {})
+    let token = new SignJWT({
+      ...(authorizedParty ? { azp: authorizedParty } : {}),
+      groups,
+    })
       .setProtectedHeader({ alg: 'RS256', kid: 'test-key' })
       .setIssuer(tokenIssuer)
-      .setSubject('operator-123')
+      .setSubject(subject)
       .setAudience(tokenAudience)
       .setIssuedAt();
     if (expiresAt !== null) token = token.setExpirationTime(expiresAt);
@@ -69,6 +75,7 @@ test('OIDC identity is verified but does not grant connector admission', async (
   process.env.OMEGA_ADMIN_TOKEN = 'test-admin-token';
   const app = createApp(':memory:', false, {
     oidcIdentity: { issuer, audience, jwksUri },
+    connectorPolicyDigests: [connectorDeclarationDigest(connector)],
     connectorAdmissionEvidence: (request) => {
       resolverCalls += 1;
       seenIdentity = request.omegaIdentity;
@@ -95,6 +102,108 @@ test('OIDC identity is verified but does not grant connector admission', async (
     assert.equal(seenIdentity.audience, audience);
     assert.equal(typeof seenIdentity.issuedAt, 'number');
     assert.ok(seenIdentity.expiresAt > Math.floor(Date.now() / 1000));
+
+    let approvalFetchCalls = 0;
+    const approvalApp = createApp(':memory:', false, {
+      oidcIdentity: { issuer, audience, jwksUri },
+      connectorPolicyDigests: [connectorDeclarationDigest(connector)],
+      githubFetch: async () => {
+        approvalFetchCalls += 1;
+        return new Response(JSON.stringify({ full_name: 'starofgodmayomi-droid/omega-v-oceanicos' }), { status: 200 });
+      },
+    });
+    try {
+      const approvalResponse = await approvalApp.inject({
+        method: 'POST',
+        url: '/v1/omega/connectors/approvals',
+        headers: { authorization: `Bearer ${validToken}` },
+        payload: { connector },
+      });
+      assert.equal(approvalResponse.statusCode, 201);
+      const approval = approvalResponse.json().approval;
+      assert.equal(approval.expiresAt - approval.createdAt, 300);
+      assert.equal(approval.use, 'single-use');
+
+      const otherSubjectResponse = await approvalApp.inject({
+        method: 'POST',
+        url: '/v1/omega/connectors/observe',
+        headers: { authorization: `Bearer ${await signToken({ subject: 'operator-456' })}` },
+        payload: { connector, approvalId: approval.id, liveAdapter: 'github-public-repository' },
+      });
+      assert.equal(otherSubjectResponse.json().admission.admitted, false);
+      assert.equal(approvalFetchCalls, 0);
+
+      const admittedResponse = await approvalApp.inject({
+        method: 'POST',
+        url: '/v1/omega/connectors/observe',
+        headers: { authorization: `Bearer ${validToken}` },
+        payload: { connector, approvalId: approval.id, liveAdapter: 'github-public-repository' },
+      });
+      assert.equal(admittedResponse.statusCode, 200);
+      assert.equal(admittedResponse.json().admission.admitted, true);
+      assert.equal(admittedResponse.json().status, 'VERIFIED');
+      assert.equal(admittedResponse.json().approvalId, approval.id);
+      assert.equal(approvalFetchCalls, 1);
+
+      const replayResponse = await approvalApp.inject({
+        method: 'POST',
+        url: '/v1/omega/connectors/observe',
+        headers: { authorization: `Bearer ${validToken}` },
+        payload: { connector, approvalId: approval.id, liveAdapter: 'github-public-repository' },
+      });
+      assert.equal(replayResponse.json().admission.admitted, false);
+      assert.equal(approvalFetchCalls, 1);
+
+      const revokeCandidate = await approvalApp.inject({
+        method: 'POST',
+        url: '/v1/omega/connectors/approvals',
+        headers: { authorization: `Bearer ${validToken}` },
+        payload: { connector },
+      });
+      const revokeId = revokeCandidate.json().approval.id;
+      const revokeResponse = await approvalApp.inject({
+        method: 'POST',
+        url: `/v1/omega/connectors/approvals/${revokeId}/revoke`,
+        headers: { authorization: `Bearer ${validToken}` },
+      });
+      assert.equal(revokeResponse.json().revoked, true);
+      const revokedUseResponse = await approvalApp.inject({
+        method: 'POST',
+        url: '/v1/omega/connectors/observe',
+        headers: { authorization: `Bearer ${validToken}` },
+        payload: { connector, approvalId: revokeId, liveAdapter: 'github-public-repository' },
+      });
+      assert.equal(revokedUseResponse.json().admission.admitted, false);
+      assert.equal(approvalFetchCalls, 1);
+
+      const nonApproverResponse = await approvalApp.inject({
+        method: 'POST',
+        url: '/v1/omega/connectors/approvals',
+        headers: { authorization: `Bearer ${await signToken({ groups: ['other-group'] })}` },
+        payload: { connector },
+      });
+      assert.equal(nonApproverResponse.statusCode, 403);
+      assert.equal(nonApproverResponse.json().error, 'CONNECTOR_APPROVER_GROUP_REQUIRED');
+    } finally {
+      await approvalApp.close();
+    }
+
+    const noPolicyApp = createApp(':memory:', false, {
+      oidcIdentity: { issuer, audience, jwksUri },
+      connectorPolicyDigests: [],
+    });
+    try {
+      const deniedApproval = await noPolicyApp.inject({
+        method: 'POST',
+        url: '/v1/omega/connectors/approvals',
+        headers: { authorization: `Bearer ${validToken}` },
+        payload: { connector },
+      });
+      assert.equal(deniedApproval.statusCode, 403);
+      assert.equal(deniedApproval.json().error, 'CONNECTOR_POLICY_DENIED');
+    } finally {
+      await noPolicyApp.close();
+    }
 
     const invalidTokens = [
       await signToken({ tokenAudience: 'different-api' }),

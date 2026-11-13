@@ -19,6 +19,7 @@ export interface VerifiedOidcIdentity {
   readonly issuer: string;
   readonly subject: string;
   readonly audience: string;
+  readonly groups: readonly string[];
   readonly issuedAt: number;
   readonly expiresAt: number;
 }
@@ -105,6 +106,9 @@ export function createOidcIdentityVerifier(config: OidcIdentityConfig) {
       issuer,
       subject: payload.sub,
       audience,
+      groups: Array.isArray(payload.groups)
+        ? payload.groups.filter((group): group is string => typeof group === 'string' && Boolean(group.trim()))
+        : [],
       issuedAt: payload.iat,
       expiresAt: payload.exp,
     };
