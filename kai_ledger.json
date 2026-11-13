@@ -3,7 +3,12 @@
   "checksum": "30013030",
   "doctrine": "ATTEST, DON'T ASSERT. UNKNOWN PRESERVED.",
   "append_only": true,
-  "status_values": ["VERIFIED", "DIVERGENT", "UNKNOWN", "NOT_EXECUTED"],
+  "status_values": [
+    "VERIFIED",
+    "DIVERGENT",
+    "UNKNOWN",
+    "NOT_EXECUTED"
+  ],
   "rule": "Append only. Never rewrite or delete an entry. On conflict keep both receipts, ordered by timestamp. See SWARM_PROTOCOL.md §VI.",
   "entries": [
     {
@@ -276,6 +281,18 @@
       "tests_passed": true,
       "evidence_hash": "f3511fc2675064bc21dec30565910c72d81cff8777f5bffe00843c54d424b3f1",
       "next_delta": "Wire a concrete command-admission provider only after its trusted authority and policy source are documented; keep the default unconfigured and fail closed."
+    },
+    {
+      "timestamp": "2026-11-13T23:20:00Z",
+      "agent_id": "grok",
+      "branch": "agent/grok/flow-water-ci",
+      "status": "UNKNOWN",
+      "files_touched": [
+        ".github/workflows/verify.yml",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "next_delta": "Human-review CI on this branch. evidence_hash is the workflow diff only, because the ledger line cannot contain the hash of a diff that includes itself. pnpm build, pnpm lint, and the full pnpm test were not run. upgrade.execution stays NOT_EXECUTED. Do not merge from this node."
     }
   ]
 }
