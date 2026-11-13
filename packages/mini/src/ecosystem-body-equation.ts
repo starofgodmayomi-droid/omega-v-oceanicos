@@ -724,6 +724,54 @@ export const EQUATION_LAW_OBSERVATION: RepoSurfaceObservation = Object.freeze({
   observed: 'Y(M[t+1]=M[t] union Delta | Expected≡Observed)',
 });
 
+/**
+ * Full-stack skills, in flow order. This is the water: one current, not eight
+ * products. The list is a declaration. Reading the files is the observation.
+ */
+export const FULL_STACK_WATER: readonly OutwardSurface[] = Object.freeze([
+  Object.freeze({ id: 'water-companion', path: 'skills/oceanicos-full-stack-companion/SKILL.md', role: 'skill' as const }),
+  Object.freeze({ id: 'water-continuum', path: 'skills/oceanicos-total-continuum/SKILL.md', role: 'skill' as const }),
+  Object.freeze({ id: 'verified-upgrade-skill', path: 'skills/oceanicos-verified-upgrade/SKILL.md', role: 'skill' as const }),
+  Object.freeze({ id: 'water-spine', path: 'skills/oceanicos-full-stack/SKILL.md', role: 'skill' as const }),
+  Object.freeze({ id: 'water-max-space', path: 'skills/oceanicos-max-space-full-stack/SKILL.md', role: 'skill' as const }),
+  Object.freeze({ id: 'water-lucid', path: 'skills/lucid-full-stack/SKILL.md', role: 'skill' as const }),
+  Object.freeze({ id: 'water-global-good', path: 'skills/omega-global-good-fullstack/SKILL.md', role: 'skill' as const }),
+  Object.freeze({ id: 'water-computer', path: 'skills/full-stack-computer-mode/SKILL.md', role: 'skill' as const }),
+]);
+
+export type FullStackWaterReport = {
+  readonly law: typeof ECOSYSTEM_BODY_EQUATION_ID;
+  readonly current: 'FULL_STACK_WATER';
+  readonly skills: number;
+  readonly status: EquationCompression['status'];
+  readonly digest: string | null;
+  readonly halt: EquationHalt | null;
+  readonly upgrade: RepoUpgradeCompression;
+  readonly flow: readonly { readonly id: string; readonly path: string }[];
+  readonly evidenceBoundary: string;
+};
+
+/**
+ * Fold every declared full-stack skill through the ecosystem equation.
+ * A compressed current names one upgrade and does not run it.
+ */
+export function compressFullStackWater(root: string): FullStackWaterReport {
+  const observed = observeOutwardFiles(root, FULL_STACK_WATER);
+  const compression = compressRepoEquation(observed.surfaces);
+  return Object.freeze({
+    law: ECOSYSTEM_BODY_EQUATION_ID,
+    current: 'FULL_STACK_WATER',
+    skills: FULL_STACK_WATER.length,
+    status: compression.status,
+    digest: compression.body?.digest ?? null,
+    halt: compression.body?.halt ?? null,
+    upgrade: compression.upgrade,
+    flow: Object.freeze(FULL_STACK_WATER.map((surface) => Object.freeze({ id: surface.id, path: surface.path }))),
+    evidenceBoundary:
+      'COMPRESSED means this process read each full-stack skill and the file was non-empty. It is not a deploy, a merge, or permission to upgrade. upgrade.execution stays NOT_EXECUTED.',
+  });
+}
+
 /** Paths this repository may expand outward. Admission is observation, not the list. */
 export const REPO_OUTWARD_RING: readonly OutwardSurface[] = Object.freeze([
   Object.freeze({ id: 'equation', path: 'ECOSYSTEM_BODY.md', role: 'contract' as const }),
@@ -741,5 +789,5 @@ export const REPO_OUTWARD_RING: readonly OutwardSurface[] = Object.freeze([
   Object.freeze({ id: 'equation-cli', path: 'scripts/compress-repo-equation.ts', role: 'cli' as const }),
   Object.freeze({ id: 'equation-doc', path: 'docs/ECOSYSTEM-BODY-EQUATION.md', role: 'docs' as const }),
   Object.freeze({ id: 'body-doc', path: 'docs/SINGLE-BODY-4X4X4X4.md', role: 'docs' as const }),
-  Object.freeze({ id: 'verified-upgrade-skill', path: 'skills/oceanicos-verified-upgrade/SKILL.md', role: 'skill' as const }),
+  ...FULL_STACK_WATER,
 ]);
