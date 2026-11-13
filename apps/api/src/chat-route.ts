@@ -9,6 +9,7 @@ import { globalMarketEngine } from './market-route.js';
 import { evaluateReaTarget } from './rea-route.js';
 import { compressAiNews } from './news-route.js';
 import { globalWealthEngine } from './wealth-route.js';
+import { executeTool, type AllowedToolName } from './tool-runner-route.js';
 
 export interface ChatMessage {
   id: string;
@@ -125,8 +126,51 @@ async function resolveOrganAndContext(
   let actionTriggered: string | undefined = undefined;
   let evidenceHash: string | undefined = undefined;
 
+  // 0. Local Tool Runner triggers (Manus AI / OpenClaw / ChatGPT OS mood)
+  if (
+    lower.includes('execute local tool') ||
+    lower.includes('local tool:') ||
+    lower.includes('system-health') ||
+    lower.includes('system telemetry') ||
+    lower.includes('repo-status') ||
+    lower.includes('git working tree') ||
+    lower.includes('ledger-status') ||
+    lower.includes('swarm ledger audit') ||
+    lower.includes('matrix-tensor') ||
+    lower.includes('4096-d hyper-tensor') ||
+    lower.includes('test-smoke') ||
+    lower.includes('run smoke tests')
+  ) {
+    organ = 'LOCAL_TOOL_COCKPIT';
+    let targetTool: AllowedToolName = 'system-health';
+    if (lower.includes('repo-status') || lower.includes('git working tree')) targetTool = 'repo-status';
+    else if (lower.includes('ledger-status') || lower.includes('swarm ledger audit') || lower.includes('ledger audit')) targetTool = 'ledger-status';
+    else if (lower.includes('matrix-tensor') || lower.includes('4096-d')) targetTool = 'matrix-tensor';
+    else if (lower.includes('test-smoke') || lower.includes('smoke test')) targetTool = 'test-smoke';
+    else if (lower.includes('system-health') || lower.includes('system telemetry')) targetTool = 'system-health';
+
+    actionTriggered = `EXECUTE_LOCAL_TOOL_${targetTool.toUpperCase().replace(/-/g, '_')}`;
+    const result = executeTool(targetTool);
+    evidenceHash = result.success
+      ? ((result.output?.proofHash as string) || (result.output?.commit as string) || `0x1111-tool-${targetTool}-success`)
+      : '0x1111-tool-exec-fail';
+
+    if (result.success) {
+      replyContent = `🛠️ **Local Tool Execution: ${targetTool.toUpperCase()}**\n\n` +
+        `• **Tool ID**: \`${result.toolId}\`\n` +
+        `• **Execution Status**: **✓ SUCCESS** (${result.elapsedMs}ms)\n` +
+        `• **Executed At**: \`${result.executedAt}\`\n\n` +
+        `**Live Output Payload:**\n` +
+        '```json\n' +
+        JSON.stringify(result.output, null, 2) +
+        '\n```\n\n' +
+        `*Executed live on host OS with zero simulated delay under fail-closed verification.*`;
+    } else {
+      replyContent = `⚠️ **Local Tool Execution Failed: ${targetTool}**\n\nError: ${result.error || 'Unknown execution error'}`;
+    }
+  }
   // 1. Treasury / Bitcoin queries
-  if (lower.includes('bitcoin') || lower.includes('treasury') || lower.includes('wallet') || lower.includes('address') || lower.includes('btc')) {
+  else if (lower.includes('bitcoin') || lower.includes('treasury') || lower.includes('wallet') || lower.includes('address') || lower.includes('btc')) {
     organ = 'SOVEREIGN_TREASURY_ORATOR';
     actionTriggered = 'VERIFY_1111_TREASURY';
     evidenceHash = '0x1111-btc-treasury-verified';

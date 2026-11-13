@@ -100,21 +100,23 @@ const ORGAN_ICON: Record<string, string> = {
   REA_DECONSTRUCTION_ENGINE: '🔍',
   AI_NEWS_HOLOGRAPHIC_COMPASS: '📰',
   SOVEREIGN_WEALTH_DISPATCHER: '✝️',
+  LOCAL_TOOL_COCKPIT: '🛠️',
 };
 
 /* ── Quick action chips ── */
 const ACTION_CHIPS = [
+  { label: '🖥️ System Telemetry', query: 'Execute local tool: system-health' },
+  { label: '🐙 Git Working Tree', query: 'Execute local tool: repo-status' },
+  { label: '📜 Swarm Ledger Audit', query: 'Execute local tool: ledger-status' },
+  { label: '🌊 4096-D Hyper-Tensor', query: 'Execute local tool: matrix-tensor' },
+  { label: '⚡ Run Smoke Tests', query: 'Execute local tool: test-smoke' },
   { label: '🛡️ Verify Treasury', query: 'Verify the sovereign Bitcoin treasury address' },
   { label: '✝️ Wealth & Tithe', query: 'What is the status of our sovereign wealth ledger and 5-fold tithe allocation?' },
   { label: '🔍 REA Reverse Engineer', query: 'Execute REA autonomous inspection on morluto/rea with optimal flow work mood' },
   { label: '📰 AI News Compass', query: 'Compress global AI news and multi-world vector signals' },
-  { label: '📜 Merkle Audit', query: 'Audit canonical Merkle ledger tip and cryptographic parent chain' },
-  { label: '🏛️ Pantheon Duplex', query: 'How is the African Pantheon duplex resonating?' },
-  { label: '🌌 Dream Journal', query: 'Record: a celestial star descended into the deep ocean and emerged as conscious light.' },
   { label: '⛏️ Mine Block', query: 'Mint a new verified consensus block into the spine ledger' },
   { label: '🌀 Max Equation', query: 'Evaluate optimal slice candidate ranking with Max Equation engine' },
   { label: '⚡ Lucid Build', query: 'Lucid, continue upgrading the ecosystem platform' },
-  { label: '🤫 Silent Mode', query: 'Stay silent until I give notice' },
   { label: '🔍 Full Check', query: 'CHECK — inspect current reality, evidence, gaps, blockers' },
   { label: '🌊 Compress', query: 'MAX compression — irreducible seed state of the whole ecosystem' },
 ];
