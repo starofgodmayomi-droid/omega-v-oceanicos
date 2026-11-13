@@ -134,6 +134,25 @@ resolver remains an additional gate. These routes rely on an access token from
 the configured OIDC provider; the implementation does not provision users,
 map provider groups, or establish that a real human completed a sign-in.
 
+### Keycloak deployment checklist
+
+The API is provider-neutral and does not discover OIDC metadata automatically.
+For Keycloak, set `OMEGA_OIDC_ISSUER` to the realm's exact public issuer URL,
+and set `OMEGA_OIDC_JWKS_URI` to that realm's public
+`/protocol/openid-connect/certs` endpoint. Set `OMEGA_OIDC_AUDIENCE` to the API
+audience and configure the Keycloak access token to contain that audience.
+Configure a Group Membership mapper to emit a `groups` array in the access
+token with the exact value `connector-approvers`; do not rely on defaults that
+may emit a group path such as `/connector-approvers`. The verifier intentionally
+uses exact group matching and accepts signed RS256 or ES256 tokens only.
+
+Before enabling an allowlist digest, verify the realm issuer, audience, JWKS
+endpoint, and group claim using a real Keycloak-issued access token in a
+non-production environment. The repository does not provision Keycloak,
+configure its clients or mappers, or store its credentials. Keep
+`OMEGA_CONNECTOR_POLICY_DIGESTS` empty until the exact connector declaration
+has been reviewed and the identity mapping has been verified.
+
 ## Ω command lifecycle governance
 
 The `/v1/omega/commands` lifecycle records human intent, worker attribution, ΩIR, evidence, authority, policy, approval, execution, attestation, provenance, and reality observation as separate states. `DENY` and `REVIEW` never execute. Approval does not claim success; execution does not claim reality; observation does not become proof without defined evidence.
