@@ -234,6 +234,48 @@
       "tests_passed": true,
       "evidence_hash": "e28dba4b7386278663388ed7838e586107234e66e21759a2234fe64bdb1f0a07",
       "next_delta": "Wait for human review and PR CI after the safety-boundary regression test update; do not merge to main."
+    },
+    {
+      "timestamp": "2026-11-13T10:32:00Z",
+      "agent_id": "copilot",
+      "branch": "agent/copilot/alpha-execution-attestation",
+      "status": "VERIFIED",
+      "files_touched": [
+        "apps/api/src/execute-route.ts",
+        "apps/api/src/index.ts",
+        "apps/api/src/__tests__/api.execute-attestation.test.ts",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "adc59c9937282a069d93c45a26459f899f2b4d95b74f0833a86386b5bd5a2ab9",
+      "next_delta": "Human-review the attestation slice and keep the fail-closed signing guard on the API-computed evidence only."
+    },
+    {
+      "timestamp": "2026-11-13T10:38:02Z",
+      "agent_id": "copilot",
+      "branch": "agent/copilot/omega-command-admission-guard",
+      "status": "UNKNOWN",
+      "files_touched": [
+        "kai_ledger.json"
+      ],
+      "tests_passed": null,
+      "evidence_hash": null,
+      "next_delta": "Human-review the preceding alpha-execution-attestation receipt: its API files were unchanged in that slice and its hash was not the committed diff hash."
+    },
+    {
+      "timestamp": "2026-11-13T10:38:02Z",
+      "agent_id": "copilot",
+      "branch": "agent/copilot/omega-command-admission-guard",
+      "status": "VERIFIED",
+      "files_touched": [
+        "apps/api/src/index.ts",
+        "apps/api/src/omega.ts",
+        "apps/api/src/__tests__/omega-command-admission.integration.test.mjs",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "f3511fc2675064bc21dec30565910c72d81cff8777f5bffe00843c54d424b3f1",
+      "next_delta": "Wire a concrete command-admission provider only after its trusted authority and policy source are documented; keep the default unconfigured and fail closed."
     }
   ]
 }
