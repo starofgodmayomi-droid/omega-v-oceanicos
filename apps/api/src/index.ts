@@ -1021,6 +1021,27 @@ export function createApp(
     return { success: true, query, results };
   });
 
+  // ─── C8 Causal Memory — new routes (Issue #295) ─────────────────────────────
+  // GET /v1/kai/replay/:id — exact record replay by ID
+  fastify.get('/v1/kai/replay/:id', async (request: any, reply) => {
+    const record = kaiLedger.replay(String(request.params.id));
+    if (!record) return jsonError(reply, 404, 'KAI_RECORD_NOT_FOUND', { id: request.params.id });
+    return { success: true, record };
+  });
+
+  // GET /v1/memory/causal — full causal chain with integrity in one call
+  fastify.get('/v1/memory/causal', async (request: any) => {
+    const { subject, distinction, limit } = request.query ?? {};
+    const records = kaiLedger.query({
+      ...(subject ? { subject: String(subject) } : {}),
+      ...(distinction ? { distinction: String(distinction) as any } : {}),
+      ...(limit ? { limit: Number(limit) } : {}),
+    });
+    const integrity = kaiLedger.verifyIntegrity();
+    return { success: true, records, count: records.length, integrity };
+  });
+  // ─────────────────────────────────────────────────────────────────────────────
+
   fastify.get('/v1/pluralism/face', async () => ({
     success: true,
     face: PluralisticRealityMatrix.evaluateMatrix(),
@@ -1505,6 +1526,8 @@ export const STARTUP_BANNER = [
   '  POST   /v1/inference/analyze',
   '  GET    /v1/memory/status',
   '  GET    /v1/memory/search',
+  '  GET    /v1/memory/causal',
+  '  GET    /v1/kai/replay/:id',
   '  GET    /v1/pluralism/face',
   '  POST   /v1/pluralism/converge',
   '  GET    /v1/pluralism/tensor',

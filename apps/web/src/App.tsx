@@ -25,6 +25,7 @@ import { WealthActionPanel } from './WealthActionPanel';
 import { EchoframeWorkspace } from './EchoframeWorkspace';
 import { WatcherCorridorPanel } from './WatcherCorridorPanel';
 import { V0CreationMirror } from './V0CreationMirror';
+import { CausalChainPanel } from './CausalChainPanel';
 import {
   theme,
   statusColor,
@@ -714,6 +715,14 @@ export function App() {
       subtitle: 'Lineage and memory',
       state: stageStates.remember,
       detail: <TransitionProvenancePanel />,
+    },
+    {
+      id: 'causal-chain',
+      icon: '💧',
+      label: 'Causal Chain',
+      subtitle: 'C8 — Live evidence dossier',
+      state: 'available' as const,
+      detail: <CausalChainPanel />,
     },
     {
       id: 'next',
