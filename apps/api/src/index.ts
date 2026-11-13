@@ -28,6 +28,7 @@ import {
   type OmegaCommandAdmissionEvidenceResolver,
 } from './omega.js';
 import { registerMeshValidationRoute } from './mesh-route.js';
+import { registerLocalActionsRoute } from './local-actions-route.js';
 import { KaiMemoryStore } from './kai-memory.js';
 import { registerExecuteRoute } from './execute-route.js';
 import { scanIntent } from './invisible-computer.js';
@@ -271,6 +272,7 @@ export function createApp(
     registerPipelineRoute(scope, jsonError, options.pipelineAdmissionEvidence);
   });
 
+  registerLocalActionsRoute(fastify);
   registerEcosystemRoute(fastify, authMode, Boolean(attestationSigningKey));
   registerNavigatorEvidenceRoute(fastify);
   registerRealityRoute(fastify, authMode, Boolean(attestationSigningKey), Boolean(ledgerMemory.getTip()));

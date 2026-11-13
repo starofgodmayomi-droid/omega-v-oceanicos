@@ -30,6 +30,31 @@ test('compiled API registers every inventoried method/path pair', async () => {
   }
 });
 
+test('local action surface answers fail-closed instead of 404', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'omega-local-actions-'));
+  const app = createApp(join(directory, 'ledger.db'), false, { allowUnsignedCycle: true });
+
+  try {
+    await app.ready();
+    const list = await app.inject({ method: 'GET', url: '/v1/local-actions' });
+    assert.equal(list.statusCode, 200);
+    const listBody = list.json();
+    assert.equal(listBody.enabled, false);
+    assert.deepEqual(listBody.actions, []);
+    assert.equal(listBody.execution, 'NOT_EXECUTED');
+
+    const runs = await app.inject({ method: 'GET', url: '/v1/local-actions/runs' });
+    assert.equal(runs.statusCode, 200);
+    assert.deepEqual(runs.json().runs, []);
+
+    // No run endpoint exists: a caller cannot execute a local action.
+    assert.equal(app.hasRoute({ method: 'POST', url: '/v1/local-actions/:actionId/run' }), false);
+  } finally {
+    await app.close();
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
 test('route inventory rejects malformed and duplicate method/path contracts', () => {
   assert.throws(() => parseApiRouteContract('PATCH /v1/unsupported'), /invalid API route contract/);
   assert.throws(() => parseApiRouteContract('GET v1/missing-leading-slash'), /invalid API route contract/);
