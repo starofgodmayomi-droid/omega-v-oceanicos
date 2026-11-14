@@ -691,10 +691,8 @@ export function registerToolRunnerRoute(fastify: FastifyInstance, kaiLedger?: an
     ],
   }));
 
-  fastify.post<{ Body: { toolId?: string; params?: Record<string, any> } }>(
-    '/v1/tools/execute',
-    async (request, reply) => {
-      const { toolId, params } = request.body || {};
+  fastify.post('/v1/tools/execute', async (request, reply) => {
+    const { toolId, params } = (request.body as any) || {};
 
       if (!toolId || !ALLOWED_TOOLS.includes(toolId as AllowedToolName)) {
         return reply.status(400).send({
