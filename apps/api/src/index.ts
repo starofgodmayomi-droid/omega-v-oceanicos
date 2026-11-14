@@ -295,6 +295,8 @@ export function createApp(
   registerSoulRoute(fastify);
   registerRealityRoute(fastify, authMode, () => Boolean(attestationSigningKey), () => Boolean(ledgerMemory.getTip()));
   const upgradeKernel = new UpgradeKernel(attestationSigningKey || 'omega-upgrade-secret');
+  // ─── 🔥 LIVE MOOD ENGINE AT MAX SCALE (Level 4: Strategic & Proactive Resonance) ───
+  const moodEngine = new AutopilotMoodEngine({ level: 4, language: 'en' });
   registerChatRoute(fastify, {
     kaiLedger,
     vectorMemory,
@@ -305,6 +307,7 @@ export function createApp(
     broadcastMintedBlock,
     attestationSigningKey,
     optimizeMaxEquationSlices,
+    moodEngine,
   });
 
   registerUpgradeRoute(fastify, jsonError, upgradeKernel);
@@ -382,9 +385,7 @@ export function createApp(
   });
 
   fastify.get('/v1/kernel/capabilities', async () => ({ success: true, capability: platformKernel.getCapabilitySnapshot(), evaluatedAt: new Date().toISOString() }));
-  // ─── 🔥 LIVE MOOD ENGINE (proactive self-sensing) ────────────────
-  const moodEngine = new AutopilotMoodEngine({ level: 1, language: 'en' });
-
+  // ─── 🔥 LIVE MOOD ENGINE (proactive self-sensing at Level 4) ────────────────
   fastify.get('/v1/mood', async () => {
     // Run the mood engine in self-observation mode
     const pipeline = moodEngine.runPipeline({

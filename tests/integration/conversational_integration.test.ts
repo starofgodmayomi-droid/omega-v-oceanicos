@@ -226,5 +226,26 @@ describe('🌊 OceanicOS Conversational Assistant & KAI Memory Integration Slice
     assert.match(body.reply.content, /Canonical State ID/i);
     assert.match(body.reply.content, /Tip Hash/i);
   });
+
+  it('POST /v1/chat upgrades conversation mood at max scale and returns Level 4 resonance', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/v1/chat',
+      payload: {
+        message: 'upgrade conversation mood at max scale',
+      },
+    });
+
+    assert.equal(res.statusCode, 200);
+    const body = JSON.parse(res.payload);
+    assert.equal(body.success, true);
+    assert.equal(body.reply.metadata.organ, 'CONVERSATION_MOOD_ENGINE');
+    assert.equal(body.reply.metadata.actionTriggered, 'UPGRADE_CONVERSATION_MOOD_MAX_SCALE');
+    assert.match(body.reply.content, /Level 4: Strategic & Proactive Resonance/i);
+    assert.match(body.reply.content, /HIGH_INTEGRITY/i);
+    assert.match(body.reply.content, /MOOD ≠ AUTHORITY/i);
+    assert.match(body.reply.content, /432\.1 Hz/i);
+    assert.ok(body.reply.metadata.evidenceHash);
+  });
 });
 

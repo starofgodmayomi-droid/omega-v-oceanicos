@@ -357,6 +357,28 @@ export function GloberAgiCommandCenter({ onSendMessage }: GloberAgiCommandCenter
             <span>{authSession?.user?.name || 'Elion Varel'} (Auth0)</span>
           </button>
 
+          {/* Conversation Mood Pill (Level 4: Max Scale) */}
+          <button
+            onClick={() => handleSendPrompt('upgrade conversation mood at max scale')}
+            title="Conversation Mood: Level 4 Max Scale (Proactive 432.1 Hz Resonance)"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              background: 'rgba(168, 85, 247, 0.12)',
+              border: '1px solid rgba(168, 85, 247, 0.35)',
+              borderRadius: '6px',
+              padding: '4px 10px',
+              color: '#d8b4fe',
+              cursor: 'pointer',
+              fontSize: '11px',
+              fontFamily: theme.fontMono,
+            }}
+          >
+            <span>🎭</span>
+            <span>MOOD: LVL 4 MAX</span>
+          </button>
+
           <button
             onClick={() => setRightPanelOpen(!rightPanelOpen)}
             title="Toggle Sensory & Telemetry Panel"
@@ -902,6 +924,7 @@ export function GloberAgiCommandCenter({ onSendMessage }: GloberAgiCommandCenter
               { label: '🐙 Git Diff', action: () => executeRealWorldTool('git-diff') },
               { label: '📰 AI News', action: () => executeRealWorldTool('news-sensor') },
               { label: '🖥️ System Health', action: () => executeRealWorldTool('system-health') },
+              { label: '🎭 Max Mood', action: () => handleSendPrompt('upgrade conversation mood at max scale') },
             ].map((toolBtn, i) => (
               <button
                 key={i}
