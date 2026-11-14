@@ -310,7 +310,7 @@ export function createApp(
   registerEchoframeRoute(fastify);
   registerMarketRoute(fastify);
   registerTradingRoute(fastify);
-  registerWealthRoute(fastify);
+  registerWealthRoute(fastify, kaiLedger);
   registerReaRoute(fastify);
   registerNewsRoute(fastify);
   registerWatcherRoute(fastify);
@@ -445,53 +445,53 @@ export function createApp(
   });
 
   fastify.post('/v1/mood/pipeline', async (request: FastifyRequest<{ Body: { signal: string; status?: string; source?: string; consequential?: boolean } }>) => {
-      const { signal, status, source, consequential } = request.body || {};
-      if (!signal || typeof signal !== 'string') {
-        return { success: false, error: 'MISSING_MOOD_SIGNAL', detail: 'Body must include "signal" string.' };
-      }
+    const { signal, status, source, consequential } = request.body || {};
+    if (!signal || typeof signal !== 'string') {
+      return { success: false, error: 'MISSING_MOOD_SIGNAL', detail: 'Body must include "signal" string.' };
+    }
 
-      const pipeline = moodEngine.runPipeline({
-        signal,
-        status: (status as any) || 'OBSERVED',
-        source: source || 'api-mood-pipeline',
-        actionConsequential: consequential ?? false,
-        authorityPresent: true,
-        policyChecked: true,
-      });
+    const pipeline = moodEngine.runPipeline({
+      signal,
+      status: (status as any) || 'OBSERVED',
+      source: source || 'api-mood-pipeline',
+      actionConsequential: consequential ?? false,
+      authorityPresent: true,
+      policyChecked: true,
+    });
 
-      const moodMatrix = evaluateProactiveMoodMatrix({
-        moodContext: pipeline.mood.context as any,
-        moodConfidence: 1.0 - pipeline.mood.uncertainty,
-        moodUncertainty: pipeline.mood.uncertainty,
-        moodStatus: pipeline.mood.status,
-        safetyGateResult: pipeline.safetyGate.admissionResult as any,
-        authority: true,
-        policy: true,
-      });
+    const moodMatrix = evaluateProactiveMoodMatrix({
+      moodContext: pipeline.mood.context as any,
+      moodConfidence: 1.0 - pipeline.mood.uncertainty,
+      moodUncertainty: pipeline.mood.uncertainty,
+      moodStatus: pipeline.mood.status,
+      safetyGateResult: pipeline.safetyGate.admissionResult as any,
+      authority: true,
+      policy: true,
+    });
 
-      return {
-        success: true,
-        contract: 'Ω∞v-MOOD-MATRIX-PROACTIVE-V1',
-        pipeline: {
-          signal: pipeline.signal,
-          mood: {
-            context: pipeline.mood.context,
-            uncertainty: pipeline.mood.uncertainty,
-            status: pipeline.mood.status,
-          },
-          adaptation: pipeline.adaptation,
-          safetyGate: pipeline.safetyGate,
-          memoryRecordsCount: pipeline.memoryRecords.length,
+    return {
+      success: true,
+      contract: 'Ω∞v-MOOD-MATRIX-PROACTIVE-V1',
+      pipeline: {
+        signal: pipeline.signal,
+        mood: {
+          context: pipeline.mood.context,
+          uncertainty: pipeline.mood.uncertainty,
+          status: pipeline.mood.status,
         },
-        moodMatrix: {
-          decision: moodMatrix.matrixDecision,
-          moodContext: moodMatrix.moodContext,
-          composedState: moodMatrix.composedState,
-          proofHash: moodMatrix.proofHash,
-        },
-        evaluatedAt: new Date().toISOString(),
-      };
-    },
+        adaptation: pipeline.adaptation,
+        safetyGate: pipeline.safetyGate,
+        memoryRecordsCount: pipeline.memoryRecords.length,
+      },
+      moodMatrix: {
+        decision: moodMatrix.matrixDecision,
+        moodContext: moodMatrix.moodContext,
+        composedState: moodMatrix.composedState,
+        proofHash: moodMatrix.proofHash,
+      },
+      evaluatedAt: new Date().toISOString(),
+    };
+  },
   );
 
   // ─── 🌊 MATHxMATRIXx8X8X8X8 HYPER-TORUS TENSOR (4096-D) ───────────

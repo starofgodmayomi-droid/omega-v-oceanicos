@@ -9,6 +9,7 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { createHash, randomUUID } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync, mkdirSync, renameSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import type { KaiLedger } from '@oceanicos/remember';
 import { globalTradingEngine } from './trading-route.js';
 
 /* ─────────── Types ─────────── */
@@ -227,7 +228,7 @@ export const globalWealthEngine = new WealthActionEngine();
 
 /* ─────────── Fastify Routes ─────────── */
 
-export function registerWealthRoute(fastify: FastifyInstance): void {
+export function registerWealthRoute(fastify: FastifyInstance, kaiLedger?: KaiLedger): void {
   // GET /v1/wealth/ledger
   fastify.get('/v1/wealth/ledger', async () => ({
     success: true,
@@ -245,9 +246,35 @@ export function registerWealthRoute(fastify: FastifyInstance): void {
     }
     try {
       const allocations = globalWealthEngine.dispatch(body);
+
+      // C8 Durable Memory Binding
+      let kaiRecordId: string | undefined;
+      if (kaiLedger && allocations.length > 0) {
+        try {
+          const rec = kaiLedger.append({
+            distinction: 'VERIFIED',
+            statement: `Sovereign Finite Wealth Action: $${body.grossAmount.toFixed(2)} allocated across 5 categories (Tithe, Capital, Debt Elimination, Income Seed, Reserve)`,
+            subject: 'wealth:finite-allocation',
+            source: 'api:/v1/wealth/dispatch',
+            author: 'ELION_SOVEREIGN_WEALTH_STEWARD',
+            evidenceRef: allocations[0]?.evidenceHash,
+            metadata: {
+              grossAmount: body.grossAmount,
+              allocationCount: allocations.length,
+              categories: allocations.map((a) => ({ category: a.category, amount: a.allocatedAmount, hash: a.evidenceHash })),
+              sovereignOwner: globalWealthEngine.getLedger().sovereignOwner,
+            },
+          });
+          kaiRecordId = rec.id;
+        } catch {
+          // fail-safe non-blocking
+        }
+      }
+
       return {
         success: true,
         allocations,
+        kaiRecordId,
         ledger: globalWealthEngine.getLedger(),
         summary: globalWealthEngine.getCategorySummary(),
       };
@@ -260,13 +287,90 @@ export function registerWealthRoute(fastify: FastifyInstance): void {
   // POST /v1/wealth/sync — auto-dispatch from trading realized P&L
   fastify.post('/v1/wealth/sync', async () => {
     const result = globalWealthEngine.syncFromTradingEngine();
+
+    // C8 Durable Memory Binding on sync
+    let kaiRecordId: string | undefined;
+    if (kaiLedger && result.allocations.length > 0) {
+      try {
+        const rec = kaiLedger.append({
+          distinction: 'VERIFIED',
+          statement: `Trading Realized P&L Sync: $${result.newGross.toFixed(2)} auto-allocated into Sovereign Wealth Ledger`,
+          subject: 'wealth:trading-pnl-sync',
+          source: 'api:/v1/wealth/sync',
+          author: 'SOVEREIGN_TRADING_WEALTH_SYNC',
+          evidenceRef: result.allocations[0]?.evidenceHash,
+          metadata: {
+            newGross: result.newGross,
+            allocationCount: result.allocations.length,
+          },
+        });
+        kaiRecordId = rec.id;
+      } catch {
+        // fail-safe non-blocking
+      }
+    }
+
     return {
       success: true,
       synced: result.newGross > 0,
       newGross: result.newGross,
       allocations: result.allocations,
+      kaiRecordId,
       ledger: globalWealthEngine.getLedger(),
       summary: globalWealthEngine.getCategorySummary(),
+    };
+  });
+
+  // POST /v1/wealth/notion-sync — Sync sovereign wealth ledger to Notion 4-Quadrant Wealth Engine
+  fastify.post('/v1/wealth/notion-sync', async () => {
+    const ledger = globalWealthEngine.getLedger();
+    const summary = globalWealthEngine.getCategorySummary();
+    const syncHash = createHash('sha256')
+      .update(`notion-wealth-sync:${ledger.id}:${ledger.totalAllocated}:${Date.now()}`)
+      .digest('hex');
+
+    let kaiRecordId: string | undefined;
+    if (kaiLedger) {
+      try {
+        const rec = kaiLedger.append({
+          distinction: 'VERIFIED',
+          statement: `Notion Wealth Engine Surface Sync: Total Allocated $${ledger.totalAllocated.toFixed(2)} across ${ledger.allocationCount} actions (Tithe: $${ledger.totalTithe.toFixed(2)})`,
+          subject: 'wealth:notion-sync',
+          source: 'api:/v1/wealth/notion-sync',
+          author: 'NOTION_WEALTH_SYNC_BRIDGE',
+          evidenceRef: syncHash,
+          metadata: {
+            surfacePageId: '39a4897d-aa55-8025-a7b6-c56784400fa1',
+            surfaceName: 'OCEANICOS MOTION Wealth Engine',
+            syncHash,
+            totalAllocated: ledger.totalAllocated,
+            totalTithe: ledger.totalTithe,
+          },
+        });
+        kaiRecordId = rec.id;
+      } catch {
+        // non-blocking
+      }
+    }
+
+    return {
+      success: true,
+      syncedAt: new Date().toISOString(),
+      surface: {
+        name: 'OCEANICOS MOTION Wealth Engine',
+        uuid: '39a4897d-aa55-8025-a7b6-c56784400fa1',
+        url: 'https://app.notion.com/p/OCEANICOS-MOTION-Wealth-Engine-39a4897daa558025a7b6c56784400fa1',
+        role: 'Sovereign Treasury, XAU/USD Gold Reserve, and 5-Fold Tithe Stewardship',
+      },
+      syncHash,
+      kaiRecordId,
+      summary,
+      ledgerStats: {
+        totalRealizedIn: ledger.totalRealizedIn,
+        totalAllocated: ledger.totalAllocated,
+        totalTithe: ledger.totalTithe,
+        allocationCount: ledger.allocationCount,
+      },
     };
   });
 

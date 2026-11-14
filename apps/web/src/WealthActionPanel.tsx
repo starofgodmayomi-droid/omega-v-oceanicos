@@ -98,6 +98,7 @@ export function WealthActionPanel() {
   const [summary, setSummary] = useState<CategorySummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [syncLoading, setSyncLoading] = useState(false);
+  const [notionSyncLoading, setNotionSyncLoading] = useState(false);
   const [dispatchLoading, setDispatchLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -124,6 +125,25 @@ export function WealthActionPanel() {
       setError('Network error: ' + e.message);
     } finally {
       setLoading(false);
+    }
+  }, []);
+
+  const handleNotionSync = useCallback(async () => {
+    setNotionSyncLoading(true);
+    setError(null);
+    setSuccessMsg(null);
+    try {
+      const res = await fetch(`${API_BASE}/v1/wealth/notion-sync`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        setSuccessMsg(`✓ Synced to Notion Wealth Engine (${data.surface?.name}) · Evidence: ${data.syncHash?.slice(0, 10)}…`);
+      } else {
+        setError(data.error ?? 'Notion sync failed');
+      }
+    } catch (e: any) {
+      setError('Notion sync error: ' + e.message);
+    } finally {
+      setNotionSyncLoading(false);
     }
   }, []);
 
@@ -220,7 +240,27 @@ export function WealthActionPanel() {
               ELION VAREL // 11:11 — Sovereign Allocation Engine
             </p>
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button
+              onClick={handleNotionSync}
+              disabled={notionSyncLoading}
+              style={{
+                background: notionSyncLoading ? '#374151' : 'linear-gradient(90deg, #a78bfa, #7c3aed)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 8,
+                padding: '8px 16px',
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: notionSyncLoading ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                transition: 'all 0.2s',
+              }}
+            >
+              {notionSyncLoading ? '⟳ Syncing Notion…' : '🏛️ Sync Notion Wealth'}
+            </button>
             <button
               onClick={handleSync}
               disabled={syncLoading}
