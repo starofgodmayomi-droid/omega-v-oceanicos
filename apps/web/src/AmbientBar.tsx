@@ -45,6 +45,7 @@ export function AmbientBar(props: AmbientBarProps) {
   const isHealthy = props.connected || props.restActive;
 
   const [goldQuote, setGoldQuote] = useState<{ mid: number; change24h: number; changePercent24h: number } | null>(null);
+  const [pluralismScore, setPluralismScore] = useState<{ harmonic: number; verdict: string } | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -65,8 +66,30 @@ export function AmbientBar(props: AmbientBarProps) {
         /* ambient */
       }
     };
+
+    const fetchPluralism = async () => {
+      try {
+        const res = await fetch('/v1/pluralism/face');
+        if (res.ok) {
+          const data = await res.json();
+          if (mounted && data.success && data.face) {
+            setPluralismScore({
+              harmonic: data.face.overallHarmonicScore,
+              verdict: data.face.consensusVerdict,
+            });
+          }
+        }
+      } catch {
+        /* ambient */
+      }
+    };
+
     fetchGold();
-    const interval = setInterval(fetchGold, 4000);
+    fetchPluralism();
+    const interval = setInterval(() => {
+      fetchGold();
+      fetchPluralism();
+    }, 4000);
     return () => {
       mounted = false;
       clearInterval(interval);
@@ -134,6 +157,12 @@ export function AmbientBar(props: AmbientBarProps) {
       label: '🥇 XAU/USD',
       value: `$${goldQuote.mid.toFixed(2)} (${goldQuote.change24h >= 0 ? '+' : ''}${goldQuote.changePercent24h.toFixed(2)}%)`,
       color: goldQuote.change24h >= 0 ? '#fbbf24' : '#fb7185',
+      pulse: true,
+    }] : []),
+    ...(pluralismScore ? [{
+      label: '🌊 Many Faces',
+      value: `${(pluralismScore.harmonic * 100).toFixed(1)}% · ${pluralismScore.verdict}`,
+      color: '#38bdf8',
       pulse: true,
     }] : []),
     {
