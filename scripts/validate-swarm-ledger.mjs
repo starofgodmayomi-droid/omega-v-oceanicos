@@ -53,13 +53,18 @@ const baseline = JSON.parse(baselineSource);
 if (!Array.isArray(baseline.entries)) {
   throw new Error(`kai_ledger.json: append-only baseline ${baselineRef} has no entries array`);
 }
-for (let index = 0; index < baseline.entries.length; index += 1) {
-  if (!isDeepStrictEqual(ledger.entries?.[index], baseline.entries[index])) {
+  let baselineIndex = 0;
+  for (const entry of ledger.entries ?? []) {
+    if (isDeepStrictEqual(entry, baseline.entries[baselineIndex])) {
+      baselineIndex += 1;
+  }
+    if (baselineIndex === baseline.entries.length) break;
+  }
+  if (baselineIndex !== baseline.entries.length) {
     throw new Error(
-      `kai_ledger.json: append-only baseline ${baselineRef} entry ${index} was removed or modified`
+      `kai_ledger.json: append-only baseline ${baselineRef} entry ${baselineIndex} was removed or modified`
     );
   }
-}
 
 if (ledger.protocol !== 'ΩVØØS-SWARM/1') {
   throw new Error('kai_ledger.json: protocol must be ΩVØØS-SWARM/1');

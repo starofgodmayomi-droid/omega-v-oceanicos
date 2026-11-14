@@ -2,20 +2,22 @@
 
 | Field | Value |
 | --- | --- |
-| Assigned to | Copilot worker on `agent/copilot/api-served-ui` |
-| Domain | One-origin API, web/Auth0 access, worker observation, deployment configuration, focused tests, and directly related documentation |
+| Assigned to | Copilot worker on `agent/copilot/self-hosted-oidc-identity` |
+| Domain | One-origin API, web/Auth0 access, worker observation, deployment configuration, directly related documentation, and the CI/ledger validation fixes authorized below |
 | Status | Authorized by the human in this session for the listed current worktree changes. |
-| Publication | Update existing PR #602 by pushing to `agent/copilot/self-hosted-oidc-identity`, whose current head matches local `HEAD` (`fe5d3988345d5bb7c35e213410ab7fa3ce0a1759`). Do not create a duplicate PR. |
-| Authority | Commit and push only the listed non-ledger changes and this order to PR #602. Do not merge or deploy. `kai_ledger.json` is excluded pending separate append-only reconciliation and receipt authorization. |
+| Publication | Update existing PR #602 by pushing to `agent/copilot/self-hosted-oidc-identity`. Do not create a duplicate PR. |
+| Authority | Commit and push the listed changes to PR #602 after local verification. Do not merge or deploy. `kai_ledger.json` may receive append-only receipts only; do not rewrite or reformat existing entries. |
 
 ## Objective
 
-Deliver the bounded one-origin Verification-as-a-Service experience: the API serves the UI, browser API calls use the shared Auth0-aware client, OIDC access remains fail-closed and human-gated, and worker observations reflect the actual API contract without overstating evidence.
+Deliver the bounded one-origin Verification-as-a-Service experience: the API serves the UI, browser API calls use the shared Auth0-aware client, OIDC access remains fail-closed and human-gated, and worker observations reflect the actual API contract without overstating evidence. Also fix observed CI failures in Compose placeholder validation and append-only baseline comparison without weakening receipt validation.
 
 ## Authorized files
 
 - `.env.compose.example`
 - `.github/workflows/verify.yml`
+- `scripts/validate-swarm-ledger.mjs`
+- `scripts/validate-swarm-ledger.test.mjs`
 - `AGENTS.md`
 - `Dockerfile`
 - `README.md`
@@ -58,14 +60,17 @@ Deliver the bounded one-origin Verification-as-a-Service experience: the API ser
 
 ```bash
 pnpm elion:veral
+node --test scripts/validate-swarm-ledger.test.mjs
+SWARM_LEDGER_BASELINE_REF=origin/main pnpm validate:swarm
+docker compose --env-file .env.compose.example config --quiet
 git diff --check
 ```
 
-The full gate passed before this assignment was added. Re-run the focused swarm
-validation and whitespace check after the assignment change.
+These checks cover the one-origin integration and the authorized CI/ledger
+repairs. They do not prove live Auth0 configuration or deployment.
 
 ## Stop conditions
 
 - Keep live Auth0 tenant verification UNKNOWN until tested with a real non-production tenant.
-- Do not include or reformat `kai_ledger.json` in this publication; reconcile it separately and append any required receipt only after that reconciliation.
+- Preserve every historical ledger receipt exactly; any new receipt must be appended without rewriting or formatting existing entries.
 - Do not merge PR #602 or deploy.

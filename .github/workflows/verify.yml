@@ -434,7 +434,7 @@ jobs:
           OMEGA_SIGNING_KEY: ci-compose-signing-key-not-for-production-2026-strong
           OMEGA_READ_TOKEN: ci-compose-read-token
           OMEGA_ADMIN_TOKEN: ci-compose-admin-token
-        run: docker compose config --quiet
+        run: docker compose --env-file .env.compose.example config --quiet
 
   report:
     name: Report pipeline result
