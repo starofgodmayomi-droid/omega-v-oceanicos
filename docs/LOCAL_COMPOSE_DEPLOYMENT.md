@@ -1,6 +1,6 @@
 # Local Compose Deployment
 
-This document defines the finite local deployment gate for the Oceanicos API, web dashboard, Ollama, and Qdrant services. It is a local validation profile, not proof of a satellite, space-edge, or production deployment.
+This document defines the finite local deployment gate for the Oceanicos API and built web dashboard, plus optional Ollama and Qdrant services. It is a local validation profile, not proof of a satellite, space-edge, or production deployment.
 
 ## Configuration
 
@@ -13,17 +13,17 @@ pnpm build
 docker compose config
 ```
 
-The API container runs with `OMEGA_AUTH_MODE=required`. Its healthcheck uses unauthenticated `/health`; protected ledger and telemetry routes require the configured read token. The Compose file also supplies the runtime’s `API_PORT` variable and waits for API health before starting the web service.
+The API container runs with `OMEGA_AUTH_MODE=required` and serves the built React dashboard and API from one origin. Compose maps host port 3000 to the API's container port 5000; its healthcheck uses unauthenticated `/health`, while API reads require a verified Auth0 access token and mutations require the configured approver subject. Compose needs the Auth0 issuer, API audience, JWKS URI, verified approver subject, and public SPA domain/client ID/audience from `.env`. Keep server bearer tokens out of Vite settings.
 
 ## Start and validate
 
 ```bash
 docker compose up --build -d
 docker compose ps
-curl -fsS http://localhost:5000/health
-curl -fsS -H "Authorization: Bearer $OMEGA_READ_TOKEN" http://localhost:5000/v1/block/tip
-curl -fsS -H "Authorization: Bearer $OMEGA_READ_TOKEN" http://localhost:5000/v1/stream
 curl -fsS http://localhost:3000
+curl -fsS http://localhost:3000/health
+curl -fsS -H "Authorization: Bearer $AUTH0_ACCESS_TOKEN" http://localhost:3000/v1/block/tip
+curl -fsS -H "Authorization: Bearer $AUTH0_ACCESS_TOKEN" http://localhost:3000/v1/stream
 ```
 
 For a compiled API contract, including health, ledger, mood, and SSE `TIP`/`BLOCK_MINTED` delivery, run:

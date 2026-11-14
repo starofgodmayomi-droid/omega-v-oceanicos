@@ -20,6 +20,7 @@ import { LifecycleFlow, deriveStageStates, type LifecycleStage } from './Lifecyc
 import { GlobeViewport } from './GlobeViewport';
 import { bindGlobeEvidence } from './globe-shell';
 import { omegaApprovalRequest } from './omega-approval-request';
+import { apiFetch } from './api-client';
 import {
   theme,
   statusColor,
@@ -32,14 +33,14 @@ import {
 // Use the browser-facing Vite/API proxy by default. A blank default sends
 // /v1/* to Vite itself, which returns the app HTML instead of API JSON.
 // VITE_API_URL remains available for a separately hosted API origin.
-const API_BASE_URL = (import.meta.env?.VITE_API_URL || '/api').replace(/\/$/, '');
+const API_BASE_URL = (import.meta.env?.VITE_API_URL ?? '/api').replace(/\/$/, '');
 
 function apiUrl(path: string): string {
   return `${API_BASE_URL}${path}`;
 }
 
 async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(apiUrl(path), init);
+  const response = await apiFetch(apiUrl(path), init);
   const text = await response.text();
   let payload: any = null;
   try {
@@ -105,7 +106,7 @@ export function App({ connectorAuth }: { connectorAuth?: ConnectorAuth } = {}) {
   const [tipReachable, setTipReachable] = useState<boolean | null>(null);
   const [tipRouteStatus, setTipRouteStatus] = useState<string | null>(null);
 
-  const eventSourceRef = useRef<EventSource | null>(null);
+  const eventStreamRef = useRef<AbortController | null>(null);
 
   const fetchMinerStatus = async () => {
     try {
@@ -167,27 +168,41 @@ export function App({ connectorAuth }: { connectorAuth?: ConnectorAuth } = {}) {
     let disposed = false;
     let attempt = 0;
 
-    const connect = () => {
+    const connect = async () => {
       if (disposed) return;
-      es?.close();
+      eventStreamRef.current?.abort();
+      const controller = new AbortController();
+      eventStreamRef.current = controller;
       try {
-        es = new EventSource(apiUrl('/v1/stream'));
-        eventSourceRef.current = es;
-
-        es.onopen = () => {
-          attempt = 0;
-          setReconnectAttempt(0);
-          setStreamConnected(true);
-          setLastError(null);
-        };
-
-        es.onmessage = (event) => {
-          try {
-            const payload = JSON.parse(event.data);
-            if (payload.block) {
+        const response = await apiFetch(apiUrl('/v1/stream'), {
+          headers: { Accept: 'text/event-stream' },
+          signal: controller.signal,
+        });
+        if (!response.ok || !response.body) {
+          throw new Error(`Stream request failed (${response.status})`);
+        }
+        attempt = 0;
+        setReconnectAttempt(0);
+        setStreamConnected(true);
+        setLastError(null);
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        while (!disposed) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const frames = buffer.split(/\r?\n\r?\n/);
+          buffer = frames.pop() ?? '';
+          for (const frame of frames) {
+            const dataLine = frame.split(/\r?\n/).find((line) => line.startsWith('data: '));
+            if (!dataLine) continue;
+            try {
+              const payload = JSON.parse(dataLine.slice(6));
+              if (!payload.block) continue;
               setTip(payload.block);
               setHistory((prev) => {
-                const exists = prev.some((b) => b.hash === payload.block.hash);
+                const exists = prev.some((block) => block.hash === payload.block.hash);
                 if (exists) return prev;
                 return [payload.block, ...prev.slice(0, 14)];
               });
@@ -195,32 +210,30 @@ export function App({ connectorAuth }: { connectorAuth?: ConnectorAuth } = {}) {
                 totalMined: prev.totalMined + 1,
                 lastBlockTime: payload.block.timestamp,
               }));
+            } catch {
+              /* skip malformed event */
             }
-          } catch {
-            /* skip malformed event */
           }
-        };
-
-        es.onerror = () => {
-          es?.close();
-          setStreamConnected(false);
-          attempt += 1;
-          setReconnectAttempt(attempt);
-          void fetchTipFallback();
-          const delay = Math.min(30_000, 1_000 * 2 ** Math.min(attempt - 1, 4));
-          reconnectTimer = setTimeout(connect, delay);
-        };
-      } catch {
+        }
+        if (!disposed) throw new Error('Stream closed unexpectedly');
+      } catch (error) {
+        if (disposed || controller.signal.aborted) return;
         setStreamConnected(false);
+        setLastError(error instanceof Error ? error.message : 'Stream unavailable');
+        attempt += 1;
+        setReconnectAttempt(attempt);
+        void fetchTipFallback();
+        const delay = Math.min(30_000, 1_000 * 2 ** Math.min(attempt - 1, 4));
+        reconnectTimer = setTimeout(() => { void connect(); }, delay);
       }
     };
 
-    connect();
+    void connect();
 
     return () => {
       disposed = true;
       if (reconnectTimer) clearTimeout(reconnectTimer);
-      es?.close();
+      eventStreamRef.current?.abort();
     };
   }, []);
 
@@ -765,7 +778,7 @@ export function App({ connectorAuth }: { connectorAuth?: ConnectorAuth } = {}) {
           </button>
         </div>
 
-        <InvisibleComputer />
+        <InvisibleComputer auth={connectorAuth} />
 
         {/* Compressed front view: the whole body is summarized here; detailed organs stay in the background workspace. */}
         <section

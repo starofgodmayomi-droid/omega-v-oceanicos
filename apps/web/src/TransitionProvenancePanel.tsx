@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
+import { apiFetch } from './api-client';
 
-const API_BASE_URL = (import.meta.env?.VITE_API_URL || '/api').replace(/\/$/, '');
+const API_BASE_URL = (import.meta.env?.VITE_API_URL ?? '/api').replace(/\/$/, '');
 
 interface CommandSummary {
   commandId: string;
@@ -59,7 +60,7 @@ export function TransitionProvenancePanel() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/v1/omega/commands`);
+      const res = await apiFetch(`${API_BASE_URL}/v1/omega/commands`);
       const text = await res.text();
       const data = text ? JSON.parse(text) : null;
       if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
@@ -75,7 +76,7 @@ export function TransitionProvenancePanel() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/v1/omega/commands/${commandId}/provenance`);
+      const res = await apiFetch(`${API_BASE_URL}/v1/omega/commands/${commandId}/provenance`);
       const text = await res.text();
       const data = text ? JSON.parse(text) : null;
       if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);

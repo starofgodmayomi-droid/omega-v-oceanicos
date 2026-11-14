@@ -66,10 +66,9 @@ describe('connector observation panel', () => {
     const approvalCall = fetchMock.mock.calls.find(([url]) => url === '/api/v1/omega/connectors/approvals');
     expect(approvalCall).toBeDefined();
     const approvalInit = approvalCall?.[1] as RequestInit;
-    expect(approvalInit.headers).toEqual({
-      Authorization: 'Bearer auth0-api-access-token',
-      'Content-Type': 'application/json',
-    });
+    const approvalHeaders = new Headers(approvalInit.headers);
+    expect(approvalHeaders.get('Authorization')).toBe('Bearer auth0-api-access-token');
+    expect(approvalHeaders.get('Content-Type')).toBe('application/json');
     const approvalBody = JSON.parse(approvalInit.body as string) as {
       connector: { id: string; scope: string[]; mode: string };
     };
@@ -84,15 +83,14 @@ describe('connector observation panel', () => {
     const observeCall = fetchMock.mock.calls.find(([url]) => url === '/api/v1/omega/connectors/observe');
     expect(observeCall).toBeDefined();
     const observeInit = observeCall?.[1] as RequestInit;
+    const observeHeaders = new Headers(observeInit.headers);
     expect(JSON.parse(observeInit.body as string)).toMatchObject({
       approvalId: 'approval-1',
       liveAdapter: 'github-public-repository',
       connector: { id: 'github.read-repository' },
     });
-    expect(observeInit.headers).toEqual({
-      Authorization: 'Bearer auth0-api-access-token',
-      'Content-Type': 'application/json',
-    });
+    expect(observeHeaders.get('Authorization')).toBe('Bearer auth0-api-access-token');
+    expect(observeHeaders.get('Content-Type')).toBe('application/json');
   });
 
   it('shows server policy denial and never exposes the run action without an approval', async () => {

@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { Auth0Provider, useAuth0 } from '@auth0/auth0-react';
 import App from './App.tsx';
+import { setApiAccessTokenProvider } from './api-client';
 import type { ConnectorAuth } from './ConnectorPanel.tsx';
 import './App.css';
 import './tokens.css';
@@ -24,18 +25,20 @@ function isAuth0Configured(config: typeof auth0Config): config is Auth0RuntimeCo
 
 function AuthenticatedApp({ audience }: { audience: string }) {
   const { isLoading, isAuthenticated, loginWithRedirect, logout, getAccessTokenSilently } = useAuth0();
+  const getAccessToken = async () => {
+    const token = await getAccessTokenSilently({ authorizationParams: { audience } });
+    if (!token) throw new Error('Auth0 did not return an API access token');
+    return token;
+  };
+  setApiAccessTokenProvider(getAccessToken);
   const connectorAuth: ConnectorAuth = {
     isLoading,
     isAuthenticated,
     login: () => loginWithRedirect(),
     logout: () => logout({ logoutParams: { returnTo: window.location.origin } }),
-    getAccessToken: async () => {
-      const token = await getAccessTokenSilently({ authorizationParams: { audience } });
-      if (!token) throw new Error('Auth0 did not return an API access token');
-      return token;
-    },
+    getAccessToken,
   };
-  return <App connectorAuth={connectorAuth} />;
+  return <App key={isAuthenticated ? 'authenticated' : 'anonymous'} connectorAuth={connectorAuth} />;
 }
 
 const app = isAuth0Configured(auth0Config) ? (

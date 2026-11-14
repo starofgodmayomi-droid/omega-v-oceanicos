@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import test from 'node:test';
 import { exportJWK, generateKeyPair, SignJWT } from 'jose';
 import { createApp } from '../../dist/index.js';
@@ -44,6 +47,10 @@ test('OIDC identity is verified but does not grant connector admission', async (
   const issuer = `http://127.0.0.1:${address.port}`;
   const audience = 'omega-api';
   const jwksUri = `${issuer}/jwks`;
+  const webDist = mkdtempSync(join(tmpdir(), 'omega-oidc-web-dist-'));
+  mkdirSync(join(webDist, 'assets'), { recursive: true });
+  writeFileSync(join(webDist, 'index.html'), '<!doctype html><div id="root"></div>');
+  writeFileSync(join(webDist, 'assets', 'app.js'), 'console.log("auth0 app");');
   const signToken = ({
     tokenIssuer = issuer,
     tokenAudience = audience,
@@ -71,10 +78,14 @@ test('OIDC identity is verified but does not grant connector admission', async (
     OMEGA_READ_TOKEN: process.env.OMEGA_READ_TOKEN,
     OMEGA_ADMIN_TOKEN: process.env.OMEGA_ADMIN_TOKEN,
     OMEGA_CONNECTOR_APPROVER_SUBJECT: process.env.OMEGA_CONNECTOR_APPROVER_SUBJECT,
+    OMEGA_WEB_DIST: process.env.OMEGA_WEB_DIST,
+    OMEGA_PERSISTENCE: process.env.OMEGA_PERSISTENCE,
   };
   process.env.OMEGA_AUTH_MODE = 'required';
   process.env.OMEGA_READ_TOKEN = 'test-read-token';
   process.env.OMEGA_ADMIN_TOKEN = 'test-admin-token';
+  process.env.OMEGA_WEB_DIST = webDist;
+  process.env.OMEGA_PERSISTENCE = 'off';
   delete process.env.OMEGA_CONNECTOR_APPROVER_SUBJECT;
   const app = createApp(':memory:', false, {
     oidcIdentity: { issuer, audience, jwksUri },
@@ -93,6 +104,52 @@ test('OIDC identity is verified but does not grant connector admission', async (
 
   try {
     const validToken = await signToken();
+    const publicPage = await app.inject({ method: 'GET', url: '/' });
+    const publicAsset = await app.inject({ method: 'GET', url: '/assets/app.js' });
+    const publicClientRoute = await app.inject({
+      method: 'GET',
+      url: '/workspace',
+      headers: { accept: 'text/html' },
+    });
+    const nonHtmlClientRoute = await app.inject({ method: 'GET', url: '/workspace' });
+    const unknownApiRoute = await app.inject({
+      method: 'GET',
+      url: '/v1/unknown',
+      headers: { accept: 'text/html' },
+    });
+    const anonymousApi = await app.inject({ method: 'GET', url: '/v1/kernel/capabilities' });
+    const signedInApi = await app.inject({
+      method: 'GET',
+      url: '/v1/kernel/capabilities',
+      headers: { authorization: `Bearer ${await signToken({ subject: 'reader-456' })}` },
+    });
+    const unauthorizedAction = await app.inject({
+      method: 'POST',
+      url: '/v1/therapeutic/transition',
+      headers: { authorization: `Bearer ${await signToken({ subject: 'reader-456' })}` },
+      payload: {},
+    });
+    const approverAction = await app.inject({
+      method: 'POST',
+      url: '/v1/therapeutic/transition',
+      headers: { authorization: `Bearer ${validToken}` },
+      payload: {},
+    });
+    assert.equal(publicPage.statusCode, 200);
+    assert.match(publicPage.headers['content-type'], /^text\/html/);
+    assert.equal(publicAsset.statusCode, 200);
+    assert.equal(publicAsset.headers['content-type'], 'text/javascript; charset=utf-8');
+    assert.equal(publicClientRoute.statusCode, 200);
+    assert.match(publicClientRoute.body, /<div id="root"><\/div>/);
+    assert.equal(nonHtmlClientRoute.statusCode, 401);
+    assert.equal(unknownApiRoute.statusCode, 401);
+    assert.equal(anonymousApi.statusCode, 401);
+    assert.equal(signedInApi.statusCode, 200);
+    assert.equal(unauthorizedAction.statusCode, 403);
+    assert.equal(unauthorizedAction.json().error, 'OIDC_ACTION_NOT_AUTHORIZED');
+    assert.equal(approverAction.statusCode, 400);
+    assert.equal(approverAction.json().error, 'THERAPEUTIC_TRANSITION_INTENT_REQUIRED');
+
     const validResponse = await app.inject({
       method: 'POST',
       url: '/v1/omega/connectors/observe',
@@ -318,6 +375,7 @@ test('OIDC identity is verified but does not grant connector admission', async (
       if (value === undefined) delete process.env[key];
       else process.env[key] = value;
     }
+    rmSync(webDist, { recursive: true, force: true });
     await new Promise((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())));
   }
 });

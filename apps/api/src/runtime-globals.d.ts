@@ -5,9 +5,10 @@ declare module 'fastify' {
   interface FastifyRequest {
     omegaAuthorization?: {
       mode: 'local' | 'required';
-      principal: 'local-development' | 'read-bearer' | 'admin-bearer';
+      principal: 'local-development' | 'read-bearer' | 'admin-bearer' | 'oidc-user' | 'oidc-approver';
     };
     omegaIdentity?: VerifiedOidcIdentity;
+    omegaOperatorId?: string;
   }
 }
 

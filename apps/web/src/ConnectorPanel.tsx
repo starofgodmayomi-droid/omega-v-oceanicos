@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import { apiFetch } from './api-client';
 
-const API_BASE_URL = (import.meta.env?.VITE_API_URL || '/api').replace(/\/$/, '');
+const API_BASE_URL = (import.meta.env?.VITE_API_URL ?? '/api').replace(/\/$/, '');
 
 export interface ConnectorAuth {
   isLoading: boolean;
@@ -108,7 +109,7 @@ function explainError(error: string): string {
 async function request(path: string, token: string, options: RequestOptions = {}): Promise<unknown> {
   const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
   if (options.json) headers['Content-Type'] = 'application/json';
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await apiFetch(`${API_BASE_URL}${path}`, {
     method: options.method,
     headers,
     body: options.body,

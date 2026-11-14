@@ -20,6 +20,15 @@ COPY packages ./packages
 COPY apps/api ./apps/api
 COPY apps/web ./apps/web
 
+ARG VITE_API_URL=
+ARG VITE_AUTH0_DOMAIN=
+ARG VITE_AUTH0_CLIENT_ID=
+ARG VITE_AUTH0_AUDIENCE=
+ENV VITE_API_URL=${VITE_API_URL}
+ENV VITE_AUTH0_DOMAIN=${VITE_AUTH0_DOMAIN}
+ENV VITE_AUTH0_CLIENT_ID=${VITE_AUTH0_CLIENT_ID}
+ENV VITE_AUTH0_AUDIENCE=${VITE_AUTH0_AUDIENCE}
+
 RUN pnpm install --frozen-lockfile
 
 # One origin serves both: the API and the static client it talks to.
@@ -39,6 +48,7 @@ FROM node:22-alpine AS runtime
 
 ENV NODE_ENV=production
 ENV API_PORT=5000
+ENV OMEGA_WEB_DIST=/app/apps/web/dist
 # Exposed images require caller authentication by default. Local source runs can
 # explicitly choose OMEGA_AUTH_MODE=local when they are not network-exposed.
 ENV OMEGA_AUTH_MODE=required

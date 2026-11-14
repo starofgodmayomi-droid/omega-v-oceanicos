@@ -1,9 +1,9 @@
-import Fastify, { FastifyInstance } from 'fastify';
+import Fastify, { FastifyInstance, type FastifyRequest } from 'fastify';
 import cors from '@fastify/cors';
 import rateLimit from '@fastify/rate-limit';
 import { randomUUID } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { extname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { MAX_PROOF_OF_WORK_ATTEMPTS, RememberEngine } from '@oceanicos/remember';
 import { FileConnectorObservationStore, FileValueNavigatorStore, MiniKernel, buildOmegaWaterFlow, compressRepoEquation, compressRepoTowardUpgrade, compressSingleBody, evaluateEcosystemFixpoint, executeAuthorizedTransition, expandRepoEquation, expandSingleBody, ECOSYSTEM_BODY_EQUATION_ID, ECOSYSTEM_BODY_EQUATION_SOURCE, ECOSYSTEM_BODY_REALITY, EQUATION_LAW_OBSERVATION, EQUATION_TEXT, REPO_OUTWARD_RING, resolveChangeAdmission, verifyExecutedReality } from '@oceanicos/mini';
@@ -169,6 +169,20 @@ export function createApp(
     : validateConnectorApproverSubject(options.connectorApproverSubject);
   const connectorApprovalStore = verifyOidcIdentity ? new ConnectorApprovalStore(dbPath) : undefined;
   const corsOrigin = parseCorsOrigins(process.env.OMEGA_CORS_ORIGINS, authMode);
+  const webDist = process.env.OMEGA_WEB_DIST?.trim() ? resolve(process.env.OMEGA_WEB_DIST.trim()) : null;
+  const isWebClientFallback = (request: FastifyRequest) => {
+    const requestPath = request.url.split('?')[0] ?? '';
+    const acceptsHtml = String(request.headers.accept ?? '').includes('text/html');
+    return Boolean(
+      webDist &&
+      request.method === 'GET' &&
+      acceptsHtml &&
+      !requestPath.startsWith('/v1/') &&
+      !requestPath.startsWith('/jobs') &&
+      !requestPath.startsWith('/persistence') &&
+      !requestPath.startsWith('/attest'),
+    );
+  };
 
   const persistenceEnabled = process.env.OMEGA_PERSISTENCE
     ? process.env.OMEGA_PERSISTENCE === 'on'
@@ -248,10 +262,12 @@ export function createApp(
 
   const requireReadAccess = async (request: any, reply: any) => {
     if (authMode === 'local') return;
+    if (request.omegaAuthorization?.principal === 'oidc-user' || request.omegaAuthorization?.principal === 'oidc-approver') return;
     if (bearer(request.headers.authorization) !== readToken) return jsonError(reply, 401, 'READ_ACCESS_REQUIRED');
   };
   const requireAdminAccess = async (request: any, reply: any) => {
     if (authMode === 'local') return;
+    if (request.omegaAuthorization?.principal === 'oidc-approver') return;
     if (bearer(request.headers.authorization) !== adminToken) return jsonError(reply, 401, 'ADMIN_ACCESS_REQUIRED');
   };
   const enforceAdminOperatorIdentity = (request: any, reply: any): boolean => {
@@ -261,7 +277,11 @@ export function createApp(
       .filter(Boolean);
     const requireAllowlist = process.env.OMEGA_ADMIN_REQUIRE_ALLOWLIST === 'on';
     const rawOperatorId = request.headers['x-omega-operator-id'];
-    const operatorId = typeof rawOperatorId === 'string' ? rawOperatorId.trim() : undefined;
+    const headerOperatorId = typeof rawOperatorId === 'string' ? rawOperatorId.trim() : undefined;
+    const verifiedOperatorId = request.omegaAuthorization?.principal === 'oidc-approver'
+      ? request.omegaIdentity?.subject
+      : undefined;
+    const operatorId = verifiedOperatorId ?? headerOperatorId;
     if (operatorIdentityAllowed(operatorId || undefined, allowedOperators, requireAllowlist)) {
       request.omegaOperatorId = operatorId || undefined;
       return true;
@@ -282,6 +302,16 @@ export function createApp(
   });
   fastify.addHook('onRequest', async (request, reply) => {
     if (request.method === 'OPTIONS' || request.url.split('?')[0] === '/health') return;
+    const routePath = request.routeOptions?.url;
+    if (
+      request.method === 'GET' &&
+      webDist &&
+      (routePath === '/' ||
+        routePath === '/assets/*' ||
+        (routePath === undefined && isWebClientFallback(request)))
+    ) {
+      return;
+    }
     const requestPath = request.url.split('?')[0] ?? '';
     const oidcConnectorPath = requestPath === '/v1/omega/connectors/observe'
       || requestPath === '/v1/omega/connectors/approvals'
@@ -303,14 +333,41 @@ export function createApp(
       request.omegaAuthorization = { mode: 'local', principal: 'local-development' };
       return;
     }
-    const required = request.method === 'GET' ? readToken : adminToken;
-    if (bearer(request.headers.authorization) !== required) {
-      return jsonError(reply, 401, request.method === 'GET' ? 'READ_ACCESS_REQUIRED' : 'ADMIN_ACCESS_REQUIRED');
+    const token = bearer(request.headers.authorization);
+    const isRead = request.method === 'GET';
+    const required = isRead ? readToken : adminToken;
+    if (token === required) {
+      request.omegaAuthorization = {
+        mode: 'required',
+        principal: isRead ? 'read-bearer' : 'admin-bearer',
+      };
+      return;
     }
+    if (token === readToken || token === adminToken) {
+      return jsonError(reply, 401, isRead ? 'READ_ACCESS_REQUIRED' : 'ADMIN_ACCESS_REQUIRED');
+    }
+    if (!token || !verifyOidcIdentity) {
+      return jsonError(reply, 401, isRead ? 'READ_ACCESS_REQUIRED' : 'ADMIN_ACCESS_REQUIRED');
+    }
+    let identity;
+    try {
+      identity = await verifyOidcIdentity(token);
+    } catch (error) {
+      if (error instanceof OidcIdentityProviderUnavailableError) {
+        return jsonError(reply, 503, 'OIDC_IDENTITY_UNAVAILABLE');
+      }
+      return jsonError(reply, 401, 'OIDC_IDENTITY_INVALID');
+    }
+    const isApprover = Boolean(connectorApproverSubject && identity.subject === connectorApproverSubject);
+    if (!isRead && !isApprover) {
+      return jsonError(reply, 403, 'OIDC_ACTION_NOT_AUTHORIZED');
+    }
+    request.omegaIdentity = identity;
     request.omegaAuthorization = {
       mode: 'required',
-      principal: request.method === 'GET' ? 'read-bearer' : 'admin-bearer',
+      principal: isRead ? 'oidc-user' : 'oidc-approver',
     };
+    if (!isRead) request.omegaOperatorId = identity.subject;
   });
 
   fastify.register(async (scope) => {
@@ -1090,19 +1147,35 @@ export function createApp(
   });
   fastify.get('/attest/policy', { preHandler: requireReadAccess }, async () => ({ success: true, policy: { authMode, revocationEnabled: true, revocationRevision: currentRevocations().length, revocationConsistency: durableRevocationStore ? 'multi-process-single-volume' : 'single-process', attestationAlgorithm: 'HMAC-SHA256' } }));
 
-  const webDist = process.env.OMEGA_WEB_DIST?.trim() ? resolve(process.env.OMEGA_WEB_DIST.trim()) : null;
   const sendStatic = (relativePath: string, reply: any) => {
     if (!webDist) return false;
-    const target = resolve(join(webDist, relativePath));
-    if (!target.startsWith(webDist)) return false;
+    const target = resolve(webDist, relativePath);
+    const relativeTarget = relative(webDist, target);
+    if (relativeTarget === '..' || relativeTarget.startsWith(`..${sep}`) || isAbsolute(relativeTarget)) return false;
     if (!existsSync(target)) return false;
-    reply.type(target.endsWith('.html') ? 'text/html; charset=utf-8' : undefined).send(readFileSync(target));
+    const contentTypes: Record<string, string> = {
+      '.css': 'text/css; charset=utf-8',
+      '.html': 'text/html; charset=utf-8',
+      '.ico': 'image/x-icon',
+      '.jpeg': 'image/jpeg',
+      '.jpg': 'image/jpeg',
+      '.js': 'text/javascript; charset=utf-8',
+      '.json': 'application/json; charset=utf-8',
+      '.mjs': 'text/javascript; charset=utf-8',
+      '.png': 'image/png',
+      '.svg': 'image/svg+xml',
+      '.wasm': 'application/wasm',
+      '.webp': 'image/webp',
+      '.woff': 'font/woff',
+      '.woff2': 'font/woff2',
+    };
+    reply.type(contentTypes[extname(target).toLowerCase()] ?? 'application/octet-stream').send(readFileSync(target));
     return true;
   };
   fastify.get('/', async (_request, reply) => { if (sendStatic('index.html', reply)) return; return jsonError(reply, 404, 'STATIC_CLIENT_UNAVAILABLE'); });
   fastify.get('/assets/*', async (request: any, reply) => { const asset = String(request.params['*'] ?? ''); if (sendStatic(join('assets', asset), reply)) return; return jsonError(reply, 404, 'STATIC_ASSET_NOT_FOUND'); });
   fastify.setNotFoundHandler(async (request, reply) => {
-    if (webDist && request.method === 'GET' && !request.url.startsWith('/v1/') && !request.url.startsWith('/jobs') && !request.url.startsWith('/persistence') && !request.url.startsWith('/attest')) {
+    if (isWebClientFallback(request)) {
       if (sendStatic('index.html', reply)) return;
     }
     return jsonError(reply, 404, 'NOT_FOUND');

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { theme } from './oceanicosTheme';
+import { apiFetch } from './api-client';
 
 /*
  * DependencyMapPanel — visualizes the workspace package dependency graph.
@@ -13,7 +14,7 @@ import { theme } from './oceanicosTheme';
  * PRESENT ≠ WORKSPACE ≠ IMPORTED ≠ VERIFIED
  */
 
-const API_BASE_URL = (import.meta.env?.VITE_API_URL || '/api').replace(/\/$/, '');
+const API_BASE_URL = (import.meta.env?.VITE_API_URL ?? '/api').replace(/\/$/, '');
 
 type Classification = 'BUILT' | 'WORKSPACE' | 'SOURCE-ONLY' | 'STUB';
 
@@ -74,7 +75,7 @@ export function DependencyMapPanel() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/v1/dependencies`);
+      const res = await apiFetch(`${API_BASE_URL}/v1/dependencies`);
       const text = await res.text();
       const json = text ? JSON.parse(text) : null;
       if (!res.ok) throw new Error(json?.error || `HTTP ${res.status}`);
