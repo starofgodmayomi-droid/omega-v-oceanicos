@@ -4,6 +4,18 @@ import assert from 'node:assert/strict';
 const API_BASE = 'http://localhost:5000';
 
 test('🌐 Glober AI & Enterprise Auth0 Full-Stack Integration Suite', async (t) => {
+  // Ensure authenticated session at start of suite
+  await fetch(`${API_BASE}/v1/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      email: 'elion@oceanicos.network',
+      name: 'Elion Varel',
+      tenantId: 'tenant-oceanicos-sovereign',
+      provider: 'auth0',
+    }),
+  });
+
   await t.test('GET /v1/auth/session returns active tenant session and fail-closed security', async () => {
     const res = await fetch(`${API_BASE}/v1/auth/session`);
     assert.equal(res.status, 200);
@@ -54,6 +66,18 @@ test('🌐 Glober AI & Enterprise Auth0 Full-Stack Integration Suite', async (t)
     assert.equal(goodRes.status, 200);
     const goodData = await goodRes.json();
     assert.equal(goodData.success, true);
+
+    // Re-authenticate sovereign session for subsequent tests and UI
+    await fetch(`${API_BASE}/v1/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: 'elion@oceanicos.network',
+        name: 'Elion Varel',
+        tenantId: 'tenant-oceanicos-sovereign',
+        provider: 'auth0',
+      }),
+    });
   });
 
   await t.test('GET /v1/glober/status returns Glober AI state and active goals', async () => {
