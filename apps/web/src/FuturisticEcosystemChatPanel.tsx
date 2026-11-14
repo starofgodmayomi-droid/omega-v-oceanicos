@@ -108,6 +108,8 @@ const ACTION_CHIPS = [
   { label: '🖥️ System Telemetry', query: 'Execute local tool: system-health' },
   { label: '🐙 Git Working Tree', query: 'Execute local tool: repo-status' },
   { label: '📜 Swarm Ledger Audit', query: 'Execute local tool: ledger-status' },
+  { label: '🛡️ Sovereign Security Audit', query: 'Execute local tool: sovereign-audit' },
+  { label: '🏛️ Notion Surface Audit', query: 'Execute local tool: notion-sync-audit' },
   { label: '🌊 4096-D Hyper-Tensor', query: 'Execute local tool: matrix-tensor' },
   { label: '⚡ Run Smoke Tests', query: 'Execute local tool: test-smoke' },
   { label: '🛡️ Verify Treasury', query: 'Verify the sovereign Bitcoin treasury address' },

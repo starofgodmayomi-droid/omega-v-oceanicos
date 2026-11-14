@@ -141,7 +141,11 @@ async function resolveOrganAndContext(
     lower.includes('matrix-tensor') ||
     lower.includes('4096-d hyper-tensor') ||
     lower.includes('test-smoke') ||
-    lower.includes('run smoke tests')
+    lower.includes('run smoke tests') ||
+    lower.includes('sovereign-audit') ||
+    lower.includes('sovereign security audit') ||
+    lower.includes('notion-sync-audit') ||
+    lower.includes('notion 4-quadrant surface audit')
   ) {
     organ = 'LOCAL_TOOL_COCKPIT';
     let targetTool: AllowedToolName = 'system-health';
@@ -149,19 +153,23 @@ async function resolveOrganAndContext(
     else if (lower.includes('ledger-status') || lower.includes('swarm ledger audit') || lower.includes('ledger audit')) targetTool = 'ledger-status';
     else if (lower.includes('matrix-tensor') || lower.includes('4096-d')) targetTool = 'matrix-tensor';
     else if (lower.includes('test-smoke') || lower.includes('smoke test')) targetTool = 'test-smoke';
+    else if (lower.includes('sovereign-audit') || lower.includes('sovereign security audit')) targetTool = 'sovereign-audit';
+    else if (lower.includes('notion-sync-audit') || lower.includes('notion 4-quadrant surface audit')) targetTool = 'notion-sync-audit';
     else if (lower.includes('system-health') || lower.includes('system telemetry')) targetTool = 'system-health';
 
     actionTriggered = `EXECUTE_LOCAL_TOOL_${targetTool.toUpperCase().replace(/-/g, '_')}`;
-    const result = executeTool(targetTool);
+    const result = executeTool(targetTool, deps.kaiLedger);
     evidenceHash = result.success
-      ? ((result.output?.proofHash as string) || (result.output?.commit as string) || `0x1111-tool-${targetTool}-success`)
+      ? (result.evidenceHash || (result.output?.proofHash as string) || (result.output?.commit as string) || `0x1111-tool-${targetTool}-success`)
       : '0x1111-tool-exec-fail';
 
     if (result.success) {
       replyContent = `🛠️ **Local Tool Execution: ${targetTool.toUpperCase()}**\n\n` +
         `• **Tool ID**: \`${result.toolId}\`\n` +
         `• **Execution Status**: **✓ SUCCESS** (${result.elapsedMs}ms)\n` +
-        `• **Executed At**: \`${result.executedAt}\`\n\n` +
+        `• **Executed At**: \`${result.executedAt}\`\n` +
+        `• **Evidence Hash**: \`${result.evidenceHash}\`\n` +
+        (result.kaiRecordId ? `• **C8 Memory Record**: \`${result.kaiRecordId}\`\n\n` : '\n') +
         `**Live Output Payload:**\n` +
         '```json\n' +
         JSON.stringify(result.output, null, 2) +

@@ -614,7 +614,7 @@ export function createApp(
   }));
 
   // ─── Local Tool Runner (Slice 2) ─────────────────────────────────
-  registerToolRunnerRoute(fastify);
+  registerToolRunnerRoute(fastify, kaiLedger);
 
   // ─── Constitutional Authorization Gate (§6, §8, §9, §12) ─────────
   fastify.post('/v1/authorization/evaluate', async (request: any) => {
