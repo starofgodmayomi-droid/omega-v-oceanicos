@@ -117,6 +117,7 @@ const ACTION_CHIPS = [
   { label: '⛏️ Mine Block', query: 'Mint a new verified consensus block into the spine ledger' },
   { label: '🌀 Max Equation', query: 'Evaluate optimal slice candidate ranking with Max Equation engine' },
   { label: '⚡ Lucid Build', query: 'Lucid, continue upgrading the ecosystem platform' },
+  { label: '🚀 V1111 Upgrade', query: 'Execute V1111 singularity self-upgrade transition' },
   { label: '🔍 Full Check', query: 'CHECK — inspect current reality, evidence, gaps, blockers' },
   { label: '🌊 Compress', query: 'MAX compression — irreducible seed state of the whole ecosystem' },
 ];

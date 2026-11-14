@@ -291,18 +291,19 @@ export function createApp(
   registerNotionSurfacesRoute(fastify);
   registerSoulRoute(fastify);
   registerRealityRoute(fastify, authMode, () => Boolean(attestationSigningKey), () => Boolean(ledgerMemory.getTip()));
+  const upgradeKernel = new UpgradeKernel(attestationSigningKey || 'omega-upgrade-secret');
   registerChatRoute(fastify, {
     kaiLedger,
     vectorMemory,
     VectorMemoryClass: VectorMemory,
     kernel,
+    upgradeKernel,
     ledgerMemory,
     broadcastMintedBlock,
     attestationSigningKey,
     optimizeMaxEquationSlices,
   });
 
-  const upgradeKernel = new UpgradeKernel(attestationSigningKey || 'omega-upgrade-secret');
   registerUpgradeRoute(fastify, jsonError, upgradeKernel);
   registerCovenantRoute(fastify, jsonError);
   registerCompressionRoute(fastify);

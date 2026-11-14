@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import { theme, statusColor, humanStatus } from './oceanicosTheme';
 
 /*
@@ -42,6 +43,35 @@ interface Indicator {
 
 export function AmbientBar(props: AmbientBarProps) {
   const isHealthy = props.connected || props.restActive;
+
+  const [goldQuote, setGoldQuote] = useState<{ mid: number; change24h: number; changePercent24h: number } | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    const fetchGold = async () => {
+      try {
+        const res = await fetch('/v1/market/quote');
+        if (res.ok) {
+          const data = await res.json();
+          if (mounted && data.success && data.quote) {
+            setGoldQuote({
+              mid: data.quote.mid,
+              change24h: data.quote.change24h,
+              changePercent24h: data.quote.changePercent24h,
+            });
+          }
+        }
+      } catch {
+        /* ambient */
+      }
+    };
+    fetchGold();
+    const interval = setInterval(fetchGold, 4000);
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, []);
 
   const indicators: Indicator[] = [
     {
@@ -98,6 +128,12 @@ export function AmbientBar(props: AmbientBarProps) {
       label: 'Transition',
       value: `Epoch ${props.latestTransition.epoch ?? '?'} · ${props.latestTransition.outcome ?? 'VERIFIED'}`,
       color: theme.verified,
+      pulse: true,
+    }] : []),
+    ...(goldQuote ? [{
+      label: '🥇 XAU/USD',
+      value: `$${goldQuote.mid.toFixed(2)} (${goldQuote.change24h >= 0 ? '+' : ''}${goldQuote.changePercent24h.toFixed(2)}%)`,
+      color: goldQuote.change24h >= 0 ? '#fbbf24' : '#fb7185',
       pulse: true,
     }] : []),
     {

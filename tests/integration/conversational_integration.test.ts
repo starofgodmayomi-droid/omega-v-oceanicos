@@ -206,5 +206,25 @@ describe('🌊 OceanicOS Conversational Assistant & KAI Memory Integration Slice
     assert.match(body.reply.content, /Fourth-Root Gram Determinant/i);
     assert.match(body.reply.content, /Fixpoint Status/i);
   });
+
+  it('POST /v1/chat executes V1111 singularity self-upgrade transition and returns verified proof', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/v1/chat',
+      payload: {
+        message: 'Execute V1111 singularity self-upgrade transition',
+      },
+    });
+
+    assert.equal(res.statusCode, 200);
+    const body = JSON.parse(res.payload);
+    assert.equal(body.success, true);
+    assert.equal(body.reply.metadata.organ, 'V1111_SINGULARITY_UPGRADE_CORE');
+    assert.equal(body.reply.metadata.actionTriggered, 'EXECUTE_V1111_SELF_UPGRADE');
+    assert.ok(body.reply.metadata.evidenceHash);
+    assert.match(body.reply.content, /V1111 Singularity Self-Upgrade Transition Committed & Verified/i);
+    assert.match(body.reply.content, /Canonical State ID/i);
+    assert.match(body.reply.content, /Tip Hash/i);
+  });
 });
 
