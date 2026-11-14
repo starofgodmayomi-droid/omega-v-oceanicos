@@ -294,6 +294,25 @@
       "tests_passed": true,
       "next_delta": "Human-review CI on this branch. evidence_hash is the workflow diff only, because the ledger line cannot contain the hash of a diff that includes itself. pnpm build, pnpm lint, and the full pnpm test were not run. upgrade.execution stays NOT_EXECUTED. Do not merge from this node.",
       "evidence_hash": "ee3589cf21ee718e4deb175c3a2d7f1893e8faab1561888aaa7bae3280cb8d08"
+    },
+    {
+      "timestamp": "2026-11-14T00:15:00Z",
+      "agent_id": "grok",
+      "branch": "agent/grok/admit-water-receipts",
+      "status": "UNKNOWN",
+      "files_touched": [
+        "apps/web/src/App.tsx",
+        "apps/web/src/water-flow-panel-model.ts",
+        "apps/web/src/__tests__/water-flow-panel.test.ts",
+        "packages/mini/src/ecosystem-body-equation.ts",
+        "tests/integration/ecosystem-body-equation.integration.test.ts",
+        "docs/ECOSYSTEM-BODY-EQUATION.md",
+        "package.json",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "0a2155d8f149c0ec9481c6d9f8d19fd055b8a920dd24a0842f0f436b6dc3bef4",
+      "next_delta": "Human-review CI. evidence_hash excludes this ledger line. Targeted water tests passed (18) and the checkout compressed 26/26 with flow:water still 8 and NOT_EXECUTED. Full pnpm build, lint, and test were not run here. Do not merge until the pipeline is green."
     }
   ]
 }
