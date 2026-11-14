@@ -151,6 +151,7 @@ export function App() {
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [isStandalone, setIsStandalone] = useState<boolean>(false);
   const [activeDeckTab, setActiveDeckTab] = useState<'gate' | 'voos' | 'lifecycle' | 'covenant' | 'news'>('gate');
+  const [deckCollapsed, setDeckCollapsed] = useState<boolean>(true);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -1516,9 +1517,9 @@ export function App() {
                   alignItems: 'center',
                   flexWrap: 'wrap',
                   gap: '12px',
-                  paddingBottom: '14px',
-                  borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-                  marginBottom: '16px',
+                  paddingBottom: deckCollapsed ? '0' : '14px',
+                  borderBottom: deckCollapsed ? 'none' : '1px solid rgba(255, 255, 255, 0.08)',
+                  marginBottom: deckCollapsed ? '0' : '16px',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1529,42 +1530,67 @@ export function App() {
                   <span style={{ fontSize: '10px', color: '#64748b', fontFamily: theme.fontMono }}>
                     (ALL 12 ORGANS COMPRESSED)
                   </span>
+                  <button
+                    onClick={() => setDeckCollapsed(!deckCollapsed)}
+                    style={{
+                      marginLeft: '10px',
+                      padding: '4px 12px',
+                      borderRadius: '9999px',
+                      border: '1px solid rgba(0, 229, 255, 0.35)',
+                      background: deckCollapsed ? 'rgba(0, 229, 255, 0.12)' : 'rgba(255, 255, 255, 0.06)',
+                      color: '#00e5ff',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    <span>{deckCollapsed ? '▾ Reveal Deep Organs' : '▴ Collapse to Clean View'}</span>
+                  </button>
                 </div>
 
                 {/* Tab Buttons */}
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                  {[
-                    { id: 'gate', label: 'Ocean Gate & Actions', icon: '💧' },
-                    { id: 'voos', label: 'Deus Ex Machina Body', icon: '🌊' },
-                    { id: 'lifecycle', label: 'Intent & Lifecycle', icon: '📜' },
-                    { id: 'covenant', label: 'Covenant Engine', icon: '🏛️' },
-                    { id: 'news', label: 'AI Multi-World News', icon: '📰' },
-                  ].map((tab) => (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveDeckTab(tab.id as any)}
-                      style={{
-                        padding: '6px 14px',
-                        borderRadius: '9999px',
-                        border: activeDeckTab === tab.id ? '1px solid rgba(0, 229, 255, 0.6)' : '1px solid rgba(255, 255, 255, 0.08)',
-                        background: activeDeckTab === tab.id ? 'rgba(0, 229, 255, 0.18)' : 'rgba(255, 255, 255, 0.03)',
-                        color: activeDeckTab === tab.id ? '#00e5ff' : '#94a3b8',
-                        fontFamily: theme.fontSans,
-                        fontSize: '12px',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                      }}
-                    >
-                      <span>{tab.icon}</span>
-                      <span>{tab.label}</span>
-                    </button>
-                  ))}
-                </div>
+                {!deckCollapsed && (
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    {[
+                      { id: 'gate', label: 'Ocean Gate & Actions', icon: '💧' },
+                      { id: 'voos', label: 'Deus Ex Machina Body', icon: '🌊' },
+                      { id: 'lifecycle', label: 'Intent & Lifecycle', icon: '📜' },
+                      { id: 'covenant', label: 'Covenant Engine', icon: '🏛️' },
+                      { id: 'news', label: 'AI Multi-World News', icon: '📰' },
+                    ].map((tab) => (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveDeckTab(tab.id as any)}
+                        style={{
+                          padding: '6px 14px',
+                          borderRadius: '9999px',
+                          border: activeDeckTab === tab.id ? '1px solid rgba(0, 229, 255, 0.6)' : '1px solid rgba(255, 255, 255, 0.08)',
+                          background: activeDeckTab === tab.id ? 'rgba(0, 229, 255, 0.18)' : 'rgba(255, 255, 255, 0.03)',
+                          color: activeDeckTab === tab.id ? '#00e5ff' : '#94a3b8',
+                          fontFamily: theme.fontSans,
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                        }}
+                      >
+                        <span>{tab.icon}</span>
+                        <span>{tab.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
+
+              {!deckCollapsed && (
+                <>
 
               {/* Deck Tab 2: Deus Ex Machina Full Body */}
               {activeDeckTab === 'voos' && (
@@ -1884,6 +1910,8 @@ export function App() {
                 <div style={{ marginTop: '10px' }}>
                   <AiNewsPanel onClose={() => { setShowNewsPanel(false); setActiveDeckTab('gate'); }} />
                 </div>
+              )}
+                </>
               )}
             </div>
           </main>

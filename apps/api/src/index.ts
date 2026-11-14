@@ -3,7 +3,7 @@ import cors from '@fastify/cors';
 import rateLimit from '@fastify/rate-limit';
 import { randomUUID } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, resolve, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { RememberEngine, KaiLedger } from '@oceanicos/remember';
 import { MiniKernel, OperatingSystemKernel, OmegaTotalCompressor } from '@oceanicos/mini';
@@ -1439,19 +1439,87 @@ export function createApp(
   });
   fastify.get('/attest/policy', { preHandler: requireReadAccess }, async () => ({ success: true, policy: { authMode, revocationEnabled: true, revocationRevision: revocations.size, attestationAlgorithm: 'HMAC-SHA256' } }));
 
-  const webDist = process.env.OMEGA_WEB_DIST?.trim() ? resolve(process.env.OMEGA_WEB_DIST.trim()) : null;
+  // ── Full-Stack Frontend Static Serving (Unified Engine) ──────────────────
+  const moduleDir = typeof __dirname !== 'undefined' ? __dirname : dirname(fileURLToPath(import.meta.url));
+  const candidateWebDirs = [
+    process.env.OMEGA_WEB_DIST?.trim() ? resolve(process.env.OMEGA_WEB_DIST.trim()) : null,
+    resolve(moduleDir, '../../web/dist'),
+    resolve(process.cwd(), 'apps/web/dist'),
+    resolve(process.cwd(), 'web/dist'),
+    resolve(moduleDir, '../web/dist'),
+  ].filter((p): p is string => Boolean(p && typeof p === 'string'));
+  const webDist = candidateWebDirs.find((dir) => existsSync(join(dir, 'index.html'))) || null;
+
+  const MIME_TYPES: Record<string, string> = {
+    '.html': 'text/html; charset=utf-8',
+    '.js': 'application/javascript; charset=utf-8',
+    '.mjs': 'application/javascript; charset=utf-8',
+    '.css': 'text/css; charset=utf-8',
+    '.json': 'application/json; charset=utf-8',
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.svg': 'image/svg+xml',
+    '.ico': 'image/x-icon',
+    '.webp': 'image/webp',
+    '.woff': 'font/woff',
+    '.woff2': 'font/woff2',
+    '.ttf': 'font/ttf',
+  };
+
   const sendStatic = (relativePath: string, reply: any) => {
     if (!webDist) return false;
     const target = resolve(join(webDist, relativePath));
     if (!target.startsWith(webDist)) return false;
     if (!existsSync(target)) return false;
-    reply.type(target.endsWith('.html') ? 'text/html; charset=utf-8' : undefined).send(readFileSync(target));
+    const ext = extname(target).toLowerCase();
+    const contentType = MIME_TYPES[ext] || 'application/octet-stream';
+    reply.type(contentType).send(readFileSync(target));
     return true;
   };
-  fastify.get('/', async (_request, reply) => { if (sendStatic('index.html', reply)) return; return jsonError(reply, 404, 'STATIC_CLIENT_UNAVAILABLE'); });
-  fastify.get('/assets/*', async (request: any, reply) => { const asset = String(request.params['*'] ?? ''); if (sendStatic(join('assets', asset), reply)) return; return jsonError(reply, 404, 'STATIC_ASSET_NOT_FOUND'); });
+
+  fastify.get('/', async (_request, reply) => {
+    if (sendStatic('index.html', reply)) return;
+    return jsonError(reply, 404, 'STATIC_CLIENT_UNAVAILABLE');
+  });
+
+  fastify.get('/manifest.json', async (_request, reply) => {
+    if (sendStatic('manifest.json', reply)) return;
+    return jsonError(reply, 404, 'MANIFEST_NOT_FOUND');
+  });
+
+  fastify.get('/sw.js', async (_request, reply) => {
+    if (sendStatic('sw.js', reply)) return;
+    return jsonError(reply, 404, 'SW_NOT_FOUND');
+  });
+
+  fastify.get('/assets/*', async (request: any, reply) => {
+    const asset = String(request.params['*'] ?? '');
+    if (sendStatic(join('assets', asset), reply)) return;
+    return jsonError(reply, 404, 'STATIC_ASSET_NOT_FOUND');
+  });
+
+  fastify.get('/icons/*', async (request: any, reply) => {
+    const icon = String(request.params['*'] ?? '');
+    if (sendStatic(join('icons', icon), reply)) return;
+    return jsonError(reply, 404, 'ICON_NOT_FOUND');
+  });
+
   fastify.setNotFoundHandler(async (request, reply) => {
-    if (webDist && request.method === 'GET' && !request.url.startsWith('/v1/') && !request.url.startsWith('/jobs') && !request.url.startsWith('/persistence') && !request.url.startsWith('/attest')) {
+    if (
+      webDist &&
+      request.method === 'GET' &&
+      !request.url.startsWith('/v1/') &&
+      !request.url.startsWith('/health') &&
+      !request.url.startsWith('/api/') &&
+      !request.url.startsWith('/jobs') &&
+      !request.url.startsWith('/persistence') &&
+      !request.url.startsWith('/attest')
+    ) {
+      // Check if exact file exists in webDist (e.g. /favicon.svg, /omega-mark.svg)
+      const cleanPath = request.url.replace(/^\//, '').split('?')[0];
+      if (cleanPath && sendStatic(cleanPath, reply)) return;
+      // SPA Fallback: send index.html for client-side routing
       if (sendStatic('index.html', reply)) return;
     }
     return jsonError(reply, 404, 'NOT_FOUND');
