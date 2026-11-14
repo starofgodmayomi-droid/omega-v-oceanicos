@@ -20,6 +20,12 @@ describe('connector observation panel', () => {
     render(<ConnectorPanel />);
 
     expect(screen.getByText(/Auth0 is not configured/i)).toBeInTheDocument();
+    expect(screen.getByLabelText('Connector registry')).toHaveTextContent(
+      'NOT_EXECUTED · no observation in this session',
+    );
+    expect(screen.getByLabelText('Connector registry')).toHaveTextContent(
+      'does not prove connectivity or service health',
+    );
     expect(screen.queryByRole('button', { name: /approve this exact read/i })).not.toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -80,6 +86,7 @@ describe('connector observation panel', () => {
 
     await user.click(screen.getByRole('button', { name: /run approved read/i }));
     expect(await screen.findByText('VERIFIED')).toBeInTheDocument();
+    expect(screen.getByLabelText('Connector observation status')).toHaveTextContent('Last result: VERIFIED');
     const observeCall = fetchMock.mock.calls.find(([url]) => url === '/api/v1/omega/connectors/observe');
     expect(observeCall).toBeDefined();
     const observeInit = observeCall?.[1] as RequestInit;

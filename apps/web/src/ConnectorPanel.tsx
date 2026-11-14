@@ -144,11 +144,31 @@ export function ConnectorPanel({ auth }: { auth?: ConnectorAuth }) {
   const [latest, setLatest] = useState<Observation | null>(null);
   const [busy, setBusy] = useState<'approve' | 'observe' | 'login' | 'logout' | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const registry = (
+    <div
+      aria-label="Connector registry"
+      style={{ border: '1px solid #334155', borderRadius: 4, padding: 10, marginBottom: 12 }}
+    >
+      <div style={{ color: '#94a3b8', fontSize: 10, fontWeight: 700, marginBottom: 6 }}>
+        DECLARED CONNECTOR · READ-ONLY
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+        <strong style={{ color: '#cbd5e1', fontSize: 11 }}>GitHub public repository metadata</strong>
+        <span role="status" aria-label="Connector observation status" style={{ color: latest ? STATUS_COLOR[latest.status] : STATUS_COLOR.NOT_EXECUTED, fontSize: 10 }}>
+          {latest ? `Last result: ${latest.status}` : 'NOT_EXECUTED · no observation in this session'}
+        </span>
+      </div>
+      <div style={{ color: '#64748b', fontSize: 10, marginTop: 6 }}>
+        Server policy and approval are checked when requested. This declaration does not prove connectivity or service health.
+      </div>
+    </div>
+  );
 
   if (!auth) {
     return (
       <section aria-label="GitHub connector observation" style={sectionStyle}>
         <ConnectorDescription />
+        {registry}
         <div style={{ color: '#facc15', fontSize: 11 }}>
           Auth0 is not configured. Set VITE_AUTH0_DOMAIN, VITE_AUTH0_CLIENT_ID, and
           VITE_AUTH0_AUDIENCE to enable sign-in. Connector actions remain unavailable.
@@ -234,6 +254,7 @@ export function ConnectorPanel({ auth }: { auth?: ConnectorAuth }) {
   return (
     <section aria-label="GitHub connector observation" style={sectionStyle}>
       <ConnectorDescription />
+      {registry}
       {auth.isLoading ? (
         <div role="status" style={{ color: '#94a3b8', fontSize: 11 }}>
           Checking Auth0 sign-in…
