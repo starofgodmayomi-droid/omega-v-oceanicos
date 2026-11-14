@@ -35,9 +35,32 @@ async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
     throw new Error(`API returned invalid JSON (${response.status})`);
   }
   if (!response.ok) {
-    throw new Error(payload?.error || payload?.message || `API request failed (${response.status})`);
+    const err = new Error(payload?.error || payload?.message || `API request failed (${response.status})`) as any;
+    err.status = response.status;
+    err.payload = payload;
+    throw err;
   }
   return payload as T;
+}
+
+export interface RealWorldTool {
+  id: string;
+  name: string;
+  description: string;
+  risk: string;
+  category: 'physical-iot' | 'financial' | 'communications' | 'productivity' | 'os-desktop' | 'system' | 'intelligence' | 'provenance' | 'mathematics' | 'testing' | 'security' | 'notion';
+  status: string;
+}
+
+export interface ToolExecutionLog {
+  id: string;
+  toolId: string;
+  timestamp: string;
+  elapsedMs: number;
+  status: 'SUCCESS' | 'HITL_GATED' | 'FAILED';
+  evidenceHash: string;
+  outputPreview?: string;
+  kaiRecordId?: string;
 }
 
 export interface GloberAgiCommandCenterProps {
@@ -65,13 +88,27 @@ export function GloberAgiCommandCenter({ onSendMessage }: GloberAgiCommandCenter
   const [authSession, setAuthSession] = useState<any>(null);
   const [showAuthOverlay, setShowAuthOverlay] = useState(false);
 
+  // ── Real-World Tools Registry & Execution Streaming ──
+  const [toolsList, setToolsList] = useState<RealWorldTool[]>([]);
+  const [toolLogs, setToolLogs] = useState<ToolExecutionLog[]>([]);
+  const [activeStreamingTool, setActiveStreamingTool] = useState<{
+    toolId: string;
+    step: string;
+    status: 'invoking' | 'processing' | 'done' | 'hitl';
+  } | null>(null);
+  const [hitlPrompt, setHitlPrompt] = useState<{
+    toolId: string;
+    params: Record<string, any>;
+    message: string;
+  } | null>(null);
+
   // ── Glober News & Goals State ──
   const [globerStatus, setGloberStatus] = useState<any>(null);
   const [newsSignals, setNewsSignals] = useState<any[]>([]);
   const [isSending, setIsSending] = useState(false);
   const [lastExecutedEvidence, setLastExecutedEvidence] = useState<string | null>(null);
 
-  // ── Dynamic Greeting ──
+  // ── Dynamic Contextual Greeting ──
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return 'Good morning';
@@ -79,13 +116,14 @@ export function GloberAgiCommandCenter({ onSendMessage }: GloberAgiCommandCenter
     return 'Good evening';
   };
 
-  // ── Fetch Session & Glober Status ──
+  // ── Fetch Session, Tools & Glober Status ──
   const loadState = useCallback(async () => {
     try {
-      const [sessionData, statusData, newsData] = await Promise.all([
+      const [sessionData, statusData, newsData, toolsData] = await Promise.all([
         apiRequest<any>('/v1/auth/session').catch(() => null),
         apiRequest<any>('/v1/glober/status').catch(() => null),
         apiRequest<any>('/v1/glober/news').catch(() => null),
+        apiRequest<any>('/v1/tools/list').catch(() => null),
       ]);
       if (sessionData?.success) setAuthSession(sessionData);
       if (statusData?.success && statusData.state) {
@@ -96,6 +134,9 @@ export function GloberAgiCommandCenter({ onSendMessage }: GloberAgiCommandCenter
       if (newsData?.success && Array.isArray(newsData.signals)) {
         setNewsSignals(newsData.signals);
       }
+      if (toolsData?.success && Array.isArray(toolsData.tools)) {
+        setToolsList(toolsData.tools);
+      }
     } catch {
       /* ambient */
     }
@@ -103,9 +144,75 @@ export function GloberAgiCommandCenter({ onSendMessage }: GloberAgiCommandCenter
 
   useEffect(() => {
     loadState();
-    const interval = setInterval(loadState, 30000);
+    const interval = setInterval(loadState, 25000);
     return () => clearInterval(interval);
   }, [loadState]);
+
+  // ── Execute Live Real-World Tool with Streaming Feedback & HITL ──
+  const executeRealWorldTool = async (toolId: string, params: Record<string, any> = {}) => {
+    setActiveStreamingTool({
+      toolId,
+      step: `Zero-trust invocation envelope dispatching to ${toolId}…`,
+      status: 'invoking',
+    });
+
+    try {
+      const res = await apiRequest<any>('/v1/tools/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ toolId, params }),
+      });
+
+      setActiveStreamingTool({
+        toolId,
+        step: `✓ Execution verified (${res.elapsedMs}ms). Sealed to KAI ledger.`,
+        status: 'done',
+      });
+
+      const newLog: ToolExecutionLog = {
+        id: `log-${Date.now()}`,
+        toolId,
+        timestamp: new Date().toLocaleTimeString(),
+        elapsedMs: res.elapsedMs,
+        status: 'SUCCESS',
+        evidenceHash: res.evidenceHash,
+        outputPreview: JSON.stringify(res.output).slice(0, 140),
+        kaiRecordId: res.kaiRecordId,
+      };
+      setToolLogs((prev) => [newLog, ...prev.slice(0, 19)]);
+      setLastExecutedEvidence(res.evidenceHash);
+
+      setTimeout(() => setActiveStreamingTool(null), 4000);
+    } catch (err: any) {
+      if (err.status === 403 || err.payload?.error === 'HITL_AUTHORIZATION_REQUIRED') {
+        setActiveStreamingTool({
+          toolId,
+          step: '🔒 Consequential Real-World Action: Human-in-the-Loop approval mandated',
+          status: 'hitl',
+        });
+        setHitlPrompt({
+          toolId,
+          params,
+          message: `Tool [${toolId}] requires zero-trust authorization to actuate real-world devices or assets.`,
+        });
+      } else {
+        setActiveStreamingTool({
+          toolId,
+          step: `✗ Execution failed: ${err.message}`,
+          status: 'done',
+        });
+        setTimeout(() => setActiveStreamingTool(null), 4000);
+      }
+    }
+  };
+
+  // ── Confirm HITL Authorization Handshake ──
+  const confirmHitl = async () => {
+    if (!hitlPrompt) return;
+    const { toolId, params } = hitlPrompt;
+    setHitlPrompt(null);
+    await executeRealWorldTool(toolId, { ...params, approved: true });
+  };
 
   // ── Handle Mode Switch ──
   const handleModeSwitch = async (mode: 'collaborative' | 'autonomous', subMode: any) => {
@@ -122,7 +229,7 @@ export function GloberAgiCommandCenter({ onSendMessage }: GloberAgiCommandCenter
     }
   };
 
-  // ── Handle Submit ──
+  // ── Handle Prompt Submit ──
   const handleSendPrompt = async (textToSend?: string) => {
     const query = (textToSend || promptText).trim();
     if (!query) return;
@@ -151,7 +258,6 @@ export function GloberAgiCommandCenter({ onSendMessage }: GloberAgiCommandCenter
         setLastExecutedEvidence(res.reply.metadata.evidenceHash);
       }
     } catch {
-      // Fallback: enqueue to offline dream queue
       await enqueueOfflineMessage(query);
     } finally {
       setIsSending(false);
@@ -171,7 +277,7 @@ export function GloberAgiCommandCenter({ onSendMessage }: GloberAgiCommandCenter
         display: 'flex',
         flexDirection: 'column',
         width: '100%',
-        minHeight: '740px',
+        minHeight: '760px',
         background: 'linear-gradient(135deg, rgba(6, 15, 23, 0.98) 0%, rgba(3, 8, 14, 0.99) 100%)',
         borderRadius: '18px',
         border: '1px solid rgba(105, 231, 185, 0.16)',
@@ -180,6 +286,7 @@ export function GloberAgiCommandCenter({ onSendMessage }: GloberAgiCommandCenter
         overflow: 'hidden',
         color: '#e2e8f0',
         fontFamily: theme.fontSans,
+        position: 'relative',
       }}
     >
       {/* ── TOP HEADER: Status, Mode, and Panel Toggles ── */}
@@ -208,7 +315,7 @@ export function GloberAgiCommandCenter({ onSendMessage }: GloberAgiCommandCenter
               fontSize: '12px',
             }}
           >
-            ☰ Workspace
+            ☰ Tools & Workspace
           </button>
 
           <span style={{ fontWeight: 700, color: '#38bdf8', letterSpacing: '0.04em' }}>
@@ -230,7 +337,7 @@ export function GloberAgiCommandCenter({ onSendMessage }: GloberAgiCommandCenter
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          {/* SSO / Auth0 Tenant Pill */}
+          {/* Auth0 SSO Tenant Pill */}
           <button
             onClick={() => setShowAuthOverlay(!showAuthOverlay)}
             style={{
@@ -252,7 +359,7 @@ export function GloberAgiCommandCenter({ onSendMessage }: GloberAgiCommandCenter
 
           <button
             onClick={() => setRightPanelOpen(!rightPanelOpen)}
-            title="Toggle Sensory & News Panel"
+            title="Toggle Sensory & Telemetry Panel"
             style={{
               background: rightPanelOpen ? 'rgba(56, 189, 248, 0.12)' : 'transparent',
               border: '1px solid rgba(56, 189, 248, 0.25)',
@@ -263,25 +370,25 @@ export function GloberAgiCommandCenter({ onSendMessage }: GloberAgiCommandCenter
               fontSize: '12px',
             }}
           >
-            📰 Sensory & Telemetry ◨
+            📰 Telemetry & Logs ◨
           </button>
         </div>
       </header>
 
       {/* ── 3-PANEL BODY ── */}
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        {/* ── LEFT SIDEBAR (Workspace, Navigation & Provenance) ── */}
+        {/* ── LEFT SIDEBAR (Workspace, Real-World Tool Registry & Provenance) ── */}
         {leftSidebarOpen && (
           <aside
             style={{
-              width: '260px',
-              minWidth: '240px',
+              width: '280px',
+              minWidth: '260px',
               borderRight: '1px solid rgba(105, 231, 185, 0.1)',
               background: 'rgba(5, 12, 18, 0.95)',
               display: 'flex',
               flexDirection: 'column',
               padding: '16px 12px',
-              gap: '16px',
+              gap: '14px',
               overflowY: 'auto',
             }}
           >
@@ -309,19 +416,74 @@ export function GloberAgiCommandCenter({ onSendMessage }: GloberAgiCommandCenter
               <span>+</span> New Chat / Task
             </button>
 
+            {/* LIVE REAL-WORLD TOOL REGISTRY */}
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span style={{ fontSize: '10px', fontWeight: 700, color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Live Tool Registry ({toolsList.length || 22})
+                </span>
+                <span style={{ fontSize: '9px', color: '#10b981', fontFamily: theme.fontMono }}>ALL ONLINE ✓</span>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '280px', overflowY: 'auto' }}>
+                {toolsList.map((t) => (
+                  <div
+                    key={t.id}
+                    onClick={() => executeRealWorldTool(t.id)}
+                    style={{
+                      padding: '7px 9px',
+                      borderRadius: '6px',
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      border: '1px solid rgba(255, 255, 255, 0.05)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '2px',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'rgba(56, 189, 248, 0.08)';
+                      e.currentTarget.style.borderColor = 'rgba(56, 189, 248, 0.25)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)';
+                      e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.05)';
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '11px', color: '#f1f5f9', fontWeight: 600 }}>{t.name}</span>
+                      <span
+                        style={{
+                          fontSize: '8.5px',
+                          padding: '1px 5px',
+                          borderRadius: '4px',
+                          background: t.risk.includes('actuation') ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                          color: t.risk.includes('actuation') ? '#f87171' : '#34d399',
+                          fontWeight: 700,
+                        }}
+                      >
+                        {t.risk.includes('actuation') ? 'HITL' : 'READ'}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '9.5px', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {t.description}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             {/* Navigation Section */}
             <div>
-              <div style={{ fontSize: '10px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '8px' }}>
-                Navigation & Library
+              <div style={{ fontSize: '10px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>
+                Workspace & Library
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                 {[
                   { icon: '🔍', label: 'Search' },
                   { icon: '📚', label: 'Library' },
                   { icon: '📁', label: 'Projects' },
                   { icon: '📄', label: 'Artifacts' },
-                  { icon: '🖼️', label: 'Images / 3D' },
-                  { icon: '⏱️', label: 'Scheduled Tasks' },
                   { icon: '⚙️', label: 'Automations' },
                 ].map((item, idx) => (
                   <button
@@ -330,12 +492,12 @@ export function GloberAgiCommandCenter({ onSendMessage }: GloberAgiCommandCenter
                       display: 'flex',
                       alignItems: 'center',
                       gap: '8px',
-                      padding: '7px 10px',
+                      padding: '6px 8px',
                       borderRadius: '6px',
                       background: 'transparent',
                       border: 'none',
                       color: '#94a3b8',
-                      fontSize: '12px',
+                      fontSize: '11px',
                       cursor: 'pointer',
                       textAlign: 'left',
                     }}
@@ -349,70 +511,36 @@ export function GloberAgiCommandCenter({ onSendMessage }: GloberAgiCommandCenter
               </div>
             </div>
 
-            {/* Pinned Agents & Teammates */}
-            <div>
-              <div style={{ fontSize: '10px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '8px' }}>
-                Pinned Agents & Teammates
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                {[
-                  { name: 'TRUTHOS Red Team', status: 'Active Guard', icon: '🛡️' },
-                  { name: 'The Honest Man OS', status: 'Root Seed', icon: '🌱' },
-                  { name: 'VOOS Daemon :8088', status: 'Autonomous', icon: '⚡' },
-                  { name: 'KAI Sovereign Auditor', status: 'Monotonic', icon: '📜' },
-                ].map((agent, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      padding: '6px 8px',
-                      borderRadius: '6px',
-                      background: 'rgba(255, 255, 255, 0.02)',
-                      border: '1px solid rgba(255, 255, 255, 0.05)',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      fontSize: '11px',
-                    }}
-                  >
-                    <span style={{ color: '#cbd5e1' }}>{agent.icon} {agent.name}</span>
-                    <span style={{ fontSize: '9px', color: '#69e7b9', fontFamily: theme.fontMono }}>{agent.status}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
             {/* Live Integrations */}
             <div>
-              <div style={{ fontSize: '10px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '8px' }}>
-                Live Integrations
+              <div style={{ fontSize: '10px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>
+                External Gateways
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px' }}>
-                <a
-                  href="https://github.com/starofgodmayomi-droid/omega-v-oceanicos"
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{ color: '#38bdf8', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}
-                >
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', fontSize: '10.5px' }}>
+                <span style={{ color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <span>🐙</span> GitHub: omega-v-oceanicos
-                </a>
+                </span>
                 <span style={{ color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <span>🏛️</span> Notion: OCEANICOS MOTION
                 </span>
                 <span style={{ color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span>🌐</span> Sandboxed Headless Chrome
+                  <span>⚡</span> Industrial IoT MQTT Broker
+                </span>
+                <span style={{ color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>🪙</span> SegWit Bitcoin Treasury
                 </span>
               </div>
             </div>
 
             {/* Bottom Profile & Quota */}
-            <div style={{ marginTop: 'auto', paddingTop: '12px', borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}>
+            <div style={{ marginTop: 'auto', paddingTop: '10px', borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px' }}>
                 <span style={{ color: '#64748b' }}>Credits</span>
                 <span style={{ color: '#10b981', fontWeight: 700, fontFamily: theme.fontMono }}>
                   {authSession?.user?.credits?.toLocaleString() || '999,999'}
                 </span>
               </div>
-              <div style={{ fontSize: '10px', color: '#475569', marginTop: '4px' }}>
+              <div style={{ fontSize: '10px', color: '#475569', marginTop: '2px' }}>
                 Tier: {authSession?.user?.tier || 'V1111 Singularity Enterprise'}
               </div>
             </div>
@@ -426,19 +554,19 @@ export function GloberAgiCommandCenter({ onSendMessage }: GloberAgiCommandCenter
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            padding: '28px 24px 40px',
+            padding: '24px 20px 40px',
             overflowY: 'auto',
             position: 'relative',
           }}
         >
           {/* Contextual Dynamic Greeting */}
-          <div style={{ textAlign: 'center', marginBottom: '22px' }}>
+          <div style={{ textAlign: 'center', marginBottom: '18px' }}>
             <h2
               style={{
                 fontSize: 'clamp(24px, 3.5vw, 34px)',
                 fontWeight: 800,
                 letterSpacing: '-0.02em',
-                margin: '0 0 6px',
+                margin: '0 0 4px',
                 background: 'linear-gradient(135deg, #ffffff 0%, #cbd5e1 50%, #38bdf8 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
@@ -447,7 +575,7 @@ export function GloberAgiCommandCenter({ onSendMessage }: GloberAgiCommandCenter
               {getGreeting()}, Ω∞v OceanicOS
             </h2>
             <p style={{ color: '#94a3b8', fontSize: '13px', margin: 0 }}>
-              Sovereign full-stack operating environment. Natural is free and effortless.
+              Live real-world tools, IoT sensors, financial telemetry, and desktop control in one operating organ.
             </p>
           </div>
 
@@ -462,10 +590,9 @@ export function GloberAgiCommandCenter({ onSendMessage }: GloberAgiCommandCenter
               borderRadius: '12px',
               background: 'rgba(10, 25, 35, 0.75)',
               border: '1px solid rgba(105, 231, 185, 0.18)',
-              marginBottom: '20px',
+              marginBottom: '16px',
             }}
           >
-            {/* Collaborative modes */}
             <button
               onClick={() => handleModeSwitch('collaborative', 'chat')}
               style={{
@@ -499,7 +626,6 @@ export function GloberAgiCommandCenter({ onSendMessage }: GloberAgiCommandCenter
 
             <div style={{ width: '1px', background: 'rgba(255, 255, 255, 0.1)', margin: '0 4px' }} />
 
-            {/* Autonomous modes */}
             <button
               onClick={() => handleModeSwitch('autonomous', 'swarm')}
               style={{
@@ -553,7 +679,7 @@ export function GloberAgiCommandCenter({ onSendMessage }: GloberAgiCommandCenter
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
-              marginBottom: '18px',
+              marginBottom: '16px',
               fontSize: '11px',
               color: '#64748b',
             }}
@@ -579,6 +705,43 @@ export function GloberAgiCommandCenter({ onSendMessage }: GloberAgiCommandCenter
             ))}
           </div>
 
+          {/* LIVE TOOL EXECUTION STREAMING BAR */}
+          {activeStreamingTool && (
+            <div
+              style={{
+                width: '100%',
+                maxWidth: '720px',
+                padding: '10px 14px',
+                borderRadius: '10px',
+                background:
+                  activeStreamingTool.status === 'hitl'
+                    ? 'rgba(239, 68, 68, 0.15)'
+                    : activeStreamingTool.status === 'done'
+                    ? 'rgba(16, 185, 129, 0.15)'
+                    : 'rgba(56, 189, 248, 0.15)',
+                border: `1px solid ${
+                  activeStreamingTool.status === 'hitl'
+                    ? 'rgba(239, 68, 68, 0.4)'
+                    : activeStreamingTool.status === 'done'
+                    ? 'rgba(16, 185, 129, 0.4)'
+                    : 'rgba(56, 189, 248, 0.4)'
+                }`,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                marginBottom: '14px',
+                fontSize: '12px',
+                fontFamily: theme.fontMono,
+              }}
+            >
+              <span style={{ fontSize: '14px' }}>
+                {activeStreamingTool.status === 'hitl' ? '🔒' : activeStreamingTool.status === 'done' ? '✓' : '⚡'}
+              </span>
+              <span style={{ color: '#ffffff', fontWeight: 600 }}>[{activeStreamingTool.toolId}]</span>
+              <span style={{ color: '#cbd5e1' }}>{activeStreamingTool.step}</span>
+            </div>
+          )}
+
           {/* Omni-Prompt Card */}
           <div
             style={{
@@ -589,7 +752,7 @@ export function GloberAgiCommandCenter({ onSendMessage }: GloberAgiCommandCenter
               borderRadius: '16px',
               padding: '16px',
               boxShadow: '0 8px 32px rgba(0, 0, 0, 0.45), inset 0 0 16px rgba(105, 231, 185, 0.03)',
-              marginBottom: '20px',
+              marginBottom: '18px',
             }}
           >
             <textarea
@@ -605,7 +768,7 @@ export function GloberAgiCommandCenter({ onSendMessage }: GloberAgiCommandCenter
               placeholder={
                 activeMode === 'autonomous'
                   ? 'Define an autonomous persistent goal for Glober AI to achieve in the background…'
-                  : 'Ask anything, explore codebase, or run a tool…'
+                  : 'Ask anything, execute real-world tools, inspect IoT sensors, or browse the web…'
               }
               style={{
                 width: '100%',
@@ -634,7 +797,6 @@ export function GloberAgiCommandCenter({ onSendMessage }: GloberAgiCommandCenter
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                {/* File Upload Button */}
                 <input
                   type="file"
                   ref={fileInputRef}
@@ -657,7 +819,6 @@ export function GloberAgiCommandCenter({ onSendMessage }: GloberAgiCommandCenter
                   📎 +
                 </button>
 
-                {/* Voice Toggle */}
                 <button
                   onClick={() => setIsRecording(!isRecording)}
                   title="Toggle Voice Input"
@@ -674,10 +835,9 @@ export function GloberAgiCommandCenter({ onSendMessage }: GloberAgiCommandCenter
                   🎙️ {isRecording ? 'Listening…' : 'Voice'}
                 </button>
 
-                {/* Plugin Pills */}
                 {[
                   { id: 'web-search', label: '🌐 Web' },
-                  { id: 'office-suite', label: '📄 Docs' },
+                  { id: 'iot', label: '⚡ IoT' },
                   { id: 'notion', label: '🏛️ Notion' },
                   { id: 'memory', label: '📜 Memory' },
                 ].map((p) => (
@@ -699,7 +859,6 @@ export function GloberAgiCommandCenter({ onSendMessage }: GloberAgiCommandCenter
                 ))}
               </div>
 
-              {/* Send Button */}
               <button
                 onClick={() => handleSendPrompt()}
                 disabled={isSending || !promptText.trim()}
@@ -722,32 +881,34 @@ export function GloberAgiCommandCenter({ onSendMessage }: GloberAgiCommandCenter
             </div>
           </div>
 
-          {/* Quick Actions Bar */}
+          {/* Quick Real-World Tool Execution Bar */}
           <div
             style={{
               display: 'flex',
               flexWrap: 'wrap',
               justifyContent: 'center',
-              gap: '8px',
+              gap: '6px',
               maxWidth: '720px',
               width: '100%',
-              marginBottom: '24px',
+              marginBottom: '20px',
             }}
           >
             {[
-              { label: '🌐 Browse Web', query: 'Browse https://example.com' },
-              { label: '🏗️ Build a Website', query: 'Build a modern responsive landing page with Tailwind and React' },
-              { label: '📊 Create Slides', query: 'Create an executive deck on the sovereign AGI continuum' },
-              { label: '🔍 Deep Research', query: 'Perform deep research on multi-tenant Auth0 fail-closed isolation' },
-              { label: '💼 Make Business Plan', query: 'Develop a 5-fold kingdom tithe business plan with XAU/USD gold reserves' },
-              { label: '⛏️ Mine Block', query: 'Mint a new verified consensus block into the spine ledger' },
-            ].map((qa, i) => (
+              { label: '🌐 Browse Web', action: () => executeRealWorldTool('browser-navigate', { url: 'https://example.com' }) },
+              { label: '⚡ IoT Sensors', action: () => executeRealWorldTool('iot-device-status') },
+              { label: '🔌 IoT Actuate', action: () => executeRealWorldTool('iot-relay-actuate', { relayId: 'relay-1', state: 'TOGGLE' }) },
+              { label: '🥇 Gold Spot', action: () => executeRealWorldTool('market-quote') },
+              { label: '📁 Workspace Files', action: () => executeRealWorldTool('fs-list', { path: '.' }) },
+              { label: '🐙 Git Diff', action: () => executeRealWorldTool('git-diff') },
+              { label: '📰 AI News', action: () => executeRealWorldTool('news-sensor') },
+              { label: '🖥️ System Health', action: () => executeRealWorldTool('system-health') },
+            ].map((toolBtn, i) => (
               <button
                 key={i}
-                onClick={() => handleSendPrompt(qa.query)}
+                onClick={toolBtn.action}
                 style={{
-                  padding: '6px 12px',
-                  borderRadius: '20px',
+                  padding: '5px 12px',
+                  borderRadius: '16px',
                   background: 'rgba(10, 31, 40, 0.75)',
                   border: '1px solid rgba(105, 231, 185, 0.16)',
                   color: '#94a3b8',
@@ -764,7 +925,7 @@ export function GloberAgiCommandCenter({ onSendMessage }: GloberAgiCommandCenter
                   e.currentTarget.style.borderColor = 'rgba(105, 231, 185, 0.16)';
                 }}
               >
-                {qa.label}
+                {toolBtn.label}
               </button>
             ))}
           </div>
@@ -791,7 +952,7 @@ export function GloberAgiCommandCenter({ onSendMessage }: GloberAgiCommandCenter
           )}
         </main>
 
-        {/* ── RIGHT PANEL: Security, Telemetry & Global News ── */}
+        {/* ── RIGHT PANEL: Real-World Tool Telemetry, Logs & Global News ── */}
         {rightPanelOpen && (
           <aside
             style={{
@@ -802,20 +963,20 @@ export function GloberAgiCommandCenter({ onSendMessage }: GloberAgiCommandCenter
               display: 'flex',
               flexDirection: 'column',
               padding: '16px 14px',
-              gap: '16px',
+              gap: '14px',
               overflowY: 'auto',
             }}
           >
             {/* Auth0 Gateway Card */}
             <div
               style={{
-                padding: '12px',
+                padding: '10px 12px',
                 borderRadius: '10px',
                 background: 'rgba(10, 25, 35, 0.8)',
                 border: '1px solid rgba(56, 189, 248, 0.2)',
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                 <span style={{ fontSize: '11px', fontWeight: 700, color: '#38bdf8' }}>AUTH0 GATEWAY</span>
                 <span
                   style={{
@@ -833,98 +994,84 @@ export function GloberAgiCommandCenter({ onSendMessage }: GloberAgiCommandCenter
               <div style={{ fontSize: '11px', color: '#cbd5e1' }}>
                 Tenant: <strong style={{ color: '#ffffff' }}>{authSession?.tenant?.name || 'Ω∞v Sovereign Enterprise'}</strong>
               </div>
-              <div style={{ fontSize: '10px', color: '#64748b', marginTop: '3px' }}>
-                SSO: Google, Apple, Corporate Email (Verified)
+              <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>
+                Zero-Trust Token Vault Active
               </div>
             </div>
 
-            {/* AI / NEWS / GLOBER Real-Time Sensory Organ Ticker */}
+            {/* LIVE REAL-WORLD TOOL EXECUTION LOGS */}
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: '#eab308' }}>AI / NEWS / GLOBER</span>
-                <span style={{ fontSize: '9px', color: '#10b981', fontFamily: theme.fontMono }}>LIVE SENSORY</span>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: '#10b981' }}>REAL-WORLD TOOL LOGS</span>
+                <span style={{ fontSize: '9px', color: '#64748b', fontFamily: theme.fontMono }}>LIVE STREAM</span>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {newsSignals.length === 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '200px', overflowY: 'auto' }}>
+                {toolLogs.length === 0 ? (
                   <div style={{ fontSize: '11px', color: '#64748b', fontStyle: 'italic' }}>
-                    Listening to planetary sensory signals…
+                    Ready for live tool executions…
                   </div>
                 ) : (
-                  newsSignals.slice(0, 3).map((sig: any) => (
+                  toolLogs.map((log) => (
                     <div
-                      key={sig.id}
+                      key={log.id}
                       style={{
-                        padding: '10px',
-                        borderRadius: '8px',
+                        padding: '8px 10px',
+                        borderRadius: '6px',
                         background: 'rgba(255, 255, 255, 0.02)',
-                        border: '1px solid rgba(255, 255, 255, 0.06)',
-                        fontSize: '11px',
+                        border: '1px solid rgba(255, 255, 255, 0.05)',
+                        fontSize: '10.5px',
                       }}
                     >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                        <span
-                          style={{
-                            fontSize: '9px',
-                            fontWeight: 700,
-                            color:
-                              sig.world === 'WORLD_PHYSICAL'
-                                ? '#38bdf8'
-                                : sig.world === 'WORLD_COGNITIVE'
-                                ? '#a855f7'
-                                : sig.world === 'WORLD_ECONOMIC'
-                                ? '#eab308'
-                                : '#10b981',
-                          }}
-                        >
-                          {sig.world?.replace('WORLD_', '')}
-                        </span>
-                        <span style={{ fontSize: '9px', color: '#64748b' }}>432 Hz</span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+                        <span style={{ color: '#38bdf8', fontWeight: 600 }}>{log.toolId}</span>
+                        <span style={{ color: '#10b981', fontFamily: theme.fontMono }}>{log.elapsedMs}ms</span>
                       </div>
-                      <div style={{ color: '#e2e8f0', fontWeight: 600, lineHeight: 1.4, marginBottom: '4px' }}>
-                        {sig.headline}
+                      <div style={{ fontSize: '9px', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {log.outputPreview}
                       </div>
-                      <div style={{ fontSize: '10px', color: '#8ba8a0' }}>{sig.actionableDelta}</div>
+                      {log.kaiRecordId && (
+                        <div style={{ fontSize: '8.5px', color: '#34d399', marginTop: '2px', fontFamily: theme.fontMono }}>
+                          KAI: {log.kaiRecordId}
+                        </div>
+                      )}
                     </div>
                   ))
                 )}
               </div>
             </div>
 
-            {/* Background Persistent Goals */}
+            {/* AI / NEWS / GLOBER Sensory Organ Ticker */}
             <div>
-              <div style={{ fontSize: '11px', fontWeight: 700, color: '#f43f5e', marginBottom: '8px' }}>
-                AUTONOMOUS GOALS ({globerStatus?.activeGoals?.length || 0})
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: '#eab308' }}>AI / NEWS / GLOBER</span>
+                <span style={{ fontSize: '9px', color: '#10b981', fontFamily: theme.fontMono }}>432 Hz</span>
               </div>
+
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {(globerStatus?.activeGoals || []).map((goal: any) => (
+                {newsSignals.slice(0, 2).map((sig: any) => (
                   <div
-                    key={goal.id}
+                    key={sig.id}
                     style={{
                       padding: '8px',
                       borderRadius: '6px',
                       background: 'rgba(255, 255, 255, 0.02)',
-                      border: '1px solid rgba(255, 255, 255, 0.05)',
-                      fontSize: '11px',
+                      border: '1px solid rgba(255, 255, 255, 0.06)',
+                      fontSize: '10.5px',
                     }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ color: '#f1f5f9', fontWeight: 600 }}>{goal.title}</span>
-                      <span style={{ fontSize: '10px', color: '#10b981', fontFamily: theme.fontMono }}>
-                        {goal.progressPercent}%
-                      </span>
+                    <div style={{ color: '#e2e8f0', fontWeight: 600, lineHeight: 1.3, marginBottom: '2px' }}>
+                      {sig.headline}
                     </div>
-                    <div style={{ fontSize: '9px', color: '#64748b', marginTop: '2px' }}>
-                      Agent: {goal.assignedAgent} · {goal.mode}
-                    </div>
+                    <div style={{ fontSize: '9px', color: '#8ba8a0' }}>{sig.actionableDelta}</div>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* System Health & Telemetry */}
+            {/* System Telemetry */}
             <div style={{ marginTop: 'auto', paddingTop: '10px', borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}>
-              <div style={{ fontSize: '10px', color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>
+              <div style={{ fontSize: '10px', color: '#64748b', textTransform: 'uppercase', marginBottom: '4px' }}>
                 System Telemetry
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#94a3b8' }}>
@@ -935,16 +1082,103 @@ export function GloberAgiCommandCenter({ onSendMessage }: GloberAgiCommandCenter
                 <span>VOOS Daemon</span>
                 <span style={{ color: '#10b981', fontFamily: theme.fontMono }}>:8088 (Active)</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
-                <span>IndexedDB Queue</span>
-                <span style={{ color: '#10b981', fontFamily: theme.fontMono }}>Resilient (Sync)</span>
-              </div>
             </div>
           </aside>
         )}
       </div>
 
-      {/* ── AUTH0 OVERLAY MODAL (When Toggled) ── */}
+      {/* ── HITL AUTHORIZATION MODAL (When Consequential Action Triggered) ── */}
+      {hitlPrompt && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'rgba(3, 8, 14, 0.88)',
+            backdropFilter: 'blur(14px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 110,
+          }}
+        >
+          <div
+            style={{
+              width: '420px',
+              padding: '24px',
+              borderRadius: '16px',
+              background: '#0a1622',
+              border: '1px solid rgba(239, 68, 68, 0.4)',
+              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.85)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+              <span style={{ fontSize: '24px' }}>🔒</span>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '16px', color: '#ffffff' }}>Human Authorization Handshake</h3>
+                <span style={{ fontSize: '11px', color: '#ef4444', fontWeight: 600 }}>ZERO-TRUST ACTUATION GUARD</span>
+              </div>
+            </div>
+
+            <p style={{ fontSize: '13px', color: '#cbd5e1', lineHeight: 1.5, margin: '0 0 16px' }}>
+              {hitlPrompt.message}
+            </p>
+
+            <div
+              style={{
+                padding: '10px',
+                borderRadius: '8px',
+                background: 'rgba(0, 0, 0, 0.4)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                fontFamily: theme.fontMono,
+                fontSize: '11px',
+                color: '#38bdf8',
+                marginBottom: '18px',
+              }}
+            >
+              <div>TOOL_ID: {hitlPrompt.toolId}</div>
+              <div>PARAMS: {JSON.stringify(hitlPrompt.params)}</div>
+              <div>POLICY: FAIL_CLOSED_HUMAN_IN_THE_LOOP</div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button
+                onClick={() => {
+                  setHitlPrompt(null);
+                  setActiveStreamingTool(null);
+                }}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  background: 'rgba(255, 255, 255, 0.06)',
+                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  color: '#94a3b8',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                }}
+              >
+                Deny & Abort
+              </button>
+              <button
+                onClick={confirmHitl}
+                style={{
+                  padding: '8px 18px',
+                  borderRadius: '8px',
+                  background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                  border: 'none',
+                  color: '#ffffff',
+                  fontWeight: 700,
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                }}
+              >
+                Authorize & Execute ➔
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── AUTH0 OVERLAY MODAL ── */}
       {showAuthOverlay && (
         <div
           style={{

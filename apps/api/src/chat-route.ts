@@ -175,16 +175,34 @@ async function resolveOrganAndContext(
       }
     } else {
       let targetTool: AllowedToolName = 'system-health';
+      let toolParams: Record<string, any> = {};
+
       if (lower.includes('repo-status') || lower.includes('git working tree')) targetTool = 'repo-status';
+      else if (lower.includes('git-log') || lower.includes('git commit') || lower.includes('commit history')) {
+        targetTool = 'git-log';
+        toolParams = { limit: 5 };
+      }
+      else if (lower.includes('git-diff') || lower.includes('git diff') || lower.includes('diff stat')) targetTool = 'git-diff';
+      else if (lower.includes('fs-list') || lower.includes('list files') || lower.includes('file tree') || lower.includes('dir list')) {
+        targetTool = 'fs-list';
+        toolParams = { path: '.' };
+      }
+      else if (lower.includes('fs-read') || lower.includes('read file') || lower.includes('view code')) {
+        targetTool = 'fs-read';
+        const fileMatch = userMessage.match(/(?:file|read|view)\s+([a-zA-Z0-9_./\\-]+)/i);
+        toolParams = { filePath: fileMatch ? fileMatch[1] : 'package.json' };
+      }
       else if (lower.includes('ledger-status') || lower.includes('swarm ledger audit') || lower.includes('ledger audit')) targetTool = 'ledger-status';
       else if (lower.includes('matrix-tensor') || lower.includes('4096-d')) targetTool = 'matrix-tensor';
       else if (lower.includes('test-smoke') || lower.includes('smoke test')) targetTool = 'test-smoke';
       else if (lower.includes('sovereign-audit') || lower.includes('sovereign security audit')) targetTool = 'sovereign-audit';
       else if (lower.includes('notion-sync-audit') || lower.includes('notion 4-quadrant surface audit')) targetTool = 'notion-sync-audit';
+      else if (lower.includes('market-quote') || lower.includes('gold price') || lower.includes('xau/usd quote')) targetTool = 'market-quote';
+      else if (lower.includes('news-sensor') || lower.includes('sensor signals')) targetTool = 'news-sensor';
       else if (lower.includes('system-health') || lower.includes('system telemetry')) targetTool = 'system-health';
 
       actionTriggered = `EXECUTE_LOCAL_TOOL_${targetTool.toUpperCase().replace(/-/g, '_')}`;
-      const result = executeTool(targetTool, deps.kaiLedger);
+      const result = await executeTool(targetTool, toolParams, deps.kaiLedger);
       evidenceHash = result.success
         ? (result.evidenceHash || (result.output?.proofHash as string) || (result.output?.commit as string) || `0x1111-tool-${targetTool}-success`)
         : '0x1111-tool-exec-fail';
