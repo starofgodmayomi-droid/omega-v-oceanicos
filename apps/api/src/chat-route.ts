@@ -11,6 +11,7 @@ import { evaluateReaTarget } from './rea-route.js';
 import { compressAiNews } from './news-route.js';
 import { globalWealthEngine } from './wealth-route.js';
 import { executeTool, type AllowedToolName } from './tool-runner-route.js';
+import { browseWeb, findChromePath } from './browser-service.js';
 
 export interface ChatMessage {
   id: string;
@@ -145,38 +146,64 @@ async function resolveOrganAndContext(
     lower.includes('sovereign-audit') ||
     lower.includes('sovereign security audit') ||
     lower.includes('notion-sync-audit') ||
-    lower.includes('notion 4-quadrant surface audit')
+    lower.includes('notion 4-quadrant surface audit') ||
+    lower.includes('browse') ||
+    lower.includes('open url') ||
+    lower.includes('fetch web') ||
+    lower.includes('chrome browser')
   ) {
     organ = 'LOCAL_TOOL_COCKPIT';
-    let targetTool: AllowedToolName = 'system-health';
-    if (lower.includes('repo-status') || lower.includes('git working tree')) targetTool = 'repo-status';
-    else if (lower.includes('ledger-status') || lower.includes('swarm ledger audit') || lower.includes('ledger audit')) targetTool = 'ledger-status';
-    else if (lower.includes('matrix-tensor') || lower.includes('4096-d')) targetTool = 'matrix-tensor';
-    else if (lower.includes('test-smoke') || lower.includes('smoke test')) targetTool = 'test-smoke';
-    else if (lower.includes('sovereign-audit') || lower.includes('sovereign security audit')) targetTool = 'sovereign-audit';
-    else if (lower.includes('notion-sync-audit') || lower.includes('notion 4-quadrant surface audit')) targetTool = 'notion-sync-audit';
-    else if (lower.includes('system-health') || lower.includes('system telemetry')) targetTool = 'system-health';
 
-    actionTriggered = `EXECUTE_LOCAL_TOOL_${targetTool.toUpperCase().replace(/-/g, '_')}`;
-    const result = executeTool(targetTool, deps.kaiLedger);
-    evidenceHash = result.success
-      ? (result.evidenceHash || (result.output?.proofHash as string) || (result.output?.commit as string) || `0x1111-tool-${targetTool}-success`)
-      : '0x1111-tool-exec-fail';
+    // Check for web browsing trigger
+    if (lower.includes('browse') || lower.includes('open url') || lower.includes('fetch web') || lower.includes('chrome browser')) {
+      actionTriggered = 'EXECUTE_SANDBOXED_BROWSER';
+      const urlMatch = userMessage.match(/https?:\/\/[^\s]+/i) || userMessage.match(/\b([a-zA-Z0-9-]+\.(?:com|org|io|net|edu|dev|app|ai)(?:\/[^\s]*)?)/i);
+      const targetUrl = urlMatch ? (urlMatch[0].startsWith('http') ? urlMatch[0] : `https://${urlMatch[0]}`) : 'https://example.com';
 
-    if (result.success) {
-      replyContent = `🛠️ **Local Tool Execution: ${targetTool.toUpperCase()}**\n\n` +
-        `• **Tool ID**: \`${result.toolId}\`\n` +
-        `• **Execution Status**: **✓ SUCCESS** (${result.elapsedMs}ms)\n` +
-        `• **Executed At**: \`${result.executedAt}\`\n` +
-        `• **Evidence Hash**: \`${result.evidenceHash}\`\n` +
-        (result.kaiRecordId ? `• **C8 Memory Record**: \`${result.kaiRecordId}\`\n\n` : '\n') +
-        `**Live Output Payload:**\n` +
-        '```json\n' +
-        JSON.stringify(result.output, null, 2) +
-        '\n```\n\n' +
-        `*Executed live on host OS with zero simulated delay under fail-closed verification.*`;
+      const navResult = await browseWeb(targetUrl, { captureScreenshot: false, timeoutMs: 12000 });
+      evidenceHash = navResult.evidenceHash;
+
+      if (navResult.success) {
+        replyContent = `🌐 **Sandboxed Browser Navigation: SUCCESS**\n\n` +
+          `• **URL**: \`${navResult.url}\`\n` +
+          `• **Title**: "${navResult.title}"\n` +
+          `• **Bytes Retrieved**: ${navResult.contentLength.toLocaleString()} bytes (${navResult.elapsedMs}ms)\n` +
+          `• **Evidence Hash**: \`${navResult.evidenceHash}\`\n\n` +
+          `**Page Text Preview:**\n> ${navResult.textSnippet || 'No visible body text extracted.'}`;
+      } else {
+        replyContent = `⚠️ **Sandboxed Browser Navigation Failed**\n\nURL: \`${targetUrl}\`\nError: ${navResult.error || 'Navigation timed out'}`;
+      }
     } else {
-      replyContent = `⚠️ **Local Tool Execution Failed: ${targetTool}**\n\nError: ${result.error || 'Unknown execution error'}`;
+      let targetTool: AllowedToolName = 'system-health';
+      if (lower.includes('repo-status') || lower.includes('git working tree')) targetTool = 'repo-status';
+      else if (lower.includes('ledger-status') || lower.includes('swarm ledger audit') || lower.includes('ledger audit')) targetTool = 'ledger-status';
+      else if (lower.includes('matrix-tensor') || lower.includes('4096-d')) targetTool = 'matrix-tensor';
+      else if (lower.includes('test-smoke') || lower.includes('smoke test')) targetTool = 'test-smoke';
+      else if (lower.includes('sovereign-audit') || lower.includes('sovereign security audit')) targetTool = 'sovereign-audit';
+      else if (lower.includes('notion-sync-audit') || lower.includes('notion 4-quadrant surface audit')) targetTool = 'notion-sync-audit';
+      else if (lower.includes('system-health') || lower.includes('system telemetry')) targetTool = 'system-health';
+
+      actionTriggered = `EXECUTE_LOCAL_TOOL_${targetTool.toUpperCase().replace(/-/g, '_')}`;
+      const result = executeTool(targetTool, deps.kaiLedger);
+      evidenceHash = result.success
+        ? (result.evidenceHash || (result.output?.proofHash as string) || (result.output?.commit as string) || `0x1111-tool-${targetTool}-success`)
+        : '0x1111-tool-exec-fail';
+
+      if (result.success) {
+        replyContent = `🛠️ **Local Tool Execution: ${targetTool.toUpperCase()}**\n\n` +
+          `• **Tool ID**: \`${result.toolId}\`\n` +
+          `• **Execution Status**: **✓ SUCCESS** (${result.elapsedMs}ms)\n` +
+          `• **Executed At**: \`${result.executedAt}\`\n` +
+          `• **Evidence Hash**: \`${result.evidenceHash}\`\n` +
+          (result.kaiRecordId ? `• **C8 Memory Record**: \`${result.kaiRecordId}\`\n\n` : '\n') +
+          `**Live Output Payload:**\n` +
+          '```json\n' +
+          JSON.stringify(result.output, null, 2) +
+          '\n```\n\n' +
+          `*Executed live on host OS with zero simulated delay under fail-closed verification.*`;
+      } else {
+        replyContent = `⚠️ **Local Tool Execution Failed: ${targetTool}**\n\nError: ${result.error || 'Unknown execution error'}`;
+      }
     }
   }
   // 1. Treasury / Bitcoin queries

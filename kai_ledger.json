@@ -1115,6 +1115,38 @@
       "evidence_hash": "7c32bf147d332617aa88546b5a3eb177727e0ea521008064a39031efb3c82e07",
       "next_delta": "Advance continuum monorepo alignment and production deployment readiness",
       "timestamp": "2026-11-14T20:20:04.713Z"
+    },
+    {
+      "receipt": 78,
+      "agent": "antigravity",
+      "action": "SANDBOXED_BROWSER_ENGINE_INTEGRATION",
+      "scope": [
+        "apps/api/src/browser-service.ts",
+        "apps/api/src/browser-route.ts",
+        "apps/api/src/index.ts",
+        "apps/api/src/chat-route.ts"
+      ],
+      "evidence": {
+        "browser_status": {
+          "available": true,
+          "binaryPath": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
+        },
+        "navigate_test": {
+          "url": "https://example.com",
+          "title": "Example Domain",
+          "elapsedMs": 1560
+        },
+        "chat_trigger": {
+          "action": "EXECUTE_SANDBOXED_BROWSER",
+          "kaiRecord": "kai-1794688253474-630"
+        },
+        "tests": {
+          "chat": "11/11 PASS",
+          "typescript": "0 errors"
+        }
+      },
+      "timestamp": "2026-11-14T21:07:58.143Z",
+      "hash": "e186487f2d1897f0250251ab7c876d7e12b467beb38bc4a6c957d373dec39119"
     }
   ]
 }
