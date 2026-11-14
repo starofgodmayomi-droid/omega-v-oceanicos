@@ -1,6 +1,15 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useState } from 'react';
+import { apiFetch } from './api-client';
 
-const API_BASE_URL = (import.meta.env?.VITE_API_URL || '/api').replace(/\/$/, '');
+const API_BASE_URL = (import.meta.env?.VITE_API_URL ?? '/api').replace(/\/$/, '');
+
+export interface ConnectorAuth {
+  isLoading: boolean;
+  isAuthenticated: boolean;
+  login: () => Promise<void>;
+  logout: () => Promise<void>;
+  getAccessToken: () => Promise<string>;
+}
 
 type Status = 'VERIFIED' | 'DIVERGENT' | 'UNKNOWN' | 'NOT_EXECUTED';
 
@@ -15,11 +24,16 @@ interface Observation {
   issues: string[];
   observedAt: string;
   admission: { decision: string; admitted: boolean };
-  liveAdapter?: string | null;
-  limitation?: string;
 }
 
-const DEFAULT_CONNECTOR = {
+interface ConnectorApproval {
+  id: string;
+  expiresAt: number;
+}
+
+const STATUSES: Status[] = ['VERIFIED', 'DIVERGENT', 'UNKNOWN', 'NOT_EXECUTED'];
+
+const CONNECTOR = {
   id: 'github.read-repository',
   version: '1.0.0',
   system: 'github',
@@ -42,17 +56,76 @@ const STATUS_COLOR: Record<Status, string> = {
   NOT_EXECUTED: '#94a3b8',
 };
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, init);
+interface RequestOptions {
+  method?: 'GET' | 'POST';
+  body?: string;
+  json?: boolean;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function isApprovalResponse(value: unknown): value is { approval: ConnectorApproval } {
+  if (!isRecord(value) || !isRecord(value.approval)) return false;
+  return (
+    typeof value.approval.id === 'string' &&
+    typeof value.approval.expiresAt === 'number' &&
+    Number.isFinite(value.approval.expiresAt)
+  );
+}
+
+function isObservation(value: unknown): value is Observation {
+  if (!isRecord(value) || !isRecord(value.admission)) return false;
+  return (
+    typeof value.status === 'string' &&
+    STATUSES.some((status) => status === value.status) &&
+    typeof value.authorized === 'boolean' &&
+    typeof value.executed === 'boolean' &&
+    typeof value.observed === 'boolean' &&
+    typeof value.expectedObservation === 'string' &&
+    typeof value.evidence === 'string' &&
+    Array.isArray(value.issues) &&
+    typeof value.observedAt === 'string' &&
+    typeof value.admission.decision === 'string' &&
+    typeof value.admission.admitted === 'boolean' &&
+    (value.actualObservation === undefined || typeof value.actualObservation === 'string')
+  );
+}
+
+function explainError(error: string): string {
+  if (error === 'CONNECTOR_POLICY_DENIED') {
+    return 'Server policy denies this connector (CONNECTOR_POLICY_DENIED). Its exact declaration must be reviewed and allowlisted before approval.';
+  }
+  if (error === 'CONNECTOR_APPROVER_NOT_ALLOWED') {
+    return 'This signed-in Auth0 account is not the server-configured approver (CONNECTOR_APPROVER_NOT_ALLOWED).';
+  }
+  if (error === 'CONNECTOR_IDENTITY_INVALID') {
+    return 'The API rejected the Auth0 access token (CONNECTOR_IDENTITY_INVALID). Check its issuer, audience, and signing key configuration.';
+  }
+  return error;
+}
+
+async function request(path: string, token: string, options: RequestOptions = {}): Promise<unknown> {
+  const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+  if (options.json) headers['Content-Type'] = 'application/json';
+  const response = await apiFetch(`${API_BASE_URL}${path}`, {
+    method: options.method,
+    headers,
+    body: options.body,
+  });
   const text = await response.text();
-  let payload: any = null;
+  let payload: unknown = null;
   try {
     payload = text ? JSON.parse(text) : null;
   } catch {
     throw new Error(`API returned invalid JSON (${response.status})`);
   }
-  if (!response.ok) throw new Error(payload?.error || `API request failed (${response.status})`);
-  return payload as T;
+  if (!response.ok) {
+    const apiError = isRecord(payload) && typeof payload.error === 'string' ? payload.error : undefined;
+    throw new Error(apiError || `API request failed (${response.status})`);
+  }
+  return payload;
 }
 
 const buttonStyle: React.CSSProperties = {
@@ -66,76 +139,162 @@ const buttonStyle: React.CSSProperties = {
   cursor: 'pointer',
 };
 
-export function ConnectorPanel() {
+export function ConnectorPanel({ auth }: { auth?: ConnectorAuth }) {
+  const [approval, setApproval] = useState<ConnectorApproval | null>(null);
   const [latest, setLatest] = useState<Observation | null>(null);
-  const [memory, setMemory] = useState<Observation[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [busy, setBusy] = useState<'approve' | 'observe' | 'login' | 'logout' | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const registry = (
+    <div
+      aria-label="Connector registry"
+      style={{ border: '1px solid #334155', borderRadius: 4, padding: 10, marginBottom: 12 }}
+    >
+      <div style={{ color: '#94a3b8', fontSize: 10, fontWeight: 700, marginBottom: 6 }}>
+        DECLARED CONNECTOR · READ-ONLY
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+        <strong style={{ color: '#cbd5e1', fontSize: 11 }}>GitHub public repository metadata</strong>
+        <span role="status" aria-label="Connector observation status" style={{ color: latest ? STATUS_COLOR[latest.status] : STATUS_COLOR.NOT_EXECUTED, fontSize: 10 }}>
+          {latest ? `Last result: ${latest.status}` : 'NOT_EXECUTED · no observation in this session'}
+        </span>
+      </div>
+      <div style={{ color: '#64748b', fontSize: 10, marginTop: 6 }}>
+        Server policy and approval are checked when requested. This declaration does not prove connectivity or service health.
+      </div>
+    </div>
+  );
 
-  const refreshMemory = useCallback(async () => {
-    const data = await request<{ entries: Observation[] }>('/v1/omega/connectors/observations');
-    setMemory(Array.isArray(data.entries) ? data.entries : []);
-  }, []);
+  if (!auth) {
+    return (
+      <section aria-label="GitHub connector observation" style={sectionStyle}>
+        <ConnectorDescription />
+        {registry}
+        <div style={{ color: '#facc15', fontSize: 11 }}>
+          Auth0 is not configured. Set VITE_AUTH0_DOMAIN, VITE_AUTH0_CLIENT_ID, and
+          VITE_AUTH0_AUDIENCE to enable sign-in. Connector actions remain unavailable.
+        </div>
+      </section>
+    );
+  }
 
-  useEffect(() => {
-    refreshMemory().catch((err) => setError(err instanceof Error ? err.message : 'memory unavailable'));
-  }, [refreshMemory]);
+  const approve = async () => {
+    setBusy('approve');
+    setError(null);
+    setApproval(null);
+    setLatest(null);
+    try {
+      const token = await auth.getAccessToken();
+      const result = await request(
+        '/v1/omega/connectors/approvals',
+        token,
+        { method: 'POST', json: true, body: JSON.stringify({ connector: CONNECTOR }) },
+      );
+      if (!isApprovalResponse(result)) throw new Error('API returned an invalid connector approval');
+      setApproval(result.approval);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Approval was not created');
+    } finally {
+      setBusy(null);
+    }
+  };
 
-  const observe = async (live: boolean) => {
-    setLoading(true);
+  const observe = async () => {
+    if (!approval) return;
+    const approvalId = approval.id;
+    setApproval(null);
+    setBusy('observe');
+    setError(null);
+    setLatest(null);
+    try {
+      const token = await auth.getAccessToken();
+      const result = await request('/v1/omega/connectors/observe', token, {
+        method: 'POST',
+        json: true,
+        body: JSON.stringify({
+          connector: CONNECTOR,
+          approvalId,
+          liveAdapter: 'github-public-repository',
+        }),
+      });
+      if (!isObservation(result)) throw new Error('API returned an invalid connector observation');
+      setLatest(result);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Connector observation failed');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const signIn = async () => {
+    setBusy('login');
     setError(null);
     try {
-      const payload = live
-        ? {
-            connector: DEFAULT_CONNECTOR,
-            liveAdapter: 'github-public-repository',
-          }
-        : {
-            connector: DEFAULT_CONNECTOR,
-          };
-      const result = await request<Observation>('/v1/omega/connectors/observe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      setLatest(result);
-      await refreshMemory();
+      await auth.login();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'observe failed');
+      setError(err instanceof Error ? err.message : 'Auth0 sign-in could not start');
     } finally {
-      setLoading(false);
+      setBusy(null);
+    }
+  };
+
+  const signOut = async () => {
+    setBusy('logout');
+    setError(null);
+    setApproval(null);
+    setLatest(null);
+    try {
+      await auth.logout();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Auth0 sign-out failed');
+    } finally {
+      setBusy(null);
     }
   };
 
   return (
-    <section
-      aria-label="GitHub connector observation"
-      style={{
-        background: '#07121b',
-        border: '1px solid #67e8f944',
-        borderRadius: 6,
-        padding: 16,
-        marginBottom: 20,
-      }}
-    >
-      <div style={{ color: '#67e8f9', fontSize: 13, fontWeight: 'bold' }}>
-        CONNECTOR — GITHUB PUBLIC READ
-      </div>
-      <div style={{ color: '#94a3b8', fontSize: 11, marginTop: 4, marginBottom: 12 }}>
-        admit → bound execute → observe → reconcile → remember. Admission is not execution.
-        Live adapter is declared (`github-public-repository`) and read-only.
-      </div>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
-        <button style={buttonStyle} disabled={loading} onClick={() => void observe(false)}>
-          {loading ? 'WORKING…' : 'ADMIT ONLY'}
+    <section aria-label="GitHub connector observation" style={sectionStyle}>
+      <ConnectorDescription />
+      {registry}
+      {auth.isLoading ? (
+        <div role="status" style={{ color: '#94a3b8', fontSize: 11 }}>
+          Checking Auth0 sign-in…
+        </div>
+      ) : auth.isAuthenticated ? (
+        <>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+            {!approval && (
+              <button style={buttonStyle} disabled={busy !== null} onClick={() => void approve()}>
+                {busy === 'approve' ? 'APPROVING…' : 'APPROVE THIS EXACT READ'}
+              </button>
+            )}
+            {approval && (
+              <button style={buttonStyle} disabled={busy !== null} onClick={() => void observe()}>
+                {busy === 'observe' ? 'RUNNING…' : 'RUN APPROVED READ'}
+              </button>
+            )}
+            <button style={buttonStyle} disabled={busy !== null} onClick={() => void signOut()}>
+              {busy === 'logout' ? 'SIGNING OUT…' : 'SIGN OUT'}
+            </button>
+          </div>
+          {approval && (
+            <div role="status" aria-label="Connector approval" style={{ color: '#6ee7b7', fontSize: 11, marginBottom: 10 }}>
+              Approval ready · single use · expires {new Date(approval.expiresAt * 1000).toLocaleString()}
+            </div>
+          )}
+          {busy === 'observe' && (
+            <div role="status" style={{ color: '#94a3b8', fontSize: 11, marginBottom: 10 }}>
+              Running the approved public read…
+            </div>
+          )}
+        </>
+      ) : (
+        <button style={buttonStyle} disabled={busy !== null} onClick={() => void signIn()}>
+          {busy === 'login' ? 'OPENING AUTH0…' : 'SIGN IN WITH AUTH0'}
         </button>
-        <button style={buttonStyle} disabled={loading} onClick={() => void observe(true)}>
-          {loading ? 'WORKING…' : 'LIVE GITHUB OBSERVE'}
-        </button>
-      </div>
-      {error && <div style={{ color: '#fca5a5', fontSize: 11, marginBottom: 8 }}>⚠ {error}</div>}
+      )}
+      {error && <div role="alert" style={{ color: '#fca5a5', fontSize: 11, marginTop: 8 }}>⚠ {explainError(error)}</div>}
       {latest && (
-        <div style={{ fontSize: 11, color: '#cbd5e1', marginBottom: 12 }}>
+        <div role="status" aria-label="Connector observation result" style={{ fontSize: 11, color: '#cbd5e1', marginTop: 12 }}>
           <span style={{ color: STATUS_COLOR[latest.status], fontWeight: 700 }}>{latest.status}</span>
           {' · '}admitted {String(latest.admission.admitted)}
           {' · '}executed {String(latest.executed)}
@@ -144,9 +303,36 @@ export function ConnectorPanel() {
           <div style={{ color: '#64748b', marginTop: 4, wordBreak: 'break-all' }}>{latest.evidence}</div>
         </div>
       )}
-      <div style={{ color: '#64748b', fontSize: 10 }}>
-        memory {memory.length} · in-process only · not deployment · not revenue
-      </div>
     </section>
   );
 }
+
+function ConnectorDescription() {
+  return (
+    <>
+      <div style={{ color: '#67e8f9', fontSize: 13, fontWeight: 'bold' }}>
+        CONNECTOR — GITHUB PUBLIC READ
+      </div>
+      <div style={{ color: '#94a3b8', fontSize: 11, marginTop: 4, marginBottom: 12 }}>
+        Review the exact connector before approving. The API checks the signed-in subject and policy;
+        approval expires in five minutes and can be used once.
+      </div>
+      <dl style={{ color: '#cbd5e1', fontSize: 11, margin: '0 0 12px' }}>
+        <dt style={{ color: '#64748b' }}>Action</dt>
+        <dd style={{ margin: '2px 0 8px' }}>Read public repository metadata</dd>
+        <dt style={{ color: '#64748b' }}>Target</dt>
+        <dd style={{ margin: '2px 0 8px' }}>starofgodmayomi-droid/omega-v-oceanicos</dd>
+        <dt style={{ color: '#64748b' }}>Limits</dt>
+        <dd style={{ margin: '2px 0 0' }}>Read-only · one attempt · 5-second timeout · no writes</dd>
+      </dl>
+    </>
+  );
+}
+
+const sectionStyle: React.CSSProperties = {
+  background: '#07121b',
+  border: '1px solid #67e8f944',
+  borderRadius: 6,
+  padding: 16,
+  marginBottom: 20,
+};

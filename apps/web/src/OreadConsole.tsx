@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react';
 import { initialOreadSubmissionIdentity, prepareOreadSubmission } from './oreade-submission';
+import { apiFetch } from './api-client';
 
-const API_BASE_URL = (import.meta.env?.VITE_API_URL || '/api').replace(/\/$/, '');
+const API_BASE_URL = (import.meta.env?.VITE_API_URL ?? '/api').replace(/\/$/, '');
 
 interface DropResult {
   drop: {
@@ -32,7 +33,7 @@ interface DropResult {
 }
 
 async function requestDrop(path: string, payload: Record<string, unknown>): Promise<DropResult> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await apiFetch(`${API_BASE_URL}${path}`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(payload),
@@ -99,7 +100,7 @@ export function OreadConsole() {
     setLoading('admit');
     setError(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/v1/omega/commands/${commandId}/approve`, {
+      const response = await apiFetch(`${API_BASE_URL}/v1/omega/commands/${commandId}/approve`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({

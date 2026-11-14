@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { apiFetch } from './api-client';
 
-const API_BASE_URL = (import.meta.env?.VITE_API_URL || '/api').replace(/\/$/, '');
+const API_BASE_URL = (import.meta.env?.VITE_API_URL ?? '/api').replace(/\/$/, '');
 
 type EvidenceStatus = 'VERIFIED' | 'SUPPORTED' | 'UNVERIFIED' | 'DIVERGENT' | 'UNKNOWN';
 
@@ -70,7 +71,7 @@ export function EcosystemPanel() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/v1/ecosystem/status`);
+      const res = await apiFetch(`${API_BASE_URL}/v1/ecosystem/status`);
       const text = await res.text();
       const data = text ? JSON.parse(text) : null;
       if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);

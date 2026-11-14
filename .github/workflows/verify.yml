@@ -139,6 +139,9 @@ jobs:
       - name: Run tests
         run: pnpm test
 
+      - name: Test Auth0 API authorization
+        run: pnpm test:auth
+
       # This is a source-level worker proof, not a claim that every historical
       # package is an active workspace product.
       - name: Run worker lifecycle verification
@@ -306,6 +309,16 @@ jobs:
           grep -q '"service":"omega-v-oceanicos-api"' /tmp/health.json
           grep -q '"readiness":"ready"' /tmp/health.json
 
+          curl -sf "$api/" | tee /tmp/web-index.html
+          grep -q '<div id="root"></div>' /tmp/web-index.html
+          asset=$(grep -oE '/assets/[^"]+\.js' /tmp/web-index.html | head -n1)
+          if [ -z "$asset" ]; then
+            echo "::error::The API image did not expose a JavaScript asset from the built UI."
+            exit 1
+          fi
+          curl -sf -D /tmp/web-asset-headers "$api$asset" -o /tmp/web-app.js
+          grep -qi '^content-type: text/javascript' /tmp/web-asset-headers
+
           if [ "$(curl -sS -o /tmp/tip-unauthenticated.json -w '%{http_code}' "$api/v1/block/tip")" != "401" ]; then
             echo "::error::Unauthenticated tip read was not rejected in required mode."
             cat /tmp/tip-unauthenticated.json
@@ -421,7 +434,7 @@ jobs:
           OMEGA_SIGNING_KEY: ci-compose-signing-key-not-for-production-2026-strong
           OMEGA_READ_TOKEN: ci-compose-read-token
           OMEGA_ADMIN_TOKEN: ci-compose-admin-token
-        run: docker compose config --quiet
+        run: docker compose --env-file .env.compose.example config --quiet
 
   report:
     name: Report pipeline result

@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { theme } from './oceanicosTheme';
+import type { ConnectorAuth } from './ConnectorPanel';
+import { apiFetch } from './api-client';
 import './InvisibleComputer.css';
 
 /*
@@ -9,7 +11,7 @@ import './InvisibleComputer.css';
  * terminal is a step the API actually recorded; nothing is narrated locally.
  */
 
-const API_BASE_URL = (import.meta.env?.VITE_API_URL || '/api').replace(/\/$/, '');
+const API_BASE_URL = (import.meta.env?.VITE_API_URL ?? '/api').replace(/\/$/, '');
 
 export type Verdict = 'VERIFIED' | 'DIVERGENT' | 'UNKNOWN' | 'NOT_EXECUTED';
 
@@ -103,11 +105,11 @@ function shortHash(hash: string | null): string {
   return `${hash.slice(0, 12)}…${hash.slice(-8)}`;
 }
 
-export function InvisibleComputer() {
-  return <OmegaConsole />;
+export function InvisibleComputer({ auth }: { auth?: ConnectorAuth }) {
+  return <OmegaConsole auth={auth} />;
 }
 
-export function OmegaConsole() {
+export function OmegaConsole({ auth }: { auth?: ConnectorAuth } = {}) {
   const [intent, setIntent] = useState('');
   const [useExternalModel, setUseExternalModel] = useState(false);
   const [commandsOpen, setCommandsOpen] = useState(false);
@@ -124,8 +126,6 @@ export function OmegaConsole() {
   const [activeLocalAction, setActiveLocalAction] = useState<LocalActionId | null>(null);
   const [localActionError, setLocalActionError] = useState<string | null>(null);
   const [localActionAccessError, setLocalActionAccessError] = useState<string | null>(null);
-  const [readToken, setReadToken] = useState('');
-  const [adminToken, setAdminToken] = useState('');
   const [error, setError] = useState<string | null>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
@@ -136,7 +136,7 @@ export function OmegaConsole() {
 
   const loadMemory = useCallback(async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/kai/memory?limit=5`);
+      const response = await apiFetch(`${API_BASE_URL}/kai/memory?limit=5`);
       if (!response.ok) return;
       const payload = await response.json();
       setMemoryTotal(typeof payload?.total === 'number' ? payload.total : null);
@@ -146,12 +146,9 @@ export function OmegaConsole() {
     }
   }, []);
 
-  const loadLocalActions = useCallback(async (readCredential = '') => {
-    const headers = readCredential.trim()
-      ? { authorization: `Bearer ${readCredential.trim()}` }
-      : undefined;
+  const loadLocalActions = useCallback(async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/v1/local-actions`, { headers });
+      const response = await apiFetch(`${API_BASE_URL}/v1/local-actions`);
       if (!response.ok) throw new Error(`Local action access failed (${response.status})`);
       const payload = await response.json();
       setLocalActionsEnabled(payload?.enabled === true);
@@ -164,7 +161,7 @@ export function OmegaConsole() {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/v1/local-actions/runs`, { headers });
+      const response = await apiFetch(`${API_BASE_URL}/v1/local-actions/runs`);
       if (!response.ok) return;
       const payload = await response.json();
       if (Array.isArray(payload?.runs)) setLocalActionRuns(payload.runs);
@@ -174,10 +171,11 @@ export function OmegaConsole() {
   }, []);
 
   useEffect(() => {
+    if (auth?.isLoading || (auth && !auth.isAuthenticated)) return;
     void loadMemory();
     void loadLocalActions();
     return clearTimers;
-  }, [loadMemory, loadLocalActions]);
+  }, [auth?.isAuthenticated, auth?.isLoading, loadMemory, loadLocalActions]);
 
   const execute = async () => {
     const trimmed = intent.trim();
@@ -191,7 +189,7 @@ export function OmegaConsole() {
     setVisibleSteps([]);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/execute`, {
+      const response = await apiFetch(`${API_BASE_URL}/execute`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ intent: trimmed, useExternalModel }),
@@ -251,12 +249,9 @@ export function OmegaConsole() {
     setActiveLocalAction(actionId);
     setLocalActionError(null);
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${API_BASE_URL}/v1/local-actions/${encodeURIComponent(actionId)}/run`,
-        {
-          method: 'POST',
-          headers: { authorization: `Bearer ${adminToken.trim()}` },
-        }
+        { method: 'POST' }
       );
       const payload = await response.json();
       if (!response.ok) throw new Error(payload?.error || `Action failed (${response.status})`);
@@ -274,7 +269,7 @@ export function OmegaConsole() {
   };
 
   const badgeTone = STATUS_TONE[verdict];
-  const canRunLocalActions = localActionsEnabled && Boolean(adminToken.trim());
+  const canRunLocalActions = localActionsEnabled === true && (!auth || auth.isAuthenticated);
   const inspectorState = {
     'Σ': {
       verdict,
@@ -326,13 +321,15 @@ export function OmegaConsole() {
 
       <div className="ioc-quick-actions" aria-label="Allowlisted local actions">
         <span className={`ioc-action-status${canRunLocalActions ? ' is-enabled' : ''}`} role="status">
-          LOCAL ACTIONS · {localActionsEnabled === null
-            ? 'UNKNOWN'
-            : !localActionsEnabled
-              ? 'DISABLED'
-              : adminToken.trim()
-                ? 'ENABLED'
-                : 'ADMIN TOKEN REQUIRED'}
+          LOCAL ACTIONS · {auth?.isLoading
+            ? 'AUTHENTICATING'
+            : auth && !auth.isAuthenticated
+              ? 'SIGN IN REQUIRED'
+              : localActionsEnabled === null
+                ? 'UNKNOWN'
+                : localActionsEnabled
+                  ? 'ENABLED'
+                  : 'DISABLED'}
         </span>
         {LOCAL_ACTIONS.map((action) => (
           <button
@@ -347,34 +344,34 @@ export function OmegaConsole() {
         ))}
       </div>
       <div className="ioc-action-access" aria-label="Local action access">
-        <label>
-          <span>Read token</span>
-          <input
-            aria-label="API read token"
-            type="password"
-            autoComplete="off"
-            value={readToken}
-            onChange={(event) => setReadToken(event.target.value)}
-          />
-        </label>
-        <label>
-          <span>Admin token</span>
-          <input
-            aria-label="API admin token"
-            type="password"
-            autoComplete="off"
-            value={adminToken}
-            onChange={(event) => setAdminToken(event.target.value)}
-          />
-        </label>
-        <button
-          type="button"
-          className="ioc-connect"
-          disabled={!readToken.trim()}
-          onClick={() => void loadLocalActions(readToken)}
-        >
-          Connect
-        </button>
+        {auth?.isAuthenticated && (
+          <>
+            <span className="ioc-access-note" role="status">
+              Signed in with Auth0. Protected actions still require approval.
+            </span>
+            <button
+              type="button"
+              className="ioc-connect"
+              onClick={() => void auth.logout().catch((err) => {
+                setLocalActionAccessError(err instanceof Error ? err.message : 'Auth0 sign-out failed.');
+              })}
+            >
+              Sign out
+            </button>
+          </>
+        )}
+        {auth && !auth.isAuthenticated && (
+          <button
+            type="button"
+            className="ioc-connect"
+            disabled={auth.isLoading}
+            onClick={() => void auth.login().catch((err) => {
+              setLocalActionAccessError(err instanceof Error ? err.message : 'Auth0 sign-in failed.');
+            })}
+          >
+            Sign in with Auth0
+          </button>
+        )}
         {localActionAccessError && <span className="ioc-access-note">{localActionAccessError}</span>}
       </div>
 

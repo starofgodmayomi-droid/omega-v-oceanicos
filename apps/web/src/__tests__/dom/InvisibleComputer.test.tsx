@@ -1,8 +1,11 @@
-import { describe, expect, it } from '@jest/globals';
+import { afterEach, describe, expect, it, jest } from '@jest/globals';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { InvisibleComputer, OmegaConsole } from '../../InvisibleComputer';
+import { setApiAccessTokenProvider } from '../../api-client';
 import { installFetch, json } from './harness';
+
+afterEach(() => setApiAccessTokenProvider(undefined));
 
 describe('Invisible Computer external-model consent', () => {
   it('runs a fixed local action and renders its output and JSON evidence', async () => {
@@ -24,23 +27,34 @@ describe('Invisible Computer external-model consent', () => {
           },
         }),
     });
+    setApiAccessTokenProvider(async () => 'admin-test');
     const user = userEvent.setup();
-    render(<OmegaConsole />);
-
-    await user.type(screen.getByLabelText('API read token'), 'read-test');
-    await user.type(screen.getByLabelText('API admin token'), 'admin-test');
-    await user.click(screen.getByRole('button', { name: 'Connect' }));
+    const logout = jest.fn(async () => {});
+    render(
+        <OmegaConsole
+          auth={{
+            isLoading: false,
+            isAuthenticated: true,
+            login: async () => {},
+            logout,
+            getAccessToken: async () => 'admin-test',
+          }}
+        />
+    );
     const checkStatus = await screen.findByRole('button', { name: 'Check Status' });
     await waitFor(() => expect(checkStatus).toBeEnabled());
     await user.click(checkStatus);
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith('/api/v1/local-actions/repo-status/run', {
-        method: 'POST',
-        headers: { authorization: 'Bearer admin-test' },
-      });
+        expect(fetchMock.mock.calls.some(([url]) => url === '/api/v1/local-actions/repo-status/run')).toBe(true);
     });
+    const runCall = fetchMock.mock.calls.find(([url]) => url === '/api/v1/local-actions/repo-status/run');
+    expect(runCall?.[1]?.method).toBe('POST');
+    expect(new Headers(runCall?.[1]?.headers).get('authorization')).toBe('Bearer admin-test');
     expect(await screen.findByText('## agent/local-workflow-actions')).toBeInTheDocument();
+    expect(screen.getByText('Signed in with Auth0. Protected actions still require approval.')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Sign out' }));
+    expect(logout).toHaveBeenCalledTimes(1);
 
     await user.click(screen.getByRole('button', { name: 'State' }));
     expect(screen.getByRole('complementary', { name: 'JSON state inspector' })).toHaveClass('is-open');

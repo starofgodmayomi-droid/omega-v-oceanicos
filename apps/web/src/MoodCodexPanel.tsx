@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { apiFetch } from './api-client';
 
-const API_BASE_URL = (import.meta.env?.VITE_API_URL || '/api').replace(/\/$/, '');
+const API_BASE_URL = (import.meta.env?.VITE_API_URL ?? '/api').replace(/\/$/, '');
 
 export function MoodCodexPanel() {
   const [intent, setIntent] = useState('improve the next bounded interaction');
@@ -16,7 +17,7 @@ export function MoodCodexPanel() {
     setError(null);
     setCommand(null);
     try {
-      const response = await fetch(`${API_BASE_URL}${persist ? '/v1/mood/codex/proposal' : '/v1/mood/codex'}`, {
+      const response = await apiFetch(`${API_BASE_URL}${persist ? '/v1/mood/codex/proposal' : '/v1/mood/codex'}`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
@@ -45,7 +46,7 @@ export function MoodCodexPanel() {
     setLoading('admit');
     setError(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/v1/omega/commands/${command.commandId}/approve`, {
+      const response = await apiFetch(`${API_BASE_URL}/v1/omega/commands/${command.commandId}/approve`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
@@ -69,7 +70,7 @@ export function MoodCodexPanel() {
     setLoading(action);
     setError(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/v1/omega/commands/${command.commandId}/${action}`, {
+      const response = await apiFetch(`${API_BASE_URL}/v1/omega/commands/${command.commandId}/${action}`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         ...(action === 'observe' ? { body: JSON.stringify({ observedState }) } : {}),

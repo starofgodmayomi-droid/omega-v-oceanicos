@@ -186,10 +186,25 @@ mode. See [the repository contract](../../skills/oceanicos-value-navigator/refer
 
 ## Static client
 
-Set `OMEGA_WEB_DIST` to a built `apps/web` directory to serve the SPA from the
-same Fastify origin. `/` serves `index.html`, `/assets/*` serves built assets,
-and eligible non-API GET paths fall back to `index.html` for client-side
-routing. API/module paths remain JSON 404s when unmatched.
+The production API image builds the web package and serves it from the same
+Fastify origin. `/` serves `index.html`, `/assets/*` serves built assets with
+their media types, and eligible non-API GET paths fall back to `index.html` for
+client-side routing. The API image sets `OMEGA_WEB_DIST` to the built bundle;
+source development remains separate so Vite hot reload can run on port 3000.
+The production Compose profile exposes the API and UI together at
+`http://localhost:3000`.
+
+In required-auth mode, the UI shell, static assets, and `/health` are available
+without a token; API resources require a verified Auth0 access token. Any
+verified tenant subject may read, while only the configured
+`OMEGA_CONNECTOR_APPROVER_SUBJECT` may make API mutations. The browser obtains
+tokens with PKCE and keeps them in memory. Server read/admin bearer tokens are
+for trusted non-browser integrations and must never be embedded in the UI.
+Configure `OMEGA_OIDC_ISSUER`, `OMEGA_OIDC_AUDIENCE`, `OMEGA_OIDC_JWKS_URI`,
+and `OMEGA_CONNECTOR_APPROVER_SUBJECT` at runtime, plus the public
+`VITE_AUTH0_DOMAIN`, `VITE_AUTH0_CLIENT_ID`, and `VITE_AUTH0_AUDIENCE` build
+arguments. The Auth0 and API audiences must match. See
+[`GOVERNANCE.md`](../../docs/GOVERNANCE.md) for identity and approval limits.
 
 ```text
 OMEGA_WEB_DIST=apps/web/dist

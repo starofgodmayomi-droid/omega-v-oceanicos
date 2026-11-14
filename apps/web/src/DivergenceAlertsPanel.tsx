@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { apiFetch } from './api-client';
 
-const API_BASE_URL = (import.meta.env?.VITE_API_URL || '/api').replace(/\/$/, '');
+const API_BASE_URL = (import.meta.env?.VITE_API_URL ?? '/api').replace(/\/$/, '');
 const REFRESH_MS = 15_000;
 
 type CommandSummary = {
@@ -31,7 +32,7 @@ export function DivergenceAlertsPanel() {
   const fetchCommands = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/v1/omega/divergences?limit=50`);
+      const response = await apiFetch(`${API_BASE_URL}/v1/omega/divergences?limit=50`);
       const text = await response.text();
       const data = text ? JSON.parse(text) : null;
       if (!response.ok) throw new Error(data?.error || `Alert check failed (${response.status})`);

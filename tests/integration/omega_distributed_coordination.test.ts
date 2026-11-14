@@ -37,6 +37,49 @@ describe('Ω durable multi-process coordination', () => {
     assert.equal(released.statusCode, 200);
   });
 
+  it('reconciles worker status and lease counts when expired leases are cleaned up', async () => {
+    for (const workerId of ['worker-expired-lease', 'worker-cleanup-trigger']) {
+      const registered = await first.inject({
+        method: 'POST',
+        url: '/v1/omega/workers/register',
+        payload: { workerId, capabilities: ['TEST'] },
+      });
+      assert.equal(registered.statusCode, 200);
+    }
+
+    const expiring = await first.inject({
+      method: 'POST',
+      url: '/v1/omega/workers/worker-expired-lease/lease',
+      payload: { commandId: 'command-expiring-lease', capability: 'TEST', durationMs: 1000 },
+    });
+    assert.equal(expiring.statusCode, 200);
+    const expiration = Date.parse(expiring.json().lease.expiresAt);
+    await new Promise((resolve) => setTimeout(resolve, Math.max(0, expiration - Date.now() + 20)));
+
+    const observedWorkers = (await first.inject({ method: 'GET', url: '/v1/omega/workers' })).json().activeWorkers;
+    const observedExpiredWorker = observedWorkers.find((worker: { workerId: string }) => worker.workerId === 'worker-expired-lease');
+    assert.ok(observedExpiredWorker);
+    assert.equal(observedExpiredWorker.status, 'IDLE');
+    assert.equal(observedExpiredWorker.leaseCount, 0);
+
+    const trigger = await second.inject({
+      method: 'POST',
+      url: '/v1/omega/workers/worker-cleanup-trigger/lease',
+      payload: { commandId: 'command-cleanup-trigger', capability: 'TEST', durationMs: 5000 },
+    });
+    assert.equal(trigger.statusCode, 200);
+
+    const workers = (await first.inject({ method: 'GET', url: '/v1/omega/workers' })).json().activeWorkers;
+    const expiredWorker = workers.find((worker: { workerId: string }) => worker.workerId === 'worker-expired-lease');
+    assert.ok(expiredWorker);
+    assert.equal(expiredWorker.status, 'IDLE');
+    assert.equal(expiredWorker.leaseCount, 0);
+    const triggerWorker = workers.find((worker: { workerId: string }) => worker.workerId === 'worker-cleanup-trigger');
+    assert.ok(triggerWorker);
+    assert.equal(triggerWorker.status, 'BUSY');
+    assert.equal(triggerWorker.leaseCount, 1);
+  });
+
   it('exposes bounded coordination evidence through the durable API contract', async () => {
     const created = await first.inject({
       method: 'POST',

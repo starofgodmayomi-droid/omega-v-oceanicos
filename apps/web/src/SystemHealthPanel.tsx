@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { theme, statusColor, humanStatus } from './oceanicosTheme';
+import { apiFetch } from './api-client';
 
 /*
  * SystemHealthPanel — surfaces the /health endpoint in the UI.
@@ -8,7 +9,7 @@ import { theme, statusColor, humanStatus } from './oceanicosTheme';
  * A readiness string is displayed, not promoted into a deployment claim.
  */
 
-const API_BASE_URL = (import.meta.env?.VITE_API_URL || '/api').replace(/\/$/, '');
+const API_BASE_URL = (import.meta.env?.VITE_API_URL ?? '/api').replace(/\/$/, '');
 
 interface HealthAcknowledgement {
   operatorId?: string;
@@ -185,7 +186,7 @@ export function SystemHealthPanel() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/health`);
+      const res = await apiFetch(`${API_BASE_URL}/health`);
       const text = await res.text();
       const data = text ? JSON.parse(text) : null;
       if (!res.ok) throw new Error(data?.error || data?.message || `HTTP ${res.status}`);
@@ -202,7 +203,7 @@ export function SystemHealthPanel() {
 
   const fetchTherapeuticState = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/v1/therapeutic/state`);
+      const res = await apiFetch(`${API_BASE_URL}/v1/therapeutic/state`);
       const text = await res.text();
       const data = text ? JSON.parse(text) : null;
       if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
@@ -218,7 +219,7 @@ export function SystemHealthPanel() {
 
   const fetchOmegaCommands = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/v1/omega/commands`);
+      const res = await apiFetch(`${API_BASE_URL}/v1/omega/commands`);
       const text = await res.text();
       const data = text ? JSON.parse(text) : null;
       if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
@@ -240,7 +241,7 @@ export function SystemHealthPanel() {
     setTransitioning(true);
     setActionError(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/v1/therapeutic/transition`, {
+      const res = await apiFetch(`${API_BASE_URL}/v1/therapeutic/transition`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -274,8 +275,8 @@ export function SystemHealthPanel() {
     const requestId = ++commandDetailsRequestId.current;
     try {
       const [commandRes, boundaryRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/v1/omega/commands/${encodeURIComponent(commandId)}`),
-        fetch(`${API_BASE_URL}/v1/omega/commands/${encodeURIComponent(commandId)}/safety-boundary`),
+        apiFetch(`${API_BASE_URL}/v1/omega/commands/${encodeURIComponent(commandId)}`),
+        apiFetch(`${API_BASE_URL}/v1/omega/commands/${encodeURIComponent(commandId)}/safety-boundary`),
       ]);
       const commandText = await commandRes.text();
       const boundaryText = await boundaryRes.text();
@@ -297,7 +298,7 @@ export function SystemHealthPanel() {
 
   const fetchDivergenceAlerts = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/v1/omega/divergences`);
+      const res = await apiFetch(`${API_BASE_URL}/v1/omega/divergences`);
       const text = await res.text();
       const data = text ? JSON.parse(text) : null;
       if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
@@ -328,7 +329,7 @@ export function SystemHealthPanel() {
         },
       };
 
-      const createRes = await fetch(`${API_BASE_URL}/v1/omega/commands`, {
+      const createRes = await apiFetch(`${API_BASE_URL}/v1/omega/commands`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(createBody),
@@ -337,7 +338,7 @@ export function SystemHealthPanel() {
       if (!createRes.ok || !createData?.command?.commandId) throw new Error(createData?.error || `HTTP ${createRes.status}`);
 
       const commandId = createData.command.commandId;
-      const admitRes = await fetch(`${API_BASE_URL}/v1/omega/commands/${encodeURIComponent(commandId)}/admit`, {
+      const admitRes = await apiFetch(`${API_BASE_URL}/v1/omega/commands/${encodeURIComponent(commandId)}/admit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ policy: 'runtime-evidence-bound:v1' }),
@@ -345,7 +346,7 @@ export function SystemHealthPanel() {
       const admitData = admitRes.ok ? (await admitRes.json()) : null;
       if (!admitRes.ok || !admitData?.command?.commandId) throw new Error(admitData?.error || `HTTP ${admitRes.status}`);
 
-      const executeRes = await fetch(`${API_BASE_URL}/v1/omega/commands/${encodeURIComponent(commandId)}/execute`, {
+      const executeRes = await apiFetch(`${API_BASE_URL}/v1/omega/commands/${encodeURIComponent(commandId)}/execute`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
@@ -354,7 +355,7 @@ export function SystemHealthPanel() {
       if (!executeRes.ok || !executeData?.command?.commandId) throw new Error(executeData?.error || `HTTP ${executeRes.status}`);
 
       const observedState = executeData.command.change?.stateAfter ?? 'bounded-local-action-complete';
-      const observeRes = await fetch(`${API_BASE_URL}/v1/omega/commands/${encodeURIComponent(commandId)}/observe`, {
+      const observeRes = await apiFetch(`${API_BASE_URL}/v1/omega/commands/${encodeURIComponent(commandId)}/observe`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ observedState }),
@@ -412,7 +413,7 @@ export function SystemHealthPanel() {
           return;
       }
 
-      const res = await fetch(url, {
+      const res = await apiFetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload ?? {}),

@@ -3,12 +3,7 @@
   "checksum": "30013030",
   "doctrine": "ATTEST, DON'T ASSERT. UNKNOWN PRESERVED.",
   "append_only": true,
-  "status_values": [
-    "VERIFIED",
-    "DIVERGENT",
-    "UNKNOWN",
-    "NOT_EXECUTED"
-  ],
+  "status_values": ["VERIFIED", "DIVERGENT", "UNKNOWN", "NOT_EXECUTED"],
   "rule": "Append only. Never rewrite or delete an entry. On conflict keep both receipts, ordered by timestamp. See SWARM_PROTOCOL.md §VI.",
   "entries": [
     {
@@ -283,6 +278,196 @@
       "next_delta": "Wire a concrete command-admission provider only after its trusted authority and policy source are documented; keep the default unconfigured and fail closed."
     },
     {
+      "timestamp": "2026-11-13T10:58:59Z",
+      "agent_id": "copilot",
+      "branch": "agent/copilot/connector-resolver-fail-closed",
+      "status": "VERIFIED",
+      "files_touched": [
+        "apps/api/src/connector-observation-route.ts",
+        "apps/api/src/__tests__/connector-admission-resolver.integration.test.mjs",
+        "docs/GOVERNANCE.md",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "06e9facce4a10c3ae09e2e427bd67fa0f6de358984fff56f431e58f2a5c5c131",
+      "next_delta": "Select and document the trusted connector authority source, including actor/action/target binding, approval freshness, and revocation, before wiring a production resolver."
+    },
+    {
+      "timestamp": "2026-11-13T11:02:38Z",
+      "agent_id": "copilot",
+      "branch": "agent/copilot/connector-resolver-fail-closed",
+      "status": "NOT_EXECUTED",
+      "files_touched": [
+        "kai_ledger.json"
+      ],
+      "tests_passed": null,
+      "evidence_hash": null,
+      "next_delta": "Resume #486 only after a human selects a trusted authority, policy, and approval source; keep connector admission fail-closed in the meantime."
+    },
+    {
+      "timestamp": "2026-11-13T12:01:17Z",
+      "agent_id": "copilot",
+      "branch": "agent/copilot/self-hosted-oidc-identity",
+      "status": "VERIFIED",
+      "files_touched": [
+        "apps/api/package.json",
+        "apps/api/src/__tests__/connector-admission-resolver.integration.test.mjs",
+        "apps/api/src/__tests__/oidc-identity.integration.test.mjs",
+        "apps/api/src/connector-observation-route.ts",
+        "apps/api/src/index.ts",
+        "apps/api/src/oidc-identity.ts",
+        "apps/api/src/runtime-globals.d.ts",
+        "docs/GOVERNANCE.md",
+        "kai_ledger.json",
+        "pnpm-lock.yaml"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "4a941c518c953edbf29c82d016e5a647f4b67ec55cc1a8d28cc159fb3a06108a",
+      "next_delta": "Add durable one-time human approvals bound to verified OIDC issuer/subject and exact connector/action/target, with explicit policy, expiry, and revocation; keep missing evidence denied."
+    },
+    {
+      "timestamp": "2026-11-13T12:17:28Z",
+      "agent_id": "copilot",
+      "branch": "agent/copilot/self-hosted-oidc-identity",
+      "status": "VERIFIED",
+      "files_touched": [
+        "apps/api/src/connector-approval-store.ts",
+        "apps/api/src/connector-observation-route.ts",
+        "apps/api/src/index.ts",
+        "apps/api/src/oidc-identity.ts",
+        "apps/api/src/__tests__/connector-approval-store.unit.test.mjs",
+        "apps/api/src/__tests__/oidc-identity.integration.test.mjs",
+        "docs/GOVERNANCE.md",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "4da9449149edc538449bb6d30b1f9ad1ad71481185c17b5db87c68600e357bfc",
+      "next_delta": "Configure a trusted OIDC issuer and explicitly reviewed connector declaration digests before enabling any deployment connector."
+    },
+    {
+      "timestamp": "2026-11-13T12:28:00Z",
+      "agent_id": "copilot",
+      "branch": "agent/copilot/self-hosted-oidc-identity",
+      "status": "VERIFIED",
+      "files_touched": [
+        "docs/GOVERNANCE.md",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "23d4e4a2a328d659b4cf5ff3523b7dbf51f60232fc252082eba8c74c5a1b130b",
+      "next_delta": "Verify the documented issuer, audience, JWKS, and groups mapping with a real non-production Keycloak access token before setting connector policy digests."
+    },
+    {
+      "timestamp": "2026-11-13T12:32:38Z",
+      "agent_id": "copilot",
+      "branch": "agent/copilot/self-hosted-oidc-identity",
+      "status": "VERIFIED",
+      "files_touched": [
+        "apps/api/src/oidc-identity.ts",
+        "apps/api/src/__tests__/oidc-identity.integration.test.mjs",
+        "docs/GOVERNANCE.md",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "2d5ab028a137fd3e03e89b43059a6e12e1b706bdeea9d05c79f871b733e0a491",
+      "next_delta": "Verify the Auth0 issuer, API audience, JWKS, and namespaced approver claim using a real non-production access token; keep policy digests empty until then."
+    },
+    {
+      "timestamp": "2026-11-13T12:37:56Z",
+      "agent_id": "copilot",
+      "branch": "agent/copilot/self-hosted-oidc-identity",
+      "status": "VERIFIED",
+      "files_touched": [
+        "apps/api/src/__tests__/oidc-identity.integration.test.mjs",
+        "docs/GOVERNANCE.md",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "630c195bafeb1ab64dcc7a694d3863e5bb7f8fce24cb63958abbe7efd193c3ea",
+      "next_delta": "Verify the Auth0 tenant issuer and JWKS against the selected API audience and namespaced approver claim using a real non-production access token."
+    },
+    {
+      "timestamp": "2026-11-13T13:06:49Z",
+      "agent_id": "copilot",
+      "branch": "agent/copilot/self-hosted-oidc-identity",
+      "status": "VERIFIED",
+      "files_touched": [
+        "apps/api/src/connector-approval-store.ts",
+        "apps/api/src/connector-observation-route.ts",
+        "apps/api/src/index.ts",
+        "apps/api/src/oidc-identity.ts",
+        "apps/api/src/__tests__/connector-approval-store.unit.test.mjs",
+        "apps/api/src/__tests__/oidc-identity.integration.test.mjs",
+        "docs/GOVERNANCE.md",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "f9b19a51f9c8aecb0461fd0dc0ce345758c018452164fab4eb9ff737cb222a63",
+      "next_delta": "Create the Auth0 API using the documented audience and configure the one verified subject outside the repository; keep connector policy digests empty until a non-production token is checked."
+    },
+    {
+      "timestamp": "2026-11-13T13:26:29Z",
+      "agent_id": "copilot",
+      "branch": "agent/copilot/self-hosted-oidc-identity",
+      "status": "VERIFIED",
+      "files_touched": [
+        "apps/web/package.json",
+        "apps/web/src/App.tsx",
+        "apps/web/src/ConnectorPanel.tsx",
+        "apps/web/src/__tests__/dom/ConnectorPanel.test.tsx",
+        "apps/web/src/css.d.ts",
+        "apps/web/src/main.tsx",
+        "docs/GOVERNANCE.md",
+        "pnpm-lock.yaml",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "45a0695410b099f4d6c95c08feb8a1b649716a9410d710b75169b7b0d94d89aa",
+      "next_delta": "Configure the Auth0 SPA and API in non-production; verify the real callback, API token, allowlisted subject, and exact connector digest before enabling the policy."
+    },
+    {
+      "timestamp": "2026-11-13T22:39:50Z",
+      "agent_id": "copilot",
+      "branch": "agent/copilot/self-hosted-oidc-identity",
+      "status": "VERIFIED",
+      "files_touched": [
+        "apps/api/package.json",
+        "apps/api/src/__tests__/connector-admission-resolver.integration.test.mjs",
+        "apps/api/src/__tests__/connector-approval-store.unit.test.mjs",
+        "apps/api/src/__tests__/oidc-identity.integration.test.mjs",
+        "apps/api/src/connector-approval-store.ts",
+        "apps/api/src/connector-observation-route.ts",
+        "apps/api/src/index.ts",
+        "apps/api/src/oidc-identity.ts",
+        "apps/api/src/runtime-globals.d.ts",
+        "apps/web/package.json",
+        "apps/web/src/App.tsx",
+        "apps/web/src/ConnectorPanel.tsx",
+        "apps/web/src/__tests__/dom/ConnectorPanel.test.tsx",
+        "apps/web/src/css.d.ts",
+        "apps/web/src/main.tsx",
+        "docs/GOVERNANCE.md",
+        "kai_ledger.json",
+        "pnpm-lock.yaml"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "29c92995847ff7209e8918bc4c96de52038aeba60a5b5826adbdd79a3632c1f9",
+      "next_delta": "Verify the Auth0 SPA callback and API access token with one real non-production account; only then set the connector policy digest."
+    },
+    {
+      "timestamp": "2026-11-13T22:51:06Z",
+      "agent_id": "copilot",
+      "branch": "agent/copilot/self-hosted-oidc-identity",
+      "status": "VERIFIED",
+      "files_touched": [
+        "tests/integration/web-api-proxy.integration.test.ts",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "5b967608ea1b5d861a770f2e89699266c490fc9e8a8a028d7935ef59ae32fd0d",
+      "next_delta": "Confirm whether the verified follow-up should update the open PR 602 branch; PR 591 is already merged."
+    },
+    {
       "timestamp": "2026-11-13T23:20:00Z",
       "agent_id": "grok",
       "branch": "agent/grok/flow-water-ci",
@@ -294,6 +479,108 @@
       "tests_passed": true,
       "next_delta": "Human-review CI on this branch. evidence_hash is the workflow diff only, because the ledger line cannot contain the hash of a diff that includes itself. pnpm build, pnpm lint, and the full pnpm test were not run. upgrade.execution stays NOT_EXECUTED. Do not merge from this node.",
       "evidence_hash": "ee3589cf21ee718e4deb175c3a2d7f1893e8faab1561888aaa7bae3280cb8d08"
+    },
+    {
+      "timestamp": "2026-11-14T01:35:00Z",
+      "agent_id": "copilot",
+      "branch": "agent/copilot/self-hosted-oidc-identity",
+      "status": "VERIFIED",
+      "files_touched": [
+        "apps/api/src/connector-approval-store.ts",
+        "apps/api/src/connector-observation-route.ts",
+        "apps/api/src/index.ts",
+        "apps/api/src/oidc-identity.ts",
+        "apps/web/src/ConnectorPanel.tsx",
+        "apps/web/src/main.tsx",
+        "apps/web/src/App.tsx",
+        "docs/GOVERNANCE.md",
+        "tests/integration/web-api-proxy.integration.test.ts",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "8fd59d1a5d72751248297dd031176b4ab8a58ab18ee88190f9cd0e7153c6f1d0",
+      "next_delta": "Bind the live Auth0 subject, audience, and policy digest from a real non-production tenant before enabling connector execution; otherwise leave the connector in fail-closed mode."
+    },
+    {
+      "timestamp": "2026-11-14T11:13:34Z",
+      "agent_id": "copilot",
+      "branch": "agent/copilot/self-hosted-oidc-identity",
+      "status": "VERIFIED",
+      "files_touched": [
+        ".env.compose.example",
+        ".github/workflows/verify.yml",
+        "AGENTS.md",
+        "Dockerfile",
+        "README.md",
+        "apps/api/Dockerfile",
+        "apps/api/README.md",
+        "apps/api/src/__tests__/api.test.ts",
+        "apps/api/src/__tests__/oidc-identity.integration.test.mjs",
+        "apps/api/src/index.ts",
+        "apps/api/src/omega-persistence.ts",
+        "apps/api/src/omega.ts",
+        "apps/api/src/runtime-globals.d.ts",
+        "apps/web/src/App.tsx",
+        "apps/web/src/ConnectorPanel.tsx",
+        "apps/web/src/DependencyMapPanel.tsx",
+        "apps/web/src/DivergenceAlertsPanel.tsx",
+        "apps/web/src/EcosystemPanel.tsx",
+        "apps/web/src/InvisibleComputer.tsx",
+        "apps/web/src/MoodCodexPanel.tsx",
+        "apps/web/src/OreadConsole.tsx",
+        "apps/web/src/RealityPanel.tsx",
+        "apps/web/src/SingleBodyPanel.tsx",
+        "apps/web/src/SystemHealthPanel.tsx",
+        "apps/web/src/TransitionProvenancePanel.tsx",
+        "apps/web/src/ValueNavigatorPanel.tsx",
+        "apps/web/src/WorkerCoordinationPanel.tsx",
+        "apps/web/src/api-client.ts",
+        "apps/web/src/__tests__/dom/ConnectorPanel.test.tsx",
+        "apps/web/src/__tests__/dom/CurrentAppShell.test.tsx",
+        "apps/web/src/__tests__/dom/InvisibleComputer.test.tsx",
+        "apps/web/src/main.tsx",
+        "docker-compose.yml",
+        "docs/GOVERNANCE.md",
+        "docs/LOCAL_COMPOSE_DEPLOYMENT.md",
+        "package.json",
+        "tests/integration/omega_distributed_coordination.test.ts",
+        "tests/integration/web-api-proxy.integration.test.ts",
+        "ΩVØØS/ASSIGNMENTS/004-cross-domain-one-origin-vaas.md",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "6e2801c658cdd36f773ce2382275c21096a1499b3f6be8c04ab182a2214ca864",
+      "next_delta": "Wait for PR #602 CI and human review; verify live Auth0 only with an authorized non-production tenant before enabling policy."
+    },
+    {
+      "timestamp": "2026-11-14T21:12:20Z",
+      "agent_id": "copilot",
+      "branch": "agent/copilot/self-hosted-oidc-identity",
+      "status": "VERIFIED",
+      "files_touched": [
+        ".github/workflows/verify.yml",
+        "scripts/validate-swarm-ledger.mjs",
+        "scripts/validate-swarm-ledger.test.mjs",
+        "ΩVØØS/ASSIGNMENTS/004-cross-domain-one-origin-vaas.md",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "d10328bd061b7a36a76e1d038df01c4b6e51f1352a043836e95365a212707fbc",
+      "next_delta": "Wait for the updated PR #602 checks and human review; live Auth0 tenant validation and deployment remain separate gates."
+    },
+    {
+      "timestamp": "2026-11-14T21:39:28Z",
+      "agent_id": "copilot",
+      "branch": "agent/copilot/self-hosted-oidc-identity",
+      "status": "VERIFIED",
+      "files_touched": [
+        "apps/web/src/ConnectorPanel.tsx",
+        "apps/web/src/__tests__/dom/ConnectorPanel.test.tsx",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "27d0e10492a1a1d89cd87c9a95f431cbf2852154503e5aa8eda55876f0c0558d",
+      "next_delta": "Observe PR #602 CI and human review; live Auth0 tenant validation remains separate."
     }
   ]
 }
