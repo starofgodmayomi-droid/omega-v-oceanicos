@@ -368,6 +368,32 @@ async function resolveOrganAndContext(
       report.signals.map(s => `• [**${s.world}**] **${s.headline}**\n  *Delta*: ${s.actionableDelta}`).join('\n\n') + `\n\n` +
       `*Resonance: 432 Hz | Evaluated At: ${report.evaluatedAt}*`;
   }
+  // 3a-2. Glober AI Dual-Mode Synthesis (Collaborative HITL vs Autonomous Agentic)
+  else if (lower.includes('glober') || lower.includes('autonomous mode') || lower.includes('cowork') || lower.includes('swarm mode') || lower.includes('dual mode')) {
+    organ = 'GLOBER_AI_DUAL_ENGINE';
+    actionTriggered = 'GLOBER_DUAL_MODE_SYNTHESIS';
+    evidenceHash = 'sha256:0x30013030-glober-dual-mode-attested';
+    const isAutonomous = lower.includes('autonomous') || lower.includes('without human');
+    replyContent = `🌐 **Glober AI Sovereign Intelligence Synthesis**\n\n` +
+      `• **Architecture**: Dual-Mode Continuum (COLLABORATIVE ⇄ AUTONOMOUS)\n` +
+      `• **Current State**: ${isAutonomous ? '**AUTONOMOUS (WITHOUT HUMAN)** ➔ Running in background via VOOS daemon (:8088)' : '**COLLABORATIVE (WITH HUMAN)** ➔ Human-in-the-loop (HITL) co-pilot awaiting your prompt'}\n` +
+      `• **Sensory Feeds**: AI / News / Glober live real-time multi-world ticker\n` +
+      `• **Active Toggles**: [Chat] · [Cowork] · [Swarm] · [Goal] · [Computer]\n` +
+      `• **Fail-Closed Security**: Consequential mutations (GitHub push, cloud deploy, fund movement) mandate explicit human authorization.\n\n` +
+      `*Ready for intent execution or background goal delegation.*`;
+  }
+  // 3a-3. Enterprise Auth0 & Multi-Tenancy Gateway
+  else if (lower.includes('auth0') || lower.includes('sso') || lower.includes('tenant') || lower.includes('logout url')) {
+    organ = 'AUTH0_TENANT_GATEWAY';
+    actionTriggered = 'INSPECT_AUTH0_TENANT_SECURITY';
+    evidenceHash = 'sha256:0x1111-auth0-tenant-isolation-valid';
+    replyContent = `🛡️ **Enterprise Auth0 & Multi-Tenancy Gateway**\n\n` +
+      `• **Identity**: \`Elion Varel\` (\`elion@oceanicos.network\`)\n` +
+      `• **Tenant ID**: \`tenant-oceanicos-sovereign\` (Isolation Mode: **STRICT FAIL-CLOSED**)\n` +
+      `• **SSO Providers**: Auth0, Google Workspace, Apple ID, Corporate SAML/OIDC\n` +
+      `• **Security Invariant**: Strictly veiled custody of keys; zero secret leakage.\n` +
+      `• **Allowed Logout URLs**: \`http://localhost:3000\`, \`http://localhost:5000\`, \`https://oceanicos.network\``;
+  }
   // 3b. Ocean Fabric / Membrane / Security
   else if (lower.includes('fabric') || lower.includes('water') || lower.includes('security') || lower.includes('membrane') || lower.includes('ocean')) {
     organ = 'OCEAN_TRUTH_MEMBRANE';

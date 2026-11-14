@@ -50,6 +50,8 @@ import { registerKnowledgeRoute } from './knowledge-route.js';
 import { registerVoosRoute } from './voos-route.js';
 import { registerToolRunnerRoute } from './tool-runner-route.js';
 import { registerBrowserRoute } from './browser-route.js';
+import { registerAuth0Routes } from './auth0-route.js';
+import { registerGloberRoutes } from './glober-route.js';
 import { registerContinuumRoute, getContinuumEcosystemStatus } from './continuum-route.js';
 import { API_ROUTE_INVENTORY } from './route-contract.js';
 import { OceanicosKernel as UpgradeKernel } from '@oceanicos/mini';
@@ -617,6 +619,8 @@ export function createApp(
   // ─── Local Tool Runner (Slice 2) ─────────────────────────────────
   registerToolRunnerRoute(fastify, kaiLedger);
   registerBrowserRoute(fastify, kaiLedger);
+  registerAuth0Routes(fastify, kaiLedger);
+  registerGloberRoutes(fastify, kaiLedger);
 
   // ─── Constitutional Authorization Gate (§6, §8, §9, §12) ─────────
   fastify.post('/v1/authorization/evaluate', async (request: any) => {

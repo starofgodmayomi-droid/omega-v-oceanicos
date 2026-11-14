@@ -25,6 +25,7 @@ import { WealthActionPanel } from './WealthActionPanel';
 import { EchoframeWorkspace } from './EchoframeWorkspace';
 import { WatcherCorridorPanel } from './WatcherCorridorPanel';
 import { V0CreationMirror } from './V0CreationMirror';
+import { GloberAgiCommandCenter } from './GloberAgiCommandCenter';
 import { CausalChainPanel } from './CausalChainPanel';
 import {
   theme,
@@ -142,7 +143,7 @@ export function App() {
   ]);
 
   const [openStageId, setOpenStageId] = useState<string | null>(null);
-  const [viewportMode, setViewportMode] = useState<'conversation' | 'v0' | 'trading' | 'watcher' | 'work' | 'evidence' | 'catalog' | 'wealth' | 'ocean'>('conversation');
+  const [viewportMode, setViewportMode] = useState<'glober' | 'conversation' | 'v0' | 'trading' | 'watcher' | 'work' | 'evidence' | 'catalog' | 'wealth' | 'ocean'>('glober');
   const [showCovenantPanel, setShowCovenantPanel] = useState<boolean>(false);
   const [showNewsPanel, setShowNewsPanel] = useState<boolean>(false);
   const [showCompressionPulse, setShowCompressionPulse] = useState<boolean>(false);
@@ -934,6 +935,31 @@ export function App() {
           }}
         >
           <button
+            onClick={() => setViewportMode('glober')}
+            style={{
+              padding: '8px 18px',
+              borderRadius: '9999px',
+              border: viewportMode === 'glober' ? '1px solid rgba(56, 189, 248, 0.7)' : '1px solid transparent',
+              background: viewportMode === 'glober' ? 'linear-gradient(180deg, rgba(56, 189, 248, 0.28) 0%, rgba(56, 189, 248, 0.12) 100%)' : 'transparent',
+              color: viewportMode === 'glober' ? '#38bdf8' : theme.textMuted,
+              boxShadow: viewportMode === 'glober' ? '0 0 20px rgba(56, 189, 248, 0.4), inset 0 1px 0 rgba(56, 189, 248, 0.4)' : 'none',
+              fontFamily: theme.fontSans,
+              fontSize: '12.5px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '7px',
+            }}
+          >
+            <span>🌐</span>
+            <span>Glober AGI</span>
+            {viewportMode === 'glober' && (
+              <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#38bdf8', boxShadow: '0 0 6px #38bdf8' }} />
+            )}
+          </button>
+          <button
             onClick={() => setViewportMode('v0')}
             style={{
               padding: '8px 18px',
@@ -1199,7 +1225,23 @@ export function App() {
         </div>
       </div>
 
-      {viewportMode === 'v0' ? (
+      {viewportMode === 'glober' ? (
+        <div
+          style={{
+            maxWidth: '1440px',
+            width: '100%',
+            margin: '0 auto',
+            padding: '16px 20px 60px',
+            flex: 1,
+          }}
+        >
+          <GloberAgiCommandCenter
+            onSendMessage={() => {
+              setViewportMode('conversation');
+            }}
+          />
+        </div>
+      ) : viewportMode === 'v0' ? (
         <div
           style={{
             maxWidth: '1280px',

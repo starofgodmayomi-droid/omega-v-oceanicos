@@ -105,6 +105,9 @@ const ORGAN_ICON: Record<string, string> = {
 
 /* ── Quick action chips ── */
 const ACTION_CHIPS = [
+  { label: '🌐 Browse Web', query: 'Browse https://example.com' },
+  { label: '⚡ Glober Dual-Mode', query: 'Glober dual mode status' },
+  { label: '🛡️ Auth0 Tenant SSO', query: 'Check Auth0 SSO tenant security' },
   { label: '🖥️ System Telemetry', query: 'Execute local tool: system-health' },
   { label: '🐙 Git Working Tree', query: 'Execute local tool: repo-status' },
   { label: '📜 Swarm Ledger Audit', query: 'Execute local tool: ledger-status' },
