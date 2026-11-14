@@ -111,6 +111,7 @@ const ACTION_CHIPS = [
   { label: '🌊 4096-D Hyper-Tensor', query: 'Execute local tool: matrix-tensor' },
   { label: '⚡ Run Smoke Tests', query: 'Execute local tool: test-smoke' },
   { label: '🛡️ Verify Treasury', query: 'Verify the sovereign Bitcoin treasury address' },
+  { label: '🏛️ Sync Notion Wealth', query: 'Sync Notion wealth engine 4-quadrant surface' },
   { label: '✝️ Wealth & Tithe', query: 'What is the status of our sovereign wealth ledger and 5-fold tithe allocation?' },
   { label: '🔍 REA Reverse Engineer', query: 'Execute REA autonomous inspection on morluto/rea with optimal flow work mood' },
   { label: '📰 AI News Compass', query: 'Compress global AI news and multi-world vector signals' },

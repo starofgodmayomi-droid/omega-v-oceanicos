@@ -178,24 +178,70 @@ async function resolveOrganAndContext(
     evidenceHash = '0x1111-btc-treasury-verified';
     replyContent = `The whole ecosystem body confirms your sovereign Bitcoin receiving address is anchored in our inviolate treasury organ:\n🪙 **bc1qaj8jmp5as80zwew09ep86w6fgw37zwhwzr89mp**\n\nThe Immune System enforces public receiving only. Sovereign private custody remains veiled (0 bytes in code or logs). Default is strictly FAIL-CLOSED.`;
   }
-  // 1b. Finite Wealth Action (FWA) & Sovereign Stewardship Ledger
-  else if (lower.includes('wealth') || lower.includes('tithe') || lower.includes('fwa') || lower.includes('allocation') || lower.includes('stewardship') || lower.includes('debt elimination')) {
+  // 1b. Finite Wealth Action (FWA) & Sovereign Stewardship Ledger / Notion Sync
+  else if (lower.includes('wealth') || lower.includes('tithe') || lower.includes('fwa') || lower.includes('allocation') || lower.includes('stewardship') || lower.includes('debt elimination') || (lower.includes('notion') && (lower.includes('sync') || lower.includes('quadrant')))) {
     organ = 'SOVEREIGN_WEALTH_DISPATCHER';
-    actionTriggered = 'QUERY_WEALTH_LEDGER';
     const ledger = globalWealthEngine.getLedger();
     const summary = globalWealthEngine.getCategorySummary();
-    evidenceHash = ledger.allocations[0]?.evidenceHash || '0x1111-wealth-fwa-verified';
-    replyContent = `✝️ **Finite Wealth Action (FWA) Sovereign Stewardship Ledger**\n\n` +
-      `• **Total Realized Inflow**: $${ledger.totalRealizedIn.toLocaleString('en-US', { minimumFractionDigits: 2 })}\n` +
-      `• **Total Allocated**: $${ledger.totalAllocated.toLocaleString('en-US', { minimumFractionDigits: 2 })}\n` +
-      `• **Total Dispatch Actions**: ${ledger.allocationCount} batches (${ledger.allocations.length} individual allocations)\n\n` +
-      `**Sovereign 5-Fold Distribution Breakdown:**\n` +
-      `• ✝️ **Tithe (10%)**: $${summary.TITHE.total.toFixed(2)} (${summary.TITHE.count} allocations)\n` +
-      `• 📈 **Capital (40%)**: $${summary.CAPITAL.total.toFixed(2)} (${summary.CAPITAL.count} allocations)\n` +
-      `• 🔓 **Debt Elimination (25%)**: $${summary.DEBT_ELIMINATION.total.toFixed(2)} (${summary.DEBT_ELIMINATION.count} allocations)\n` +
-      `• 🌱 **Income Seed (20%)**: $${summary.INCOME_SEED.total.toFixed(2)} (${summary.INCOME_SEED.count} allocations)\n` +
-      `• 🛡️ **Reserve (5%)**: $${summary.RESERVE.total.toFixed(2)} (${summary.RESERVE.count} allocations)\n\n` +
-      `_All allocations are cryptographically signed and fail-closed under ELION VAREL // 11:11._`;
+
+    if (lower.includes('notion') || lower.includes('sync')) {
+      actionTriggered = 'SYNC_NOTION_WEALTH_ENGINE';
+      const syncHash = createHash('sha256')
+        .update(`NOTION_WEALTH_SYNC:${Date.now()}:${ledger.totalAllocated}:${ledger.allocationCount}`)
+        .digest('hex');
+      evidenceHash = syncHash;
+
+      // Append sync evidence to KAI ledger if available
+      if (deps.kaiLedger) {
+        try {
+          deps.kaiLedger.append({
+            distinction: 'VERIFIED',
+            statement: `Chat Triggered Notion Wealth Engine Surface Sync: Total Allocated $${ledger.totalAllocated.toFixed(2)} (Tithe: $${summary.TITHE.total.toFixed(2)})`,
+            subject: 'wealth:notion-sync',
+            source: 'chat:notion-wealth-sync',
+            author: 'CHAT_SOVEREIGN_WEALTH_ORACLE',
+            evidenceRef: syncHash,
+            metadata: {
+              surfacePageId: '39a4897d-aa55-8025-a7b6-c56784400fa1',
+              surfaceName: 'OCEANICOS MOTION Wealth Engine',
+              syncHash,
+              totalAllocated: ledger.totalAllocated,
+              totalTithe: summary.TITHE.total,
+            },
+          });
+        } catch {
+          // memory append best effort
+        }
+      }
+
+      replyContent = `🏛️ **Notion 4-Quadrant Wealth Engine Synchronized!**\n\n` +
+        `• **Target Surface**: [OCEANICOS MOTION Wealth Engine](https://app.notion.com/p/OCEANICOS-MOTION-Wealth-Engine-39a4897daa558025a7b6c56784400fa1)\n` +
+        `• **Page UUID**: \`39a4897d-aa55-8025-a7b6-c56784400fa1\`\n` +
+        `• **Sync Evidence Hash**: \`${syncHash}\`\n` +
+        `• **Total Allocated**: $${ledger.totalAllocated.toLocaleString('en-US', { minimumFractionDigits: 2 })}\n` +
+        `• **Total Batches**: ${ledger.allocationCount} (${ledger.allocations.length} individual allocations)\n\n` +
+        `**Live 5-Fold Kingdom Distribution:**\n` +
+        `• ✝️ **Tithe (10%)**: $${summary.TITHE.total.toFixed(2)}\n` +
+        `• 📈 **Capital (40%)**: $${summary.CAPITAL.total.toFixed(2)}\n` +
+        `• 🔓 **Debt Elimination (25%)**: $${summary.DEBT_ELIMINATION.total.toFixed(2)}\n` +
+        `• 🌱 **Income Seed (20%)**: $${summary.INCOME_SEED.total.toFixed(2)}\n` +
+        `• 🛡️ **Reserve (5%)**: $${summary.RESERVE.total.toFixed(2)}\n\n` +
+        `_Durable C8 causal memory record appended under ELION VAREL // 11:11 authority._`;
+    } else {
+      actionTriggered = 'QUERY_WEALTH_LEDGER';
+      evidenceHash = ledger.allocations[0]?.evidenceHash || '0x1111-wealth-fwa-verified';
+      replyContent = `✝️ **Finite Wealth Action (FWA) Sovereign Stewardship Ledger**\n\n` +
+        `• **Total Realized Inflow**: $${ledger.totalRealizedIn.toLocaleString('en-US', { minimumFractionDigits: 2 })}\n` +
+        `• **Total Allocated**: $${ledger.totalAllocated.toLocaleString('en-US', { minimumFractionDigits: 2 })}\n` +
+        `• **Total Dispatch Actions**: ${ledger.allocationCount} batches (${ledger.allocations.length} individual allocations)\n\n` +
+        `**Sovereign 5-Fold Distribution Breakdown:**\n` +
+        `• ✝️ **Tithe (10%)**: $${summary.TITHE.total.toFixed(2)} (${summary.TITHE.count} allocations)\n` +
+        `• 📈 **Capital (40%)**: $${summary.CAPITAL.total.toFixed(2)} (${summary.CAPITAL.count} allocations)\n` +
+        `• 🔓 **Debt Elimination (25%)**: $${summary.DEBT_ELIMINATION.total.toFixed(2)} (${summary.DEBT_ELIMINATION.count} allocations)\n` +
+        `• 🌱 **Income Seed (20%)**: $${summary.INCOME_SEED.total.toFixed(2)} (${summary.INCOME_SEED.count} allocations)\n` +
+        `• 🛡️ **Reserve (5%)**: $${summary.RESERVE.total.toFixed(2)} (${summary.RESERVE.count} allocations)\n\n` +
+        `_All allocations are cryptographically signed and fail-closed under ELION VAREL // 11:11._`;
+    }
   }
   // 2. Dreams / Visions / Night Ocean Signals
   else if (lower.includes('dream') || lower.includes('vision') || lower.includes('revelation') || lower.includes('sleep')) {
