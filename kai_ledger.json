@@ -466,6 +466,40 @@
       "tests_passed": true,
       "evidence_hash": "5b967608ea1b5d861a770f2e89699266c490fc9e8a8a028d7935ef59ae32fd0d",
       "next_delta": "Confirm whether the verified follow-up should update the open PR 602 branch; PR 591 is already merged."
+    },
+    {
+      "timestamp": "2026-11-13T23:20:00Z",
+      "agent_id": "grok",
+      "branch": "agent/grok/flow-water-ci",
+      "status": "UNKNOWN",
+      "files_touched": [
+        ".github/workflows/verify.yml",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "next_delta": "Human-review CI on this branch. evidence_hash is the workflow diff only, because the ledger line cannot contain the hash of a diff that includes itself. pnpm build, pnpm lint, and the full pnpm test were not run. upgrade.execution stays NOT_EXECUTED. Do not merge from this node.",
+      "evidence_hash": "ee3589cf21ee718e4deb175c3a2d7f1893e8faab1561888aaa7bae3280cb8d08"
+    },
+    {
+      "timestamp": "2026-11-14T01:35:00Z",
+      "agent_id": "copilot",
+      "branch": "agent/copilot/self-hosted-oidc-identity",
+      "status": "VERIFIED",
+      "files_touched": [
+        "apps/api/src/connector-approval-store.ts",
+        "apps/api/src/connector-observation-route.ts",
+        "apps/api/src/index.ts",
+        "apps/api/src/oidc-identity.ts",
+        "apps/web/src/ConnectorPanel.tsx",
+        "apps/web/src/main.tsx",
+        "apps/web/src/App.tsx",
+        "docs/GOVERNANCE.md",
+        "tests/integration/web-api-proxy.integration.test.ts",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "8fd59d1a5d72751248297dd031176b4ab8a58ab18ee88190f9cd0e7153c6f1d0",
+      "next_delta": "Bind the live Auth0 subject, audience, and policy digest from a real non-production tenant before enabling connector execution; otherwise leave the connector in fail-closed mode."
     }
   ]
 }
