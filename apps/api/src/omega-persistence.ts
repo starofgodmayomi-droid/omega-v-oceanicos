@@ -175,7 +175,33 @@ export class OmegaDurableStore {
   }
 
   listWorkers(): readonly DurableWorker[] {
-    return this.db.prepare('SELECT * FROM omega_workers ORDER BY worker_id').all().map((row) => ({ workerId: row.worker_id, capabilities: JSON.parse(row.capabilities_json), status: row.status, lastHeartbeatAt: row.last_heartbeat_at, leaseCount: row.lease_count }));
+    const now = new Date().toISOString();
+    return this.db.prepare(`
+      SELECT
+        worker.worker_id,
+        worker.capabilities_json,
+        CASE
+          WHEN worker.status = 'OFFLINE' THEN 'OFFLINE'
+          WHEN EXISTS (
+            SELECT 1 FROM omega_leases lease
+            WHERE lease.worker_id = worker.worker_id AND lease.expires_at > ?
+          ) THEN 'BUSY'
+          ELSE 'IDLE'
+        END AS status,
+        worker.last_heartbeat_at,
+        (
+          SELECT COUNT(*) FROM omega_leases lease
+          WHERE lease.worker_id = worker.worker_id AND lease.expires_at > ?
+        ) AS lease_count
+      FROM omega_workers worker
+      ORDER BY worker.worker_id
+    `).all(now, now).map((row) => ({
+      workerId: row.worker_id,
+      capabilities: JSON.parse(row.capabilities_json),
+      status: row.status,
+      lastHeartbeatAt: row.last_heartbeat_at,
+      leaseCount: row.lease_count,
+    }));
   }
 
   getLeaseForCommand(commandId: string): WorkerLease | undefined {
@@ -202,7 +228,23 @@ export class OmegaDurableStore {
     const lease: WorkerLease = { leaseId: `lease-${randomUUID()}`, workerId, commandId, capability, leasedAt: now.toISOString(), expiresAt: expires.toISOString() };
     try {
       this.db.exec('BEGIN IMMEDIATE');
+      const expiredWorkers = this.db
+        .prepare('SELECT DISTINCT worker_id FROM omega_leases WHERE expires_at <= ?')
+        .all(now.toISOString());
       this.db.prepare('DELETE FROM omega_leases WHERE expires_at <= ?').run(now.toISOString());
+      const reconcileWorker = this.db.prepare(`
+        UPDATE omega_workers
+        SET lease_count = (SELECT COUNT(*) FROM omega_leases WHERE worker_id = ?),
+            status = CASE
+              WHEN status = 'OFFLINE' THEN status
+              WHEN EXISTS (SELECT 1 FROM omega_leases WHERE worker_id = ?) THEN 'BUSY'
+              ELSE 'IDLE'
+            END
+        WHERE worker_id = ?
+      `);
+      for (const expiredWorker of expiredWorkers) {
+        reconcileWorker.run(expiredWorker.worker_id, expiredWorker.worker_id, expiredWorker.worker_id);
+      }
       const existing = this.db.prepare('SELECT lease_id FROM omega_leases WHERE command_id = ?').get(commandId);
       if (existing) { this.db.exec('ROLLBACK'); return undefined; }
       this.db.prepare('INSERT INTO omega_leases(lease_id, worker_id, command_id, capability, leased_at, expires_at) VALUES (?, ?, ?, ?, ?, ?)').run(lease.leaseId, lease.workerId, lease.commandId, lease.capability, lease.leasedAt, lease.expiresAt);

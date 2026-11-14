@@ -1,4 +1,4 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 import {
   admitOmegaConnector,
   createGithubPublicRepositoryHandler,
@@ -8,6 +8,10 @@ import {
   type ConnectorObservationStore,
   type OmegaConnectorDeclaration,
 } from '@oceanicos/mini';
+import {
+  connectorDeclarationDigest,
+  ConnectorApprovalStore,
+} from './connector-approval-store.js';
 
 type JsonError = (reply: any, status: number, error: string, extra?: Record<string, unknown>) => unknown;
 
@@ -79,8 +83,22 @@ export interface ConnectorAdmissionEvidence {
   readonly approvalVerified: boolean;
 }
 
+function isConnectorAdmissionEvidence(value: unknown): value is ConnectorAdmissionEvidence {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  try {
+    const evidence = value as Record<string, unknown>;
+    return (
+      typeof evidence.authorityVerified === 'boolean' &&
+      typeof evidence.policySatisfied === 'boolean' &&
+      typeof evidence.approvalVerified === 'boolean'
+    );
+  } catch {
+    return false;
+  }
+}
+
 export type ConnectorAdmissionEvidenceResolver = (
-  request: unknown,
+  request: FastifyRequest,
   connector: OmegaConnectorDeclaration,
 ) => ConnectorAdmissionEvidence | Promise<ConnectorAdmissionEvidence>;
 
@@ -88,6 +106,10 @@ export interface ConnectorObservationRouteOptions {
   readonly githubFetch?: typeof fetch;
   /** Trusted server-side evidence source. Missing resolver means deny by default. */
   readonly resolveAdmissionEvidence?: ConnectorAdmissionEvidenceResolver;
+  readonly oidcIdentityEnabled?: boolean;
+  readonly approverSubject?: string;
+  readonly policyDigests?: ReadonlySet<string>;
+  readonly approvalStore?: ConnectorApprovalStore;
 }
 
 export function registerConnectorObservationRoute(
@@ -111,6 +133,77 @@ export function registerConnectorObservationRoute(
       limitation:
         'local connector journal is not deployment health, not live GitHub execution, not revenue, and not durable across a destroyed volume',
     };
+  });
+
+  fastify.post('/v1/omega/connectors/approvals', async (request, reply) => {
+    const identity = request.omegaIdentity;
+    if (!options.oidcIdentityEnabled || !identity) {
+      return jsonError(reply, 401, 'CONNECTOR_IDENTITY_REQUIRED');
+    }
+    if (identity.subject !== options.approverSubject) {
+      return jsonError(reply, 403, 'CONNECTOR_APPROVER_NOT_ALLOWED');
+    }
+    const body = parseObject(request.body);
+    if (!body || Object.keys(body).some((field) => field !== 'connector')) {
+      return jsonError(reply, 400, 'INVALID_CONNECTOR_APPROVAL');
+    }
+
+    let connector: OmegaConnectorDeclaration;
+    try {
+      connector = parseConnector(body.connector);
+    } catch (error) {
+      return jsonError(reply, 400, 'INVALID_CONNECTOR_DECLARATION', {
+        message: String((error as Error)?.message ?? error),
+      });
+    }
+
+    const connectorDigest = connectorDeclarationDigest(connector);
+    if (!options.policyDigests?.has(connectorDigest)) {
+      return jsonError(reply, 403, 'CONNECTOR_POLICY_DENIED');
+    }
+    if (!options.approvalStore) {
+      return jsonError(reply, 503, 'CONNECTOR_APPROVAL_STORE_UNAVAILABLE');
+    }
+
+    const now = Math.floor(Date.now() / 1000);
+    try {
+      const approval = options.approvalStore.create(identity, connectorDigest, now);
+      return reply.status(201).send({
+        success: true,
+        approval: {
+          ...approval,
+          use: 'single-use',
+          approver: { issuer: identity.issuer, subject: identity.subject },
+        },
+      });
+    } catch {
+      return jsonError(reply, 503, 'CONNECTOR_APPROVAL_STORE_UNAVAILABLE');
+    }
+  });
+
+  fastify.post('/v1/omega/connectors/approvals/:id/revoke', async (request, reply) => {
+    const identity = request.omegaIdentity;
+    if (!options.oidcIdentityEnabled || !identity) {
+      return jsonError(reply, 401, 'CONNECTOR_IDENTITY_REQUIRED');
+    }
+    if (identity.subject !== options.approverSubject) {
+      return jsonError(reply, 403, 'CONNECTOR_APPROVER_NOT_ALLOWED');
+    }
+    if (!options.approvalStore) {
+      return jsonError(reply, 503, 'CONNECTOR_APPROVAL_STORE_UNAVAILABLE');
+    }
+
+    try {
+      const revoked = options.approvalStore.revoke(
+        (request.params as { id: string }).id,
+        identity,
+        Math.floor(Date.now() / 1000),
+      );
+      if (!revoked) return jsonError(reply, 409, 'CONNECTOR_APPROVAL_NOT_REVOCABLE');
+      return { success: true, revoked: true };
+    } catch {
+      return jsonError(reply, 503, 'CONNECTOR_APPROVAL_STORE_UNAVAILABLE');
+    }
   });
 
   fastify.post('/v1/omega/connectors/observe', async (request, reply) => {
@@ -151,10 +244,71 @@ export function registerConnectorObservationRoute(
       return jsonError(reply, 400, 'CONNECTOR_EXECUTION_NOT_ACCEPTED');
     }
 
-    const admissionEvidence = options.resolveAdmissionEvidence
-      ? await options.resolveAdmissionEvidence(request, connector)
-      : { authorityVerified: false, policySatisfied: false, approvalVerified: false };
-    const admission = admitOmegaConnector({ connector, ...admissionEvidence });
+    const identity = request.omegaIdentity;
+    const connectorDigest = connectorDeclarationDigest(connector);
+    const approverAuthorized = Boolean(identity && identity.subject === options.approverSubject);
+    const policySatisfied = Boolean(options.policyDigests?.has(connectorDigest));
+    let resolverEvidence: ConnectorAdmissionEvidence | undefined;
+    if (options.resolveAdmissionEvidence && (!options.oidcIdentityEnabled || (approverAuthorized && policySatisfied))) {
+      let resolvedEvidence: unknown;
+      try {
+        resolvedEvidence = await options.resolveAdmissionEvidence(request, connector);
+      } catch {
+        return jsonError(reply, 503, 'CONNECTOR_ADMISSION_EVIDENCE_UNAVAILABLE');
+      }
+      if (!isConnectorAdmissionEvidence(resolvedEvidence)) {
+        return jsonError(reply, 503, 'CONNECTOR_ADMISSION_EVIDENCE_INVALID');
+      }
+      resolverEvidence = resolvedEvidence;
+    }
+
+    let approvalVerified = false;
+    let usedApprovalId: string | undefined;
+    const approvalId = body.approvalId;
+    if (
+      options.oidcIdentityEnabled &&
+      identity &&
+      approverAuthorized &&
+      policySatisfied &&
+      typeof approvalId === 'string' &&
+      liveAdapter === GITHUB_PUBLIC_REPOSITORY_ADAPTER &&
+      (!resolverEvidence || resolverEvidence.authorityVerified && resolverEvidence.policySatisfied && resolverEvidence.approvalVerified)
+    ) {
+      if (!options.approvalStore) return jsonError(reply, 503, 'CONNECTOR_APPROVAL_STORE_UNAVAILABLE');
+      try {
+        approvalVerified = options.approvalStore.consume(
+          approvalId,
+          identity,
+          connectorDigest,
+          Math.floor(Date.now() / 1000),
+        );
+        if (approvalVerified) usedApprovalId = approvalId;
+      } catch {
+        return jsonError(reply, 503, 'CONNECTOR_APPROVAL_STORE_UNAVAILABLE');
+      }
+    }
+
+    const admissionEvidence: ConnectorAdmissionEvidence = options.oidcIdentityEnabled
+      ? {
+          authorityVerified: approverAuthorized && (resolverEvidence?.authorityVerified ?? true),
+          policySatisfied: policySatisfied && (resolverEvidence?.policySatisfied ?? true),
+          approvalVerified: approvalVerified && (resolverEvidence?.approvalVerified ?? true),
+        }
+      : resolverEvidence ?? {
+          authorityVerified: false,
+          policySatisfied: false,
+          approvalVerified: false,
+        };
+    const kernelAdmission = admitOmegaConnector({ connector, ...admissionEvidence });
+    const missingRequiredApproval = options.oidcIdentityEnabled && !admissionEvidence.approvalVerified;
+    const admission = missingRequiredApproval
+      ? {
+          ...kernelAdmission,
+          decision: 'DENY' as const,
+          admitted: false,
+          issues: [...kernelAdmission.issues, 'connector requires a current single-use human approval'],
+        }
+      : kernelAdmission;
 
     let execution: ConnectorExecutionObservation | undefined;
     if (liveAdapter === GITHUB_PUBLIC_REPOSITORY_ADAPTER && admission.admitted) {
@@ -167,7 +321,8 @@ export function registerConnectorObservationRoute(
       }
     }
 
-    const observation = observeAdmittedConnector({ connector, admission, execution });
+    const observed = observeAdmittedConnector({ connector, admission, execution });
+    const observation = usedApprovalId ? { ...observed, approvalId: usedApprovalId } : observed;
 
     let journal;
     try {

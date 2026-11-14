@@ -1,8 +1,9 @@
-import { describe, expect, it } from '@jest/globals';
-import { render, screen, within } from '@testing-library/react';
+import { describe, expect, it, jest } from '@jest/globals';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '../../App';
-import { installFetch, json } from './harness';
+import { WorkerCoordinationPanel } from '../../WorkerCoordinationPanel';
+import { installFetch, json, type FakeResponse } from './harness';
 
 describe('current OceanicOS app shell', () => {
   it('renders the whole-ecosystem surface without promoting unqueried sources to verified', async () => {
@@ -65,5 +66,76 @@ describe('current OceanicOS app shell', () => {
         return options?.method?.toUpperCase() === 'POST';
       })
     ).toBe(false);
+  });
+
+  it('renders the worker API contract without claiming inaccessible lease details', async () => {
+    installFetch({
+      '/api/v1/omega/workers': () =>
+        json({
+          success: true,
+          activeWorkers: [{
+            workerId: 'worker-a',
+            capabilities: ['FILE_READ', 'VERIFY'],
+            status: 'BUSY',
+            lastHeartbeatAt: '2026-11-14T02:00:00.000Z',
+            leaseCount: 1,
+          }],
+        }),
+    });
+    render(<WorkerCoordinationPanel />);
+
+    const panel = await screen.findByRole('region', { name: 'Worker coordination observation' });
+    expect(await within(panel).findByText('OBSERVED')).toBeInTheDocument();
+    expect(within(panel).getByText('worker-a')).toBeInTheDocument();
+    expect(within(panel).getByText(/capabilities: FILE_READ, VERIFY/)).toBeInTheDocument();
+    expect(within(panel).getByText('Recorded lease count').parentElement).toHaveTextContent('1');
+    expect(within(panel).queryByText(/role: UNKNOWN|LEASED/)).not.toBeInTheDocument();
+  });
+
+  it('marks a malformed worker response DIVERGENT instead of observing an empty fleet', async () => {
+    installFetch({
+      '/api/v1/omega/workers': () => json({ success: true, activeWorkers: [{ workerId: 'worker-a' }] }),
+    });
+    render(<WorkerCoordinationPanel />);
+
+    const panel = await screen.findByRole('region', { name: 'Worker coordination observation' });
+    expect(await within(panel).findByText(/DIVERGENT · worker response does not match the expected schema/)).toBeInTheDocument();
+    expect(within(panel).queryByText('No worker instances observed.')).not.toBeInTheDocument();
+  });
+
+  it('does not overlap worker refreshes while an earlier observation is pending', async () => {
+    let poll: (() => void) | undefined;
+    let resolveFirst: ((response: FakeResponse) => void) | undefined;
+    let calls = 0;
+    const intervalSpy = jest.spyOn(window, 'setInterval').mockImplementation((callback, delay) => {
+      if (delay === 10000 && typeof callback === 'function') poll = callback as () => void;
+      return 1;
+    });
+    const fetchMock = installFetch({
+      '/api/v1/omega/workers': () => {
+        calls += 1;
+        if (calls === 1) return new Promise<FakeResponse>((resolve) => { resolveFirst = resolve; });
+        return json({ success: true, activeWorkers: [] });
+      },
+    });
+    const { unmount } = render(<WorkerCoordinationPanel />);
+
+    try {
+      await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+      expect(poll).toBeDefined();
+      act(() => poll?.());
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+
+      await act(async () => {
+        resolveFirst?.(json({ success: true, activeWorkers: [] }));
+      });
+      expect(await screen.findByText('No worker instances observed.')).toBeInTheDocument();
+
+      act(() => poll?.());
+      await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    } finally {
+      unmount();
+      intervalSpy.mockRestore();
+    }
   });
 });

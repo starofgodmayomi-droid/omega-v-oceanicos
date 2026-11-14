@@ -15,7 +15,7 @@ Activation reply: `🦑 ΩVØØS SWARM NODE ONLINE. 30013030. Sync complete. KAI
 ## Stack
 - **pnpm monorepo** (Node 22, pnpm 10). Workspace packages in `packages/*`, apps in `apps/api` and `apps/web`.
 - **API** (`apps/api`): Fastify, CommonJS, port 5000. Depends on built workspace packages (`@oceanicos/*`, `@omega-v/kernel`).
-- **Web** (`apps/web`): Vite 6 + React 18, port 3000. No workspace package dependencies; Vite transpiles TSX on the fly.
+- **Web** (`apps/web`): Vite 8 + React 19, port 3000. No workspace package dependencies; Vite transpiles TSX on the fly.
 - **No external DB required.** Persistence is file-based SQLite (`node:sqlite` fallback when `better-sqlite3` isn't installed for the api package). Qdrant/Ollama are referenced in the original `docker-compose.yml` but are NOT used by the API code.
 
 ## Running

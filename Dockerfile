@@ -26,8 +26,14 @@ COPY apps/ apps/
 COPY tsconfig.json ./
 COPY bin/ bin/
 
-ARG VITE_API_URL=http://localhost:5000
+ARG VITE_API_URL=
+ARG VITE_AUTH0_DOMAIN=
+ARG VITE_AUTH0_CLIENT_ID=
+ARG VITE_AUTH0_AUDIENCE=
 ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_AUTH0_DOMAIN=$VITE_AUTH0_DOMAIN
+ENV VITE_AUTH0_CLIENT_ID=$VITE_AUTH0_CLIENT_ID
+ENV VITE_AUTH0_AUDIENCE=$VITE_AUTH0_AUDIENCE
 
 RUN pnpm run build
 
@@ -41,9 +47,11 @@ COPY --from=builder /app/package.json /app/pnpm-workspace.yaml /app/pnpm-lock.ya
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/packages ./packages
 COPY --from=builder /app/apps/api ./apps/api
+COPY --from=builder /app/apps/web/dist ./apps/web/dist
 COPY --from=builder /app/bin ./bin
 
 ENV NODE_ENV=production
+ENV OMEGA_WEB_DIST=/app/apps/web/dist
 EXPOSE 5000
 CMD ["node", "apps/api/dist/index.js"]
 

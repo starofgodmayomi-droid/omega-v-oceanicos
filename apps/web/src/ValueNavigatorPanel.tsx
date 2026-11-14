@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { apiFetch } from './api-client';
 
-const API_BASE_URL = (import.meta.env?.VITE_API_URL || '/api').replace(/\/$/, '');
+const API_BASE_URL = (import.meta.env?.VITE_API_URL ?? '/api').replace(/\/$/, '');
 
 type Status = 'VERIFIED' | 'DIVERGENT' | 'UNKNOWN' | 'NOT_EXECUTED';
 type ClaimKind = 'CURRENT_HYPOTHESIS' | 'HISTORICAL_DECLARATION';
@@ -37,7 +38,7 @@ const STATUS_COLOR: Record<Status, string> = {
 };
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, init);
+  const response = await apiFetch(`${API_BASE_URL}${path}`, init);
   const text = await response.text();
   let payload: any = null;
   try { payload = text ? JSON.parse(text) : null; } catch { throw new Error(`API returned invalid JSON (${response.status})`); }

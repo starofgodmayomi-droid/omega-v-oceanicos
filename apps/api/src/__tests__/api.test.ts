@@ -1869,8 +1869,9 @@ describe('static web client, when a build is present', () => {
 
   beforeAll(async () => {
     distDir = mkdtempSync(join(tmpdir(), 'omega-api-web-dist-'));
+    mkdirSync(join(distDir, 'assets'), { recursive: true });
     writeFileSync(join(distDir, 'index.html'), '<!doctype html><title>Omega web</title>');
-    writeFileSync(join(distDir, 'app.js'), 'console.log("omega web bundle");');
+    writeFileSync(join(distDir, 'assets', 'app.js'), 'console.log("omega web bundle");');
 
     process.env.OMEGA_WEB_DIST = distDir;
 
@@ -1892,10 +1893,11 @@ describe('static web client, when a build is present', () => {
     jest.resetModules();
   });
 
-  it('serves a built static asset directly from the bundle', async () => {
-    const response = await fetch(`${baseUrl}/app.js`);
+  it('serves a built JavaScript asset with a browser-executable media type', async () => {
+    const response = await fetch(`${baseUrl}/assets/app.js`);
 
     expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toBe('text/javascript; charset=utf-8');
     expect(await response.text()).toBe('console.log("omega web bundle");');
   });
 

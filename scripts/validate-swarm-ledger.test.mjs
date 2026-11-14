@@ -65,6 +65,22 @@ test('swarm ledger validation rejects uncommitted removal of historical receipts
   }
 });
 
+test('swarm ledger validation rejects modification of a historical receipt', () => {
+  const root = createGitFixture();
+  try {
+    const ledgerPath = path.join(root, 'kai_ledger.json');
+    const ledger = JSON.parse(readFileSync(ledgerPath, 'utf8'));
+    ledger.entries[3].next_delta = 'Modified historical receipt.';
+    writeFileSync(ledgerPath, `${JSON.stringify(ledger, null, 2)}\n`);
+
+    const result = runValidator(root, 'HEAD');
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /append-only baseline HEAD entry 3 was removed or modified/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('swarm ledger validation accepts new receipts appended to the baseline', () => {
   const root = createGitFixture();
   try {
@@ -84,6 +100,35 @@ test('swarm ledger validation accepts new receipts appended to the baseline', ()
     writeFileSync(ledgerPath, `${JSON.stringify(ledger, null, 2)}\n`);
     execFileSync('git', ['add', 'kai_ledger.json'], { cwd: root });
     execFileSync('git', ['commit', '-qm', 'append new receipt'], { cwd: root });
+
+    const result = runValidator(root, 'origin/main');
+    assert.equal(result.status, 0, result.stderr);
+    assert.ok(result.stdout.includes(`validated ${ledger.entries.length} swarm ledger receipt`));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('swarm ledger validation accepts chronologically interleaved receipts from concurrent branches', () => {
+  const root = createGitFixture();
+  try {
+    const ledgerPath = path.join(root, 'kai_ledger.json');
+    const ledger = JSON.parse(readFileSync(ledgerPath, 'utf8'));
+    const lastIndex = ledger.entries.length - 1;
+    const previousTimestamp = Date.parse(ledger.entries[lastIndex - 1].timestamp);
+    const latestTimestamp = Date.parse(ledger.entries[lastIndex].timestamp);
+    const interleavedTimestamp = new Date(previousTimestamp + Math.floor((latestTimestamp - previousTimestamp) / 2));
+    ledger.entries.splice(lastIndex, 0, {
+      agent_id: 'copilot-test',
+      branch: 'agent/copilot-test/concurrent-ledger',
+      status: 'UNKNOWN',
+      files_touched: ['scripts/validate-swarm-ledger.test.mjs'],
+      tests_passed: null,
+      evidence_hash: null,
+      next_delta: 'No follow-up; this receipt is an isolated test fixture.',
+      timestamp: interleavedTimestamp.toISOString(),
+    });
+    writeFileSync(ledgerPath, `${JSON.stringify(ledger, null, 2)}\n`);
 
     const result = runValidator(root, 'origin/main');
     assert.equal(result.status, 0, result.stderr);

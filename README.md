@@ -234,6 +234,10 @@ The root development command builds the workspace and starts:
 The local dashboard is an inspection and verification surface. It is not proof of
 production availability, identity proofing, external custody, or deployment health.
 
+For the local production-like Compose profile, `docker compose up --build` serves
+the built dashboard and API from one origin at `http://localhost:3000`; Vite on
+port 3000 remains available for development hot reload through `pnpm dev`.
+
 ### Run the repository verification gate
 
 ```bash

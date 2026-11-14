@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { apiFetch } from './api-client';
 
 /**
  * Ω∞v Single Body — visual 4×4×4×4 compression / expansion.
@@ -17,7 +18,7 @@ import React, { useMemo, useState } from 'react';
  * this local representation, not about deployment or real-world outcome.
  */
 
-const API_BASE_URL = (import.meta.env?.VITE_API_URL || '/api').replace(/\/$/, '');
+const API_BASE_URL = (import.meta.env?.VITE_API_URL ?? '/api').replace(/\/$/, '');
 
 const AXES = {
   layer: ['reality', 'system', 'evidence', 'authority'],
@@ -78,7 +79,7 @@ export function SingleBodyPanel({ body }: Props) {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/v1/ecosystem/body/expand`, {
+      const response = await apiFetch(`${API_BASE_URL}/v1/ecosystem/body/expand`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ compression }),

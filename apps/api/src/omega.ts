@@ -220,7 +220,7 @@ function commandResult(command: StoredCommand, nextAction: string): OmegaCommand
 
 type OmegaAuthorizationContext = {
   mode: 'local' | 'required';
-  principal: 'local-development' | 'read-bearer' | 'admin-bearer';
+  principal: 'local-development' | 'read-bearer' | 'admin-bearer' | 'oidc-user' | 'oidc-approver';
 };
 
 const omegaAuthorizationContext = (request: FastifyRequest): OmegaAuthorizationContext | null => {
@@ -229,7 +229,7 @@ const omegaAuthorizationContext = (request: FastifyRequest): OmegaAuthorizationC
   if (context.mode === 'local') {
     return context.principal === 'local-development' ? context : null;
   }
-  if (context.mode === 'required' && ['read-bearer', 'admin-bearer'].includes(context.principal)) {
+  if (context.mode === 'required' && ['read-bearer', 'admin-bearer', 'oidc-user', 'oidc-approver'].includes(context.principal)) {
     return context;
   }
   return null;
@@ -598,7 +598,7 @@ export function registerOmegaRoutes(
     const body = bodyOf(request);
     const auth = omegaAuthorizationContext(request);
     if (!auth) return reply.status(403).send({ success: false, error: 'OMEGA_AUTHORIZATION_CONTEXT_UNAVAILABLE' });
-    if (auth.principal !== 'admin-bearer' && auth.principal !== 'local-development') {
+    if (!['admin-bearer', 'oidc-approver', 'local-development'].includes(auth.principal)) {
       return reply.status(403).send({ success: false, error: 'OMEGA_APPROVAL_NOT_AUTHORIZED' });
     }
     const guardedOperator = (request as typeof request & { omegaOperatorId?: string }).omegaOperatorId;
