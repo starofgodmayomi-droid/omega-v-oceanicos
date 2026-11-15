@@ -1,5 +1,5 @@
 {
-  "protocol": "ΩVØØS-SWARM/1",
+  "protocol": "\u03a9V\u00d8\u00d8S-SWARM/1",
   "checksum": "30013030",
   "doctrine": "ATTEST, DON'T ASSERT. UNKNOWN PRESERVED.",
   "append_only": true,
@@ -9,7 +9,7 @@
     "UNKNOWN",
     "NOT_EXECUTED"
   ],
-  "rule": "Append only. Never rewrite or delete an entry. On conflict keep both receipts, ordered by timestamp. See SWARM_PROTOCOL.md §VI.",
+  "rule": "Append only. Never rewrite or delete an entry. On conflict keep both receipts, ordered by timestamp. See SWARM_PROTOCOL.md \u00a7VI.",
   "entries": [
     {
       "timestamp": "2026-11-08T16:03:00Z",
@@ -25,7 +25,7 @@
       ],
       "tests_passed": null,
       "evidence_hash": null,
-      "next_delta": "Claim one domain from SWARM_PROTOCOL.md §III, branch as agent/<platform>/<task>, and append your own receipt."
+      "next_delta": "Claim one domain from SWARM_PROTOCOL.md \u00a7III, branch as agent/<platform>/<task>, and append your own receipt."
     },
     {
       "timestamp": "2026-11-11T08:18:22Z",
@@ -36,7 +36,7 @@
         "apps/web/src/InvisibleComputer.tsx",
         "apps/web/src/InvisibleComputer.css",
         "apps/web/src/__tests__/dom/InvisibleComputer.test.tsx",
-        "ΩVØØS/ASSIGNMENTS/002-beta-invisible-computer-workspace.md",
+        "\u03a9V\u00d8\u00d8S/ASSIGNMENTS/002-beta-invisible-computer-workspace.md",
         "kai_ledger.json"
       ],
       "tests_passed": true,
@@ -294,6 +294,20 @@
       "tests_passed": true,
       "next_delta": "Human-review CI on this branch. evidence_hash is the workflow diff only, because the ledger line cannot contain the hash of a diff that includes itself. pnpm build, pnpm lint, and the full pnpm test were not run. upgrade.execution stays NOT_EXECUTED. Do not merge from this node.",
       "evidence_hash": "ee3589cf21ee718e4deb175c3a2d7f1893e8faab1561888aaa7bae3280cb8d08"
+    },
+    {
+      "timestamp": "2026-11-15T21:39:33Z",
+      "agent_id": "grok",
+      "branch": "agent/grok/boundary-suites",
+      "status": "VERIFIED",
+      "files_touched": [
+        "package.json",
+        "tests/integration/full-stack-water.integration.test.ts",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "afb3ad5abcc52f2de631645dbb4b889db6da2b6f9689434a55d94df8f8faa99f",
+      "next_delta": "Human-review the boundary-suite wiring. The three suites passed locally after the mini build. Full pnpm test, lint, and deployment were not run. upgrade.execution stays NOT_EXECUTED."
     }
   ]
 }

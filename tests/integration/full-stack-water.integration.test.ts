@@ -95,3 +95,23 @@ test('a missing skill halts the current and selects no upgrade', () => {
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+const BOUNDARY_SUITES = [
+  './tests/integration/omega_change_boundary.test.ts',
+  './tests/integration/omega_pipeline.e2e.test.ts',
+  './tests/integration/omega_transition_boundary.test.ts',
+];
+
+test('release scripts run the change, pipeline, and transition boundaries', () => {
+  const manifest = JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8')) as {
+    scripts: Record<string, string>;
+  };
+  for (const name of ['test', 'test:e2e'] as const) {
+    for (const file of BOUNDARY_SUITES) {
+      assert.ok(manifest.scripts[name].includes(file), `${name} omits ${file}`);
+    }
+  }
+  assert.match(manifest.scripts['test:fast'], /full-stack-water\.integration\.test\.ts/);
+  assert.match(manifest.scripts['test:fast'], /--test-concurrency=1/);
+  assert.doesNotMatch(manifest.scripts['test:fast'], /omega_change_boundary/);
+});
