@@ -21,6 +21,7 @@ import { LifecycleFlow, deriveStageStates, type LifecycleStage } from './Lifecyc
 import { GlobeViewport } from './GlobeViewport';
 import { bindGlobeEvidence } from './globe-shell';
 import { omegaApprovalRequest } from './omega-approval-request';
+import { SceneSimulationPanel } from './SceneSimulationPanel';
 import {
   theme,
   statusColor,
@@ -999,6 +1000,7 @@ export function App() {
           aria-hidden={!backgroundWorkspaceOpen}
           style={{ display: backgroundWorkspaceOpen ? 'block' : 'none' }}
         >
+          <SceneSimulationPanel />
           <OreadConsole />
           <MoodCodexPanel />
           <DivergenceAlertsPanel />

@@ -66,4 +66,41 @@ describe('current OceanicOS app shell', () => {
       })
     ).toBe(false);
   });
+
+  it('runs the bounded scene locally and keeps the cosmological boundary visible', async () => {
+    const user = userEvent.setup();
+    installFetch({
+      '/api/scene/simulate': () => ({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          data: {
+            id: 'scene-test',
+            seed: 'test-scene',
+            equation: 'DARKNESS→RETURN',
+            states: ['darkness', 'return'],
+            terminalState: 'return',
+            trace: [
+              { sequence: 0, state: 'darkness', from: null, to: 'darkness', transition: 'origin', status: 'observed', evidence: 'scene:darkness:one' },
+              { sequence: 1, state: 'return', from: 'darkness', to: 'return', transition: 'advance', status: 'verified', evidence: 'scene:return:two' },
+            ],
+            branches: [{ id: 'branch-1', perspective: 'point-of-view-1', states: ['darkness', 'return'], terminalState: 'return' }],
+            branchCount: 1,
+            continuation: 'bounded-sample-of-infinite-potential',
+            provenance: { source: 'local-simulation', ruleVersion: 'scene-equation.v2', deterministic: true, verified: false, note: 'Bounded symbolic perspectives only; this is not a claim about physical multiverses, cosmology, or consciousness.' },
+          },
+        }),
+        text: async () => '',
+        headers: { get: () => 'application/json' },
+      }),
+    });
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /open background full-stack/i }));
+    await user.click(await screen.findByRole('button', { name: /run bounded scene/i }));
+
+    expect(await screen.findByLabelText('terminal state return')).toBeInTheDocument();
+    expect(screen.getByText(/not a claim about physical multiverses/i)).toBeInTheDocument();
+    expect(screen.getByRole('list', { name: 'Scene trace' })).toBeInTheDocument();
+  });
 });
