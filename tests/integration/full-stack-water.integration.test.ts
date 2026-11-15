@@ -14,7 +14,7 @@ import {
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '../..');
 
 test('the full-stack water current is one bounded ordered flow', () => {
-  assert.equal(FULL_STACK_WATER.length, 8);
+  assert.equal(FULL_STACK_WATER.length, 18);
   assert.ok(REPO_OUTWARD_RING.length <= MAX_EQUATION_SURFACES);
   const ids = FULL_STACK_WATER.map((surface) => surface.id);
   assert.equal(new Set(ids).size, ids.length);
@@ -29,6 +29,16 @@ test('the full-stack water current is one bounded ordered flow', () => {
       'water-lucid',
       'water-global-good',
       'water-computer',
+      'water-reality',
+      'water-framework',
+      'water-continuum-return',
+      'water-os',
+      'water-navigator',
+      'water-kai',
+      'water-voice',
+      'water-pidgin',
+      'water-kaixelion',
+      'water-kaixelion-x',
     ],
   );
   for (const surface of FULL_STACK_WATER) {
@@ -88,7 +98,7 @@ test('a missing skill halts the current and selects no upgrade', () => {
     const report = compressFullStackWater(root);
     assert.equal(report.status, 'HALTED');
     assert.equal(report.halt?.verdict, 'UNKNOWN');
-    assert.equal(report.halt?.id, 'water-computer');
+    assert.equal(report.halt?.id, 'water-kaixelion-x');
     assert.equal(report.upgrade.execution, 'NOT_EXECUTED');
     assert.equal(report.upgrade.selected, null);
   } finally {

@@ -315,6 +315,23 @@
       "tests_passed": true,
       "evidence_hash": "33c63fe5cf304b30ca99a1cc846d35a4a8d63f06795b4a20848cbd83d869a3b6",
       "next_delta": "Human-review CI on current main. The outward ring remembers the water runtime (26/26, NOT_EXECUTED) and a command receipt stays UNKNOWN. Boundary suites are now named by the release scripts; their dist execution was not run in this workspace. Do not treat this receipt as a merge."
+    },
+    {
+      "timestamp": "2026-11-15T21:51:30Z",
+      "agent_id": "grok",
+      "branch": "agent/grok/water-shelf-eighteen",
+      "status": "UNKNOWN",
+      "files_touched": [
+        "packages/mini/src/ecosystem-body-equation.ts",
+        "tests/integration/full-stack-water.integration.test.ts",
+        "docs/ECOSYSTEM-BODY-EQUATION.md",
+        "AGENTS.md",
+        ".github/workflows/verify.yml",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "a0cec0aa42c883680e9343007f7834044c8860edd3ebefb78daf8d5ae5193dac",
+      "next_delta": "Human-review this shelf fold. evidence_hash is the pre-ledger diff. Observed here: ring 36/36 COMPRESSED and VERIFIED, water 18 skills COMPRESSED, upgrade.execution NOT_EXECUTED, boundary suites 12 passed after mini dist build. Full pnpm build, lint, and pnpm test were not run. Do not merge from this node."
     }
   ]
 }

@@ -102,7 +102,7 @@ jobs:
           if (repo.upgrade?.selected?.evidenceHash !== repo.digest) failures.push('repo evidenceHash does not match digest');
           if (water.status !== 'COMPRESSED') failures.push(`water.status=${water.status}`);
           if (water.current !== 'FULL_STACK_WATER') failures.push(`water.current=${water.current}`);
-          if (water.skills !== 8) failures.push(`water.skills=${water.skills}`);
+          if (water.skills !== 18) failures.push(`water.skills=${water.skills}`);
           if (water.halt !== null) failures.push('water halt was not null');
           if (water.upgrade?.execution !== 'NOT_EXECUTED') failures.push(`water.upgrade.execution=${water.upgrade?.execution}`);
           if (water.upgrade?.selected?.evidenceHash !== water.digest) failures.push('water evidenceHash does not match digest');
