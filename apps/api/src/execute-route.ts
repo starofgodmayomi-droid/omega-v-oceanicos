@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { AttestationService } from '@oceanicos/attestation';
+import { runKaixelionOmega } from '@oceanicos/mini';
 import type { Attestation } from '@oceanicos/types';
 import {
   authoritySatisfies,
@@ -7,14 +8,11 @@ import {
   deriveAuthorityLevel,
   executeElion,
   requiredAuthorityFor,
-  expectedOutcomeFor,
   reconcileEvidence,
   scanIntent,
-  sha256Hex,
-  verifyOmega,
   type AuthorityLevel,
 } from './invisible-computer.js';
-import type { KaiMemoryStore, KaiMemoryRecord, OmegaContract } from './kai-memory.js';
+import type { KaiMemoryStore } from './kai-memory.js';
 
 type JsonError = (reply: any, status: number, error: string, extra?: Record<string, unknown>) => unknown;
 
@@ -83,9 +81,12 @@ function parseObject(body: unknown): Record<string, unknown> | null {
 /**
  * POST /api/execute — the Invisible Online Computer loop.
  *
- *   KAI observe → ELION execute → OMEGA verify → KAI remember → return
+ *   KAI observe → authority → runKaixelionOmega → ELION compose → return
  *
- * A blocked intent (DIVERGENT) or an unverifiable output (UNKNOWN) is a
+ * A local template is not an observation of reality. This route passes an
+ * empty observation and source `caller` into the cycle, so the status stays
+ * UNKNOWN, KaiMemory is not written, and no attestation is eligible.
+ * A blocked intent (DIVERGENT) or insufficient authority (NOT_EXECUTED) is a
  * successful HTTP response carrying a verdict, not an HTTP failure.
  */
 export function registerExecuteRoute(
@@ -181,87 +182,98 @@ export function registerExecuteRoute(
         upgrade: compressTowardUpgrade({ cycleStatus: 'NOT_EXECUTED', evidenceHash: null }),
       });
     }
-    recordStep('KAI', 'OBSERVE', 'VERIFIED', 'No known fraud pattern matched; authority is sufficient.');
+    recordStep('KAI', 'OBSERVE', 'OBSERVED', 'No known fraud pattern matched; authority is sufficient. Observation is not verification.');
 
-    // The OmegaIR contract is written before execution so the output is
-    // verified against a declared expectation, not against itself.
-    const contract: OmegaContract = store.createContract({
+    const cycle = await runKaixelionOmega({
       intent,
-      authorityLevel,
-      expectedOutcome: expectedOutcomeFor(authorityLevel),
+      authority: authorityLevel,
+      observed: '',
+      source: 'caller',
+      witness: null,
+      memory: [],
     });
+    if (cycle.status === 'DIVERGENT' || cycle.status === 'NOT_EXECUTED') {
+      for (const step of cycle.steps) {
+        recordStep(step.actor, step.phase, step.status, step.detail);
+      }
+      const haltedAttestation = attestExecution({
+        status: cycle.status,
+        evidenceHash: null,
+        contractId: null,
+        checks: [],
+        signingKey: attestationSigningKey,
+      });
+      return reply.status(200).send({
+        success: true,
+        status: cycle.status,
+        intent,
+        response: null,
+        evidence_hash: null,
+        reason: cycle.reason,
+        matched_patterns: cycle.matchedLabels,
+        steps,
+        contract: null,
+        memory: null,
+        engine: null,
+        model_error: null,
+        evaluated_at: new Date().toISOString(),
+        attestation: haltedAttestation.attestation,
+        attestation_status: haltedAttestation.status,
+        cycle: {
+          equation: cycle.equation,
+          status: cycle.status,
+          ledgerMutation: cycle.ledgerMutation,
+          remembered: false,
+          independentObservation: false,
+        },
+        upgrade: compressTowardUpgrade({ cycleStatus: cycle.status, evidenceHash: null }),
+      });
+    }
 
-    // Step 2 — ELION execute: bounded answer, model or local composer.
     const elion = await executeElion(intent, authorityLevel, body.useExternalModel === true);
     recordStep(
       'ELION',
       'EXECUTE',
-      elion.error ? 'UNKNOWN' : 'VERIFIED',
+      elion.error ? 'UNKNOWN' : 'COMPOSED',
       elion.error
         ? `Answer unavailable from ${elion.engine}: ${elion.error}. UNKNOWN preserved.`
-        : `Bounded answer composed via ${elion.engine}.`
+        : `Sentence composed via ${elion.engine}. Composition is not verification.`
     );
-
-    // Step 3 — OMEGA verify: hash the output, compare it to the contract.
-    const evidenceHash = sha256Hex(elion.output);
-    const omega = verifyOmega({ output: elion.output, evidenceHash, authorityLevel });
-    recordStep(
-      'OMEGA',
-      'VERIFY',
-      omega.status,
-      omega.status === 'VERIFIED'
-        ? 'Output matches the contract and the SHA-256 digest recomputes.'
-        : omega.reason ?? 'Output could not be verified.'
-    );
-
-    // Step 4 — KAI remember: only a verified outcome is written to memory.
-    let memory: KaiMemoryRecord | null = null;
-    if (omega.status === 'VERIFIED') {
-      memory = store.remember({
-        intent,
-        evidenceHash,
-        status: omega.status,
-        contractId: contract.id,
-      });
-      recordStep('KAI', 'REMEMBER', 'VERIFIED', `Evidence stored as ${memory.id}.`);
-    } else {
-      recordStep(
-        'KAI',
-        'REMEMBER',
-        'NOT_EXECUTED',
-        'Nothing was remembered because verification did not pass.'
-      );
-    }
+    recordStep('OMEGA', 'VERIFY', cycle.status, cycle.reason);
+    recordStep('KAI', 'REMEMBER', cycle.status, 'Nothing was written to KaiMemory. The cycle tuple is not a ledger write.');
 
     const executionAttestation = attestExecution({
-      status: omega.status,
-      evidenceHash: elion.output ? evidenceHash : null,
-      contractId: contract.id,
-      checks: omega.checks,
+      status: cycle.status,
+      evidenceHash: null,
+      contractId: null,
+      checks: [],
       signingKey: attestationSigningKey,
     });
 
     return reply.status(200).send({
       success: true,
-      status: omega.status,
+      status: cycle.status,
       intent,
       response: elion.output || null,
-      evidence_hash: elion.output ? evidenceHash : null,
-      reason: omega.reason,
+      evidence_hash: null,
+      reason: cycle.reason,
       matched_patterns: [],
-      checks: omega.checks,
       steps,
-      contract,
-      memory,
+      contract: null,
+      memory: null,
       engine: elion.engine,
       model_error: elion.error,
       evaluated_at: new Date().toISOString(),
       attestation: executionAttestation.attestation,
       attestation_status: executionAttestation.status,
-      upgrade: compressTowardUpgrade({
-        cycleStatus: omega.status,
-        evidenceHash: elion.output ? evidenceHash : null,
-      }),
+      cycle: {
+        equation: cycle.equation,
+        status: cycle.status,
+        ledgerMutation: cycle.ledgerMutation,
+        remembered: false,
+        independentObservation: cycle.independentObservation,
+      },
+      upgrade: compressTowardUpgrade({ cycleStatus: cycle.status, evidenceHash: null }),
     });
   };
 
