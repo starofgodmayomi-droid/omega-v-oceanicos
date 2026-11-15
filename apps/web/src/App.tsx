@@ -19,6 +19,7 @@ import { WaterFlowPanel } from './WaterFlowPanel';
 import { projectCommandWaterFlow } from './water-flow-panel-model';
 import { LifecycleFlow, deriveStageStates, type LifecycleStage } from './LifecycleFlow';
 import { GlobeViewport } from './GlobeViewport';
+import { OvoosPanel } from './OvoosPanel';
 import { bindGlobeEvidence } from './globe-shell';
 import { omegaApprovalRequest } from './omega-approval-request';
 import {
@@ -606,6 +607,7 @@ export function App() {
               <small>{ecosystemBody.expansion?.moduleInvariant} · read-only · bounded · append-only</small>
             </section>
           )}
+          <OvoosPanel />
           <EcosystemPanel />
         </>
       ),
