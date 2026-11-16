@@ -196,6 +196,37 @@ export {
 export type { FixpointInput, FixpointReason, FixpointStatus, FixpointStep } from './ecosystem-fixpoint.js';
 
 export {
+  FLOW_MATRIX_ID,
+  FLOW_MATRIX_CELLS,
+  FLOW_READ_ACTUAL,
+  FLOW_COMPOSE_ACTUAL,
+  FLOW_WORKS,
+  FLOW_AUTHORITIES,
+  FLOW_EVIDENCE,
+  FLOW_CLAIMS,
+  MAX_FLOW_INTENT,
+  MAX_FLOW_EXPECTED,
+  MAX_FLOW_MEMORY,
+  classifyFlowCell,
+  compressFlowMatrix,
+  enumerateFlowCells,
+  hashFlowText,
+  stepFlow,
+} from './flow-matrix.js';
+export type {
+  FlowAuthority,
+  FlowCell,
+  FlowClaim,
+  FlowEvidence,
+  FlowInput,
+  FlowPreStatus,
+  FlowReason,
+  FlowStatus,
+  FlowStep,
+  FlowWork,
+} from './flow-matrix.js';
+
+export {
   ECOSYSTEM_BODY_EQUATION_ID,
   ECOSYSTEM_BODY_EQUATION_SOURCE,
   ECOSYSTEM_BODY_REALITY,

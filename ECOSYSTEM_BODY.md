@@ -61,6 +61,20 @@ Halt cases are decided before any hash is appended, including when a caller also
 
 The pure step is `evaluateEcosystemFixpoint` in [packages/mini/src/ecosystem-fixpoint.ts](packages/mini/src/ecosystem-fixpoint.ts). `GET /v1/ecosystem/body` includes `fixpoint` for that local read. `ledgerMutation` is false: the response is not a ledger write, not deployment, and not production health.
 
+
+### FLOW MATRIX
+
+`work × authority × evidence × claim` is 24 cells. Each cell has one pre-status. None of them is `VERIFIED` before a witness.
+
+1. `claim = scam` → `DIVERGENT` before any work
+2. `authority = below` → `NOT_EXECUTED`
+3. `work = external` → `NOT_EXECUTED`. No engine, market, spend, or deployment is called
+4. `evidence = empty` → `UNKNOWN`
+5. The two open cells are a local read and a local composition. A caller who copies the expected sentence stays `UNKNOWN`
+6. Memory receives `Hash(x)` only when `witness` is the SHA-256 of the actual sentence this function produced
+
+The pure step is `stepFlow` in [packages/mini/src/flow-matrix.ts](packages/mini/src/flow-matrix.ts). `ledgerMutation` is false. `upgrade.execution` stays `NOT_EXECUTED`.
+
 ### OUTWARD EQUATION
 
 The same halt order folds a declared ring in [packages/mini/src/ecosystem-body-equation.ts](packages/mini/src/ecosystem-body-equation.ts). A verified surface is remembered. Scam, empty evidence, missing authority, or `Expected ≢ Observed` halts the fold and keeps only the verified prefix.
