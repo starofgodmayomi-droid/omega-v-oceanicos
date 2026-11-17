@@ -100,6 +100,9 @@ This documentation set is intentionally explicit about what is implemented, what
   handoff, and what must be observed again.
 - **[Oceanicos Total Continuum](../skills/oceanicos-total-continuum/SKILL.md)**
   — one finite pass inside this public repository, then only an observed handoff.
+- **[Ω∞v entity full stack](../skills/omega-entity-full-stack/SKILL.md)**
+  — evidence-bound intent, continuity, repository work, and one finite next Δ.
+  The file is the contract. It is not evidence that a session loaded it.
 - **[Whole ecosystem reality compression](./upgrades/WHOLE_ECOSYSTEM_REALITY_COMPRESSION_2026-10-04.md)**
   — source-labeled translation of the supplied Ω∞v architecture into repository
   boundaries and explicit unknowns.
