@@ -685,6 +685,53 @@ export function VibeOS({ onOpenDashboard }: { onOpenDashboard?: () => void }) {
     setVerifying(false);
   };
 
+  const runMeshConvergenceCheck = async () => {
+    if (verifying) return;
+    beginQuickAction('Simulate Multi-Region Mesh');
+    let result: ChatMessage;
+    try {
+      const response = await fetch(apiUrl('/v1/mesh/simulate'), { headers: { accept: 'application/json' } });
+      let payload: any = null;
+      try {
+        payload = await response.json();
+      } catch {
+        payload = null;
+      }
+      if (!response.ok || !payload?.success || !payload?.convergence) {
+        result = {
+          role: 'ai',
+          content: '[UNKNOWN]',
+          verified: false,
+          status: 'UNKNOWN',
+          detail: `GET /v1/mesh/simulate · HTTP ${response.status}`,
+        };
+      } else {
+        const conv = payload.convergence;
+        const votes = Array.isArray(conv.votes)
+          ? conv.votes.map((v: any) => `${v.nodeId} (${v.region}: ${v.verdict}, ${v.latencyMs}ms)`).join(' · ')
+          : 'no votes';
+        const proof = conv.clusterSignatureProof ? `Proof: ${conv.clusterSignatureProof.slice(0, 10)}...` : '';
+        result = {
+          role: 'ai',
+          content: `Multi-Region Mesh Convergence: ${conv.effectiveStatus} (Quorum: ${conv.quorumReached ? 'yes' : 'no'}, ${conv.participatingNodes ?? 0} nodes). Nodes: ${votes}. Round: ${conv.consensusRound}. ${proof}`,
+          verified: false,
+          status: 'OBSERVED',
+          detail: 'GET /v1/mesh/simulate · multi-region consensus simulation only; not physical deployment.',
+        };
+      }
+    } catch (error) {
+      result = {
+        role: 'ai',
+        content: '[UNKNOWN]',
+        verified: false,
+        status: 'UNKNOWN',
+        detail: `GET /v1/mesh/simulate unavailable${error instanceof Error ? ` · ${error.message}` : ''}`,
+      };
+    }
+    setMessages((previous) => [...previous, result]);
+    setVerifying(false);
+  };
+
   const empty = messages.length === 0 && !verifying;
 
   return (
@@ -990,6 +1037,9 @@ export function VibeOS({ onOpenDashboard }: { onOpenDashboard?: () => void }) {
               </button>
               <button type="button" className="vibe-action" onClick={() => void runKernelStatsCheck()} disabled={verifying}>
                 📊 Kernel Stats
+              </button>
+              <button type="button" className="vibe-action" onClick={() => void runMeshConvergenceCheck()} disabled={verifying}>
+                🪐 Mesh Convergence
               </button>
             </div>
             <label className="vibe-model-toggle">

@@ -532,4 +532,34 @@ describe('Vibe OS surface', () => {
     expect(await screen.findByText(/Kernel Telemetry observed: 42 transitions · 39 verified states · 5 human-gated · 1 dissents preserved · 2 recompilations · 0.94 avg efficiency/i)).toBeInTheDocument();
     expect(screen.getByText(/Root: 0x12345678\.\.\./i)).toBeInTheDocument();
   });
+
+  it('observes Multi-Region Mesh Convergence and displays consensus telemetry', async () => {
+    installFetch({
+      '/api/v1/mesh/simulate': () =>
+        json({
+          success: true,
+          convergence: {
+            consensusRound: 'round-101',
+            quorumReached: true,
+            participatingNodes: 4,
+            effectiveStatus: 'CONVERGED_PASS',
+            clusterSignatureProof: '11a21306ccef0d28b3a828323e211c221b058c1a23695519f1925b3ba1b1b1a5',
+            votes: [
+              { nodeId: 'node-us', region: 'US', verdict: 'PASS', latencyMs: 22 },
+              { nodeId: 'node-eu', region: 'EU', verdict: 'PASS', latencyMs: 55 },
+            ],
+          },
+        }),
+    });
+    const user = userEvent.setup();
+    render(<VibeOS />);
+
+    const meshBtn = screen.getByRole('button', { name: /🪐 Mesh Convergence/i });
+    expect(meshBtn).toBeInTheDocument();
+
+    await user.click(meshBtn);
+    expect(await screen.findByText(/Multi-Region Mesh Convergence: CONVERGED_PASS \(Quorum: yes, 4 nodes\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/node-us \(US: PASS, 22ms\) · node-eu \(EU: PASS, 55ms\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Round: round-101/i)).toBeInTheDocument();
+  });
 });
