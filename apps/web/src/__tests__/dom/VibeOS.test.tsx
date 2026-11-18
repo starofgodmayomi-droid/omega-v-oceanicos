@@ -562,4 +562,30 @@ describe('Vibe OS surface', () => {
     expect(screen.getByText(/node-us \(US: PASS, 22ms\) · node-eu \(EU: PASS, 55ms\)/i)).toBeInTheDocument();
     expect(screen.getByText(/Round: round-101/i)).toBeInTheDocument();
   });
+
+  it('observes Navigator Evidence and displays presentation evidence boundary', async () => {
+    installFetch({
+      '/api/v1/navigator/evidence': () =>
+        json({
+          contract: 'omega-navigator-evidence.v1',
+          overallStatus: 'SUPPORTED',
+          readOnly: true,
+          source: { repository: 'starofgodmayomi-droid/omega-v-oceanicos' },
+          evidence: [
+            { id: 'omega-api-contract-v1', status: 'SUPPORTED', claim: 'The Omega API exposes a versioned read-only evidence snapshot.' },
+            { id: 'omega-deployment-observation', status: 'UNKNOWN', claim: 'A deployed Omega target has not been observed.' },
+          ],
+        }),
+    });
+    const user = userEvent.setup();
+    render(<VibeOS />);
+
+    const navBtn = screen.getByRole('button', { name: /🧭 Navigator Evidence/i });
+    expect(navBtn).toBeInTheDocument();
+
+    await user.click(navBtn);
+    expect(await screen.findByText(/Navigator Evidence observed: omega-navigator-evidence.v1 \(SUPPORTED, readOnly: yes\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Repository: starofgodmayomi-droid\/omega-v-oceanicos/i)).toBeInTheDocument();
+    expect(screen.getByText(/omega-api-contract-v1: SUPPORTED/i)).toBeInTheDocument();
+  });
 });

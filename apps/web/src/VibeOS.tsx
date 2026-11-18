@@ -732,6 +732,51 @@ export function VibeOS({ onOpenDashboard }: { onOpenDashboard?: () => void }) {
     setVerifying(false);
   };
 
+  const runNavigatorEvidenceCheck = async () => {
+    if (verifying) return;
+    beginQuickAction('Inspect Navigator Evidence');
+    let result: ChatMessage;
+    try {
+      const response = await fetch(apiUrl('/v1/navigator/evidence'), { headers: { accept: 'application/json' } });
+      let payload: any = null;
+      try {
+        payload = await response.json();
+      } catch {
+        payload = null;
+      }
+      if (!response.ok || !payload?.contract || !Array.isArray(payload.evidence)) {
+        result = {
+          role: 'ai',
+          content: '[UNKNOWN]',
+          verified: false,
+          status: 'UNKNOWN',
+          detail: `GET /v1/navigator/evidence · HTTP ${response.status}`,
+        };
+      } else {
+        const items = payload.evidence
+          .map((item: any) => `${item.id}: ${item.status} (${item.claim})`)
+          .join(' · ');
+        result = {
+          role: 'ai',
+          content: `Navigator Evidence observed: ${payload.contract} (${payload.overallStatus}, readOnly: ${payload.readOnly ? 'yes' : 'no'}). Repository: ${payload.source?.repository ?? 'local'}. Items: ${items}.`,
+          verified: false,
+          status: 'OBSERVED',
+          detail: 'GET /v1/navigator/evidence · presentation evidence only; no external deployment inferred.',
+        };
+      }
+    } catch (error) {
+      result = {
+        role: 'ai',
+        content: '[UNKNOWN]',
+        verified: false,
+        status: 'UNKNOWN',
+        detail: `GET /v1/navigator/evidence unavailable${error instanceof Error ? ` · ${error.message}` : ''}`,
+      };
+    }
+    setMessages((previous) => [...previous, result]);
+    setVerifying(false);
+  };
+
   const empty = messages.length === 0 && !verifying;
 
   return (
@@ -1040,6 +1085,9 @@ export function VibeOS({ onOpenDashboard }: { onOpenDashboard?: () => void }) {
               </button>
               <button type="button" className="vibe-action" onClick={() => void runMeshConvergenceCheck()} disabled={verifying}>
                 🪐 Mesh Convergence
+              </button>
+              <button type="button" className="vibe-action" onClick={() => void runNavigatorEvidenceCheck()} disabled={verifying}>
+                🧭 Navigator Evidence
               </button>
             </div>
             <label className="vibe-model-toggle">
