@@ -366,6 +366,7 @@ export function createApp(
   });
 
   fastify.get('/v1/kernel/capabilities', async () => ({ success: true, capability: platformKernel.getCapabilitySnapshot(), evaluatedAt: new Date().toISOString() }));
+  fastify.get('/v1/kernel/stats', async () => ({ success: true, stats: platformKernel.getStats(), evaluatedAt: new Date().toISOString() }));
   fastify.get('/v1/ecosystem/body', async () => {
     const evaluatedAt = new Date().toISOString();
     const telemetry = ObserverEngine.generateTelemetry();

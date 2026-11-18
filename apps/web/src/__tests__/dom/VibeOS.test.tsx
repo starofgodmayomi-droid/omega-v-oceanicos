@@ -505,4 +505,31 @@ describe('Vibe OS surface', () => {
     expect(screen.getByText(/declared: YES · represented: YES · implemented: YES · tested: YES · verified: YES · deployed: UNKNOWN · healthy: UNKNOWN/i)).toBeInTheDocument();
     expect(screen.getByText(/Invariant: VERIFY\(ΔREALITY\)/i)).toBeInTheDocument();
   });
+
+  it('observes Kernel Telemetry Stats and displays live state machine metrics', async () => {
+    installFetch({
+      '/api/v1/kernel/stats': () =>
+        json({
+          success: true,
+          stats: {
+            totalTransitions: 42,
+            verifiedStates: 39,
+            humanGatedAuthorizations: 5,
+            preservedDissentCount: 1,
+            recompilationsTriggered: 2,
+            avgEfficiencyRatio: 0.94,
+            currentRootStateHash: '0x1234567890abcdef',
+          },
+        }),
+    });
+    const user = userEvent.setup();
+    render(<VibeOS />);
+
+    const statsBtn = screen.getByRole('button', { name: /📊 Kernel Stats/i });
+    expect(statsBtn).toBeInTheDocument();
+
+    await user.click(statsBtn);
+    expect(await screen.findByText(/Kernel Telemetry observed: 42 transitions · 39 verified states · 5 human-gated · 1 dissents preserved · 2 recompilations · 0.94 avg efficiency/i)).toBeInTheDocument();
+    expect(screen.getByText(/Root: 0x12345678\.\.\./i)).toBeInTheDocument();
+  });
 });

@@ -642,6 +642,49 @@ export function VibeOS({ onOpenDashboard }: { onOpenDashboard?: () => void }) {
     setVerifying(false);
   };
 
+  const runKernelStatsCheck = async () => {
+    if (verifying) return;
+    beginQuickAction('Inspect Kernel Telemetry');
+    let result: ChatMessage;
+    try {
+      const response = await fetch(apiUrl('/v1/kernel/stats'), { headers: { accept: 'application/json' } });
+      let payload: any = null;
+      try {
+        payload = await response.json();
+      } catch {
+        payload = null;
+      }
+      if (!response.ok || !payload?.success || !payload?.stats) {
+        result = {
+          role: 'ai',
+          content: '[UNKNOWN]',
+          verified: false,
+          status: 'UNKNOWN',
+          detail: `GET /v1/kernel/stats · HTTP ${response.status}`,
+        };
+      } else {
+        const stats = payload.stats;
+        result = {
+          role: 'ai',
+          content: `Kernel Telemetry observed: ${stats.totalTransitions} transitions · ${stats.verifiedStates} verified states · ${stats.humanGatedAuthorizations} human-gated · ${stats.preservedDissentCount} dissents preserved · ${stats.recompilationsTriggered} recompilations · ${stats.avgEfficiencyRatio} avg efficiency. Root: ${stats.currentRootStateHash.slice(0, 10)}...`,
+          verified: false,
+          status: 'OBSERVED',
+          detail: 'GET /v1/kernel/stats · live state machine telemetry only; not a deployment claim.',
+        };
+      }
+    } catch (error) {
+      result = {
+        role: 'ai',
+        content: '[UNKNOWN]',
+        verified: false,
+        status: 'UNKNOWN',
+        detail: `GET /v1/kernel/stats unavailable${error instanceof Error ? ` · ${error.message}` : ''}`,
+      };
+    }
+    setMessages((previous) => [...previous, result]);
+    setVerifying(false);
+  };
+
   const empty = messages.length === 0 && !verifying;
 
   return (
@@ -944,6 +987,9 @@ export function VibeOS({ onOpenDashboard }: { onOpenDashboard?: () => void }) {
               </button>
               <button type="button" className="vibe-action" onClick={() => void runRealityStatusCheck()} disabled={verifying}>
                 🌐 Reality Vector
+              </button>
+              <button type="button" className="vibe-action" onClick={() => void runKernelStatsCheck()} disabled={verifying}>
+                📊 Kernel Stats
               </button>
             </div>
             <label className="vibe-model-toggle">
