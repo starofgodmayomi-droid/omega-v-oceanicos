@@ -319,4 +319,18 @@ describe('Vibe OS surface', () => {
     await waitFor(() => expect(screen.getByLabelText('Local LLM · 11434 status')).toHaveTextContent('VERIFIED'));
     expect(screen.getByRole('checkbox', { name: /Ocean Intelligence/i })).toBeInTheDocument();
   });
+
+  it('renders prompt starters in empty state and populates composer draft on click', async () => {
+    installFetch();
+    const user = userEvent.setup();
+    render(<VibeOS />);
+
+    const starterBtn = screen.getByRole('button', { name: /🌊 Water Intelligence/i });
+    expect(starterBtn).toBeInTheDocument();
+
+    await user.click(starterBtn);
+    expect(screen.getByRole('textbox', { name: 'Intent' })).toHaveValue(
+      'Explain the biomimetic water intelligence of Oceanicos.'
+    );
+  });
 });

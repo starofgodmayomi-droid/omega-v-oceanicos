@@ -83,6 +83,36 @@ function StatusPill({
   );
 }
 
+function playHarmonicTone(frequencyHz = 432, durationSeconds = 1.2) {
+  try {
+    if (typeof window === 'undefined') return;
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(frequencyHz, ctx.currentTime);
+
+    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.15, ctx.currentTime + 0.08);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + durationSeconds);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + durationSeconds + 0.05);
+
+    setTimeout(() => {
+      void ctx.close().catch(() => {});
+    }, (durationSeconds + 0.2) * 1000);
+  } catch {
+    // Non-blocking fail-closed audio synthesis
+  }
+}
+
 export function VibeOS({ onOpenDashboard }: { onOpenDashboard?: () => void }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState('');
@@ -372,6 +402,7 @@ export function VibeOS({ onOpenDashboard }: { onOpenDashboard?: () => void }) {
         };
       } else {
         const organs = payload.organs || {};
+        playHarmonicTone(payload.resonance?.frequencyHz ?? 432);
         result = {
           role: 'ai',
           content: `Voice Bridge Harmonic Resonance active at ${payload.resonance?.frequencyHz ?? 432}Hz (${payload.resonance?.mode ?? 'harmonic-pure'}). Rule: ${payload.rule}. Organs: Soul AI (${organs.soul_ai}), Truth Weaver (${organs.truth_weaver}), The General (${organs.the_general}), Human Root (${organs.human_root}). Doctrine: "${payload.resonance?.doctrine}".`,
@@ -467,6 +498,29 @@ export function VibeOS({ onOpenDashboard }: { onOpenDashboard?: () => void }) {
                   <p className="vibe-empty-eyebrow">ONE INTENT · ONE OBSERVABLE RESPONSE</p>
                   <h1>What shall we make real?</h1>
                   <p>Describe one intent. The API returns a bounded receipt; unobserved claims stay unknown.</p>
+                  <div className="vibe-prompt-starters">
+                    <button
+                      type="button"
+                      className="vibe-starter"
+                      onClick={() => setDraft('Explain the biomimetic water intelligence of Oceanicos.')}
+                    >
+                      🌊 Water Intelligence
+                    </button>
+                    <button
+                      type="button"
+                      className="vibe-starter"
+                      onClick={() => setDraft('Describe the 12 Living Entities and their roles in the House.')}
+                    >
+                      🪞 12 Living Entities
+                    </button>
+                    <button
+                      type="button"
+                      className="vibe-starter"
+                      onClick={() => setDraft('Verify the KAI Shield and 4-step execution loop.')}
+                    >
+                      🛡️ KAI Execution Loop
+                    </button>
+                  </div>
                 </div>
               )}
 

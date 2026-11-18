@@ -305,6 +305,32 @@
   line-height: 1.65;
 }
 
+.vibe-prompt-starters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 18px;
+}
+
+.vibe-starter {
+  padding: 6px 14px;
+  border: 1px solid var(--vibe-line);
+  border-radius: 999px;
+  background: var(--vibe-surface);
+  color: var(--vibe-ink-muted);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.vibe-starter:hover {
+  border-color: var(--vibe-current);
+  color: var(--vibe-ink);
+  background: rgba(140, 232, 200, 0.08);
+}
+
 .vibe-message {
   display: flex;
   flex-direction: column;

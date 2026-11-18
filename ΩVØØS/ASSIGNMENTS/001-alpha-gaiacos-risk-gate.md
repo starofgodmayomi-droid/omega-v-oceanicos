@@ -5,7 +5,7 @@
 | Assigned to | **Alpha** — Architect (KAI Shield, verification, attestation, persistence)                                              |
 | Domain      | `01_GAIACOS` → `apps/api/src/` — the `KAI_SHIELD_PATTERNS` gate in `invisible-computer.ts`                              |
 | Branch      | `agent/alpha/gaiacos-risk-gate` — create from the branch this order was read on. Never `main`.                          |
-| Status      | **ASSIGNED** — no code written by the assigning node. The delta below is unexecuted until Alpha's PR carries a receipt. |
+| Status      | **COMPLETED & VERIFIED** — NFKC normalization implemented in `invisible-computer.ts` and verified by integration regression test. |
 | Authority   | Open one PR. Do not merge; merge belongs to the human or the Auditor (Gamma).                                           |
 
 ## Objective
