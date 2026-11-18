@@ -12,6 +12,7 @@ export type ChatMessage = {
   content: string;
   verified: boolean;
   hash?: string;
+  engine?: string;
   /** The API's own reason for a fail-closed or observed result. */
   detail?: string;
   status?: Verdict | 'OBSERVED';
@@ -54,6 +55,7 @@ function receiptMessage(receipt: IntentReceipt): ChatMessage {
       content: receipt.output ?? '',
       verified: true,
       hash: receipt.hash ?? undefined,
+      engine: receipt.engine ?? undefined,
       status: 'VERIFIED',
     };
   }
@@ -62,6 +64,7 @@ function receiptMessage(receipt: IntentReceipt): ChatMessage {
     content: `[${receipt.status}]`,
     verified: false,
     detail: receipt.reason ?? undefined,
+    engine: receipt.engine ?? undefined,
     status: receipt.status,
   };
 }
@@ -252,6 +255,9 @@ export function VibeOS({ onOpenDashboard }: { onOpenDashboard?: () => void }) {
     setKaiStatus(receipt.status);
     setMessages((previous) => [...previous, receiptMessage(receipt)]);
     setWaterFrames(generateWaterFlowFrames(receipt.status, intent));
+    if (receipt.verified) {
+      playHarmonicTone(432, 0.5);
+    }
     setVerifying(false);
   };
 
@@ -576,6 +582,7 @@ export function VibeOS({ onOpenDashboard }: { onOpenDashboard?: () => void }) {
                       <span className="vibe-badge" aria-label="API receipt verified with SHA-256 evidence hash">
                         <span aria-hidden="true">🔒</span> Verified
                         {message.hash && <span className="vibe-badge-hash">{message.hash.slice(0, 8)}</span>}
+                        {message.engine && <span className="vibe-badge-engine">{message.engine}</span>}
                       </span>
                     </>
                   ) : message.status === 'OBSERVED' ? (

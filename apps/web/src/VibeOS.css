@@ -421,6 +421,15 @@
   color: var(--vibe-ink-dim);
 }
 
+.vibe-badge-engine {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-left: 4px;
+}
+
 .vibe-proof {
   margin: 0 12px 16px;
   border: 1px solid var(--vibe-line);

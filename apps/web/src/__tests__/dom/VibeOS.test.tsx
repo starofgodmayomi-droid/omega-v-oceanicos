@@ -349,4 +349,28 @@ describe('Vibe OS surface', () => {
     expect(screen.getByText('RETURN')).toBeInTheDocument();
     expect(screen.getAllByText(/UNKNOWN/i).length).toBeGreaterThan(0);
   });
+
+  it('displays the engine provenance badge when the receipt includes an engine field', async () => {
+    installFetch({
+      '/api/chat': () =>
+        json({
+          success: true,
+          status: 'VERIFIED',
+          response: VERIFIED_RESPONSE,
+          evidence_hash: VERIFIED_RESPONSE_SHA256,
+          engine: 'llm:qwen2.5:0.5b',
+        }),
+    });
+    const user = userEvent.setup();
+    render(<VibeOS />);
+
+    await user.type(screen.getByRole('textbox', { name: 'Intent' }), 'What engine are you?');
+    await user.click(screen.getByRole('button', { name: 'Send intent' }));
+
+    expect(await screen.findByText(VERIFIED_RESPONSE)).toBeInTheDocument();
+    expect(screen.getByText('llm:qwen2.5:0.5b')).toBeInTheDocument();
+    const badge = screen.getByLabelText(/API receipt verified with SHA-256 evidence hash/i);
+    expect(badge).toHaveTextContent('llm:qwen2.5:0.5b');
+    expect(badge).toHaveTextContent(VERIFIED_RESPONSE_SHA256.slice(0, 8));
+  });
 });

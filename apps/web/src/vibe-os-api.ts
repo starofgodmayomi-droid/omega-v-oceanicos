@@ -12,6 +12,7 @@ export type IntentReceipt = {
   output: string | null;
   hash: string | null;
   reason: string | null;
+  engine?: string | null;
 };
 
 /** The chat endpoint suffix, served under /api by default or an API origin override. */
@@ -22,7 +23,7 @@ const OFFLINE = 'Local Brain Offline';
 const SHA256_HEX = /^[0-9a-f]{64}$/i;
 
 function offlineReceipt(reason: string): IntentReceipt {
-  return { status: 'UNKNOWN', verified: false, output: null, hash: null, reason: `${OFFLINE} · ${reason}` };
+  return { status: 'UNKNOWN', verified: false, output: null, hash: null, reason: `${OFFLINE} · ${reason}`, engine: null };
 }
 
 function isVerdict(value: unknown): value is Verdict {
@@ -44,7 +45,14 @@ function failureReceipt(payload: any, httpStatus: number): IntentReceipt {
   const reason = httpStatus === 503
     ? `${OFFLINE} · HTTP 503${detail === 'HTTP 503' ? '' : ` · ${detail}`}`
     : detail === `HTTP ${httpStatus}` ? detail : `${detail} · HTTP ${httpStatus}`;
-  return { status, verified: false, output: null, hash: null, reason };
+  return {
+    status,
+    verified: false,
+    output: null,
+    hash: null,
+    reason,
+    engine: typeof payload?.engine === 'string' ? payload.engine : null,
+  };
 }
 
 export function executeUrl(): string {
@@ -90,6 +98,8 @@ export async function submitIntent(intent: string, signal?: AbortSignal, useExte
       ? payload.evidence_hash
       : null;
 
+  const engine = typeof payload?.engine === 'string' ? payload.engine : null;
+
   if (status !== 'VERIFIED') {
     return {
       status,
@@ -97,6 +107,7 @@ export async function submitIntent(intent: string, signal?: AbortSignal, useExte
       output: null,
       hash: null,
       reason: typeof payload?.reason === 'string' ? payload.reason : null,
+      engine,
     };
   }
 
@@ -107,6 +118,7 @@ export async function submitIntent(intent: string, signal?: AbortSignal, useExte
       output: null,
       hash: null,
       reason: 'The VERIFIED API receipt did not include a response body.',
+      engine,
     };
   }
   if (!hash) {
@@ -116,6 +128,7 @@ export async function submitIntent(intent: string, signal?: AbortSignal, useExte
       output: null,
       hash: null,
       reason: 'The VERIFIED API receipt did not include a SHA-256 digest.',
+      engine,
     };
   }
   if (!SHA256_HEX.test(hash)) {
@@ -125,6 +138,7 @@ export async function submitIntent(intent: string, signal?: AbortSignal, useExte
       output: null,
       hash: null,
       reason: 'The API supplied a malformed SHA-256 digest.',
+      engine,
     };
   }
 
@@ -138,6 +152,7 @@ export async function submitIntent(intent: string, signal?: AbortSignal, useExte
       output: null,
       hash: null,
       reason: 'SHA-256 verification is unavailable in this browser.',
+      engine,
     };
   }
   if (observedHash !== hash.toLowerCase()) {
@@ -147,6 +162,7 @@ export async function submitIntent(intent: string, signal?: AbortSignal, useExte
       output: null,
       hash: null,
       reason: 'The response body does not match the supplied SHA-256 digest.',
+      engine,
     };
   }
 
@@ -156,5 +172,6 @@ export async function submitIntent(intent: string, signal?: AbortSignal, useExte
     output,
     hash: observedHash,
     reason: typeof payload?.reason === 'string' ? payload.reason : null,
+    engine,
   };
 }
