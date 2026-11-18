@@ -3,6 +3,8 @@ import { submitIntent, type IntentReceipt, type Verdict } from './vibe-os-api';
 import { TensorDavVisualizer } from './components/TensorDavVisualizer';
 import { MoodCodexPanel } from './MoodCodexPanel';
 import { EntityCodexModal } from './components/EntityCodexModal';
+import { WaterFlowPanel } from './WaterFlowPanel';
+import { WATER_FLOW_STAGES, type WaterFlowFrameView } from './water-flow-panel-model';
 import './VibeOS.css';
 
 export type ChatMessage = {
@@ -113,6 +115,28 @@ function playHarmonicTone(frequencyHz = 432, durationSeconds = 1.2) {
   }
 }
 
+function generateWaterFlowFrames(state: string, intent: string): readonly WaterFlowFrameView[] {
+  const boundedIntent = intent.trim() || 'water-current';
+  const hash = Math.abs(
+    Array.from(boundedIntent).reduce((acc, char) => (acc * 31 + char.charCodeAt(0)) | 0, 0)
+  ).toString(16).padEnd(8, '0');
+  const traceId = `flow-${hash.slice(0, 8)}`;
+  return WATER_FLOW_STAGES.map((stage, idx) => ({
+    stage,
+    sequence: idx,
+    state,
+    transition: stage === 'REALITY' ? `observe:${state}` : `${stage.toLowerCase()}:${boundedIntent}`,
+    traceId,
+    deterministic: true,
+    bounds: { maxSteps: WATER_FLOW_STAGES.length },
+    provenance: {
+      source: 'local-water-flow',
+      verified: false,
+      note: 'Bounded symbolic local-simulation evidence; not physical-world observation or external execution.',
+    },
+  }));
+}
+
 export function VibeOS({ onOpenDashboard }: { onOpenDashboard?: () => void }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState('');
@@ -126,6 +150,8 @@ export function VibeOS({ onOpenDashboard }: { onOpenDashboard?: () => void }) {
   const [davOpen, setDavOpen] = useState(false);
   const [moodOpen, setMoodOpen] = useState(false);
   const [codexOpen, setCodexOpen] = useState(false);
+  const [waterOpen, setWaterOpen] = useState(false);
+  const [waterFrames, setWaterFrames] = useState<readonly WaterFlowFrameView[] | null>(null);
   const [moodState, setMoodState] = useState<HealthObservation>({
     status: 'UNKNOWN',
     detail: 'No mood response observed yet.',
@@ -225,6 +251,7 @@ export function VibeOS({ onOpenDashboard }: { onOpenDashboard?: () => void }) {
     const receipt = await submitIntent(intent, undefined, useExternalModel);
     setKaiStatus(receipt.status);
     setMessages((previous) => [...previous, receiptMessage(receipt)]);
+    setWaterFrames(generateWaterFlowFrames(receipt.status, intent));
     setVerifying(false);
   };
 
@@ -520,6 +547,18 @@ export function VibeOS({ onOpenDashboard }: { onOpenDashboard?: () => void }) {
                     >
                       🛡️ KAI Execution Loop
                     </button>
+                    <button
+                      type="button"
+                      className="vibe-starter"
+                      onClick={() => {
+                        const starter = 'Water Magic Flow: run the 8 biomimetic stages of ocean intelligence.';
+                        setDraft(starter);
+                        setWaterFrames(generateWaterFlowFrames('VERIFIED', starter));
+                        setWaterOpen(true);
+                      }}
+                    >
+                      💧 8-Stage Water Magic
+                    </button>
                   </div>
                 </div>
               )}
@@ -609,6 +648,35 @@ export function VibeOS({ onOpenDashboard }: { onOpenDashboard?: () => void }) {
             )}
           </section>
 
+          <section className="vibe-proof" aria-label="Interactive water flow magic drawer">
+            <div className="vibe-proof-trigger-row">
+              <div>
+                <span className="vibe-proof-kicker">WATER MAGIC CONTINUUM</span>
+                <p>8-stage biomimetic water flow · fail-closed provenance · pure continuum</p>
+              </div>
+              <button
+                type="button"
+                className="vibe-proof-toggle"
+                aria-expanded={waterOpen}
+                aria-controls="lucid-water-drawer"
+                onClick={() => {
+                  if (!waterFrames) {
+                    setWaterFrames(generateWaterFlowFrames('VERIFIED', draft || 'Water Magic Flow'));
+                  }
+                  setWaterOpen((open) => !open);
+                }}
+              >
+                {waterOpen ? 'Close Water Flow' : 'Open Water Flow'}
+                <span aria-hidden="true">{waterOpen ? ' −' : ' +'}</span>
+              </button>
+            </div>
+            {waterOpen && (
+              <div id="lucid-water-drawer" className="vibe-proof-drawer">
+                <WaterFlowPanel frames={waterFrames} />
+              </div>
+            )}
+          </section>
+
           {codexOpen && <EntityCodexModal onClose={() => setCodexOpen(false)} />}
 
           <div className="vibe-composer-wrap">
@@ -631,6 +699,21 @@ export function VibeOS({ onOpenDashboard }: { onOpenDashboard?: () => void }) {
                 disabled={verifying}
               >
                 🪞 Living Codex (12)
+              </button>
+              <button
+                type="button"
+                className="vibe-action"
+                aria-expanded={waterOpen}
+                aria-controls="lucid-water-drawer"
+                onClick={() => {
+                  if (!waterFrames) {
+                    setWaterFrames(generateWaterFlowFrames('VERIFIED', draft || 'Water Magic Flow'));
+                  }
+                  setWaterOpen(true);
+                }}
+                disabled={verifying}
+              >
+                💧 Water Flow Magic (8)
               </button>
               <button
                 type="button"

@@ -333,4 +333,20 @@ describe('Vibe OS surface', () => {
       'Explain the biomimetic water intelligence of Oceanicos.'
     );
   });
+
+  it('opens Water Flow Magic drawer and renders 8 canonical stages with fail-closed provenance', async () => {
+    installFetch();
+    const user = userEvent.setup();
+    render(<VibeOS />);
+
+    const waterBtn = screen.getByRole('button', { name: /💧 Water Flow Magic \(8\)/i });
+    expect(waterBtn).toBeInTheDocument();
+
+    await user.click(waterBtn);
+    expect(await screen.findByRole('region', { name: /Interactive water flow magic drawer/i })).toBeInTheDocument();
+    expect(screen.getByText(/KAI WATER-FLOW · FINITE TRACE/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/REALITY/i).length).toBeGreaterThan(0);
+    expect(screen.getByText('RETURN')).toBeInTheDocument();
+    expect(screen.getAllByText(/UNKNOWN/i).length).toBeGreaterThan(0);
+  });
 });
