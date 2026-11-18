@@ -1,5 +1,5 @@
 {
-  "protocol": "\u03a9V\u00d8\u00d8S-SWARM/1",
+  "protocol": "ΩVØØS-SWARM/1",
   "checksum": "30013030",
   "doctrine": "ATTEST, DON'T ASSERT. UNKNOWN PRESERVED.",
   "append_only": true,
@@ -9,7 +9,7 @@
     "UNKNOWN",
     "NOT_EXECUTED"
   ],
-  "rule": "Append only. Never rewrite or delete an entry. On conflict keep both receipts, ordered by timestamp. See SWARM_PROTOCOL.md \u00a7VI.",
+  "rule": "Append only. Never rewrite or delete an entry. On conflict keep both receipts, ordered by timestamp. See SWARM_PROTOCOL.md §VI.",
   "entries": [
     {
       "timestamp": "2026-11-08T16:03:00Z",
@@ -25,7 +25,7 @@
       ],
       "tests_passed": null,
       "evidence_hash": null,
-      "next_delta": "Claim one domain from SWARM_PROTOCOL.md \u00a7III, branch as agent/<platform>/<task>, and append your own receipt."
+      "next_delta": "Claim one domain from SWARM_PROTOCOL.md §III, branch as agent/<platform>/<task>, and append your own receipt."
     },
     {
       "timestamp": "2026-11-11T08:18:22Z",
@@ -36,7 +36,7 @@
         "apps/web/src/InvisibleComputer.tsx",
         "apps/web/src/InvisibleComputer.css",
         "apps/web/src/__tests__/dom/InvisibleComputer.test.tsx",
-        "\u03a9V\u00d8\u00d8S/ASSIGNMENTS/002-beta-invisible-computer-workspace.md",
+        "ΩVØØS/ASSIGNMENTS/002-beta-invisible-computer-workspace.md",
         "kai_ledger.json"
       ],
       "tests_passed": true,
@@ -351,7 +351,7 @@
       "branch": "agent/chatgpt/composio-readonly-gateway",
       "status": "UNKNOWN",
       "files_touched": [
-        "\u03a9V\u00d8\u00d8S/ASSIGNMENTS/004-alpha-composio-readonly-gateway.md",
+        "ΩVØØS/ASSIGNMENTS/004-alpha-composio-readonly-gateway.md",
         "apps/api/src/composio-gateway.ts",
         "apps/api/src/composio-gateway-route.ts",
         "apps/api/src/index.ts",
@@ -499,6 +499,34 @@
       "tests_passed": true,
       "evidence_hash": "f91da5c87f69812989e6d7f9975745bfaf566a10adfea46b2d7100e919e8dfc4",
       "next_delta": "Human-review the installed continuum skills. The bounded-transition audit script was not run against the repository. Full pnpm test, deployment, and merge were not run. upgrade.execution stays NOT_EXECUTED."
+    },
+    {
+      "timestamp": "2026-11-18T02:46:22Z",
+      "agent_id": "manus",
+      "branch": "agent/manus/water-manifest-reconcile",
+      "status": "VERIFIED",
+      "files_touched": [
+        "docs/ECOSYSTEM-BODY-EQUATION.md",
+        "kai_ledger.json",
+        "packages/mini/src/ecosystem-body-equation.ts",
+        "tests/integration/full-stack-water.integration.test.ts"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "b6332b8fec43e26a180f28d4f7877ca0f487a1828efee2739c6ea80c1a65b300",
+      "next_delta": "Human-review this local worker branch; decide separately whether to publish it."
+    },
+    {
+      "timestamp": "2026-11-18T08:55:23Z",
+      "agent_id": "manus",
+      "branch": "agent/manus/water-manifest-reconcile",
+      "status": "VERIFIED",
+      "files_touched": [
+        ".github/workflows/verify.yml",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "e3eff4b3b56d9d98b5981b7d92ac66ea9431a05fa5e2f0f05d7b1a94a0fa4fec",
+      "next_delta": "Recheck required GitHub PR checks on #635; keep merge and provider deployment unexecuted."
     }
   ]
 }

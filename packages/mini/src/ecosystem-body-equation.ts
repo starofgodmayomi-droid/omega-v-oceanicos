@@ -725,7 +725,7 @@ export const EQUATION_LAW_OBSERVATION: RepoSurfaceObservation = Object.freeze({
 });
 
 /**
- * Full-stack skills, in flow order. This is the water: one current, not eight
+ * Full-stack skills, in flow order. This is the water: one current, not separate
  * products. The list is a declaration. Reading the files is the observation.
  */
 export const FULL_STACK_WATER: readonly OutwardSurface[] = Object.freeze([
@@ -737,6 +737,7 @@ export const FULL_STACK_WATER: readonly OutwardSurface[] = Object.freeze([
   Object.freeze({ id: 'water-lucid', path: 'skills/lucid-full-stack/SKILL.md', role: 'skill' as const }),
   Object.freeze({ id: 'water-global-good', path: 'skills/omega-global-good-fullstack/SKILL.md', role: 'skill' as const }),
   Object.freeze({ id: 'water-computer', path: 'skills/full-stack-computer-mode/SKILL.md', role: 'skill' as const }),
+  Object.freeze({ id: 'water-sovereign', path: 'skills/omega-sovereign/SKILL.md', role: 'skill' as const }),
 ]);
 
 export type FullStackWaterReport = {
