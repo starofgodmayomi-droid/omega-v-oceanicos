@@ -595,6 +595,53 @@ export function VibeOS({ onOpenDashboard }: { onOpenDashboard?: () => void }) {
     setVerifying(false);
   };
 
+  const runRealityStatusCheck = async () => {
+    if (verifying) return;
+    beginQuickAction('Inspect Reality Status Vector');
+    let result: ChatMessage;
+    try {
+      const response = await fetch(apiUrl('/v1/reality/status'), { headers: { accept: 'application/json' } });
+      let payload: any = null;
+      try {
+        payload = await response.json();
+      } catch {
+        payload = null;
+      }
+      if (!response.ok || !payload?.success || !Array.isArray(payload.statusVector)) {
+        result = {
+          role: 'ai',
+          content: '[UNKNOWN]',
+          verified: false,
+          status: 'UNKNOWN',
+          detail: `GET /v1/reality/status · HTTP ${response.status}`,
+        };
+      } else {
+        const vectorSummary = payload.statusVector
+          .map((item: any) => `${item.field}: ${item.value}`)
+          .join(' · ');
+        const stage = payload.contract?.currentStage ?? 'REALITY';
+        const equation = payload.contract?.governingEquation ?? 'Ω∞v := VERIFY(ΔREALITY)';
+        result = {
+          role: 'ai',
+          content: `Reality Verification Vector (${stage}): ${vectorSummary}. Governing Equation: "${equation}". Invariant: ${payload.contract?.invariant ?? 'VERIFY(ΔREALITY)'}.`,
+          verified: false,
+          status: 'OBSERVED',
+          detail: 'GET /v1/reality/status · 11-dimension status vector; reality is final authority.',
+        };
+      }
+    } catch (error) {
+      result = {
+        role: 'ai',
+        content: '[UNKNOWN]',
+        verified: false,
+        status: 'UNKNOWN',
+        detail: `GET /v1/reality/status unavailable${error instanceof Error ? ` · ${error.message}` : ''}`,
+      };
+    }
+    setMessages((previous) => [...previous, result]);
+    setVerifying(false);
+  };
+
   const empty = messages.length === 0 && !verifying;
 
   return (
@@ -894,6 +941,9 @@ export function VibeOS({ onOpenDashboard }: { onOpenDashboard?: () => void }) {
               </button>
               <button type="button" className="vibe-action" onClick={() => void runTherapeuticStateCheck()} disabled={verifying}>
                 🕊️ Therapeutic State
+              </button>
+              <button type="button" className="vibe-action" onClick={() => void runRealityStatusCheck()} disabled={verifying}>
+                🌐 Reality Vector
               </button>
             </div>
             <label className="vibe-model-toggle">

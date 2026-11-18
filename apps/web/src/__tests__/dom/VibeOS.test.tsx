@@ -472,4 +472,37 @@ describe('Vibe OS surface', () => {
     expect(screen.getByText(/OMEGA: READY \(verification-gate\)/i)).toBeInTheDocument();
     expect(screen.getByText(/Loop: \[observe → bound → execute → reconcile → remember\]/i)).toBeInTheDocument();
   });
+
+  it('observes Reality Status Vector and displays 11-dimension epistemic boundary', async () => {
+    installFetch({
+      '/api/v1/reality/status': () =>
+        json({
+          success: true,
+          contract: {
+            currentStage: 'REALITY',
+            invariant: 'VERIFY(ΔREALITY)',
+            governingEquation: 'Ω∞v := VERIFY(ΔREALITY) ∧ PRESERVE(TRUTH) ∧ PROTECT(HUMAN_AGENCY)',
+          },
+          statusVector: [
+            { field: 'declared', value: 'YES' },
+            { field: 'represented', value: 'YES' },
+            { field: 'implemented', value: 'YES' },
+            { field: 'tested', value: 'YES' },
+            { field: 'verified', value: 'YES' },
+            { field: 'deployed', value: 'UNKNOWN' },
+            { field: 'healthy', value: 'UNKNOWN' },
+          ],
+        }),
+    });
+    const user = userEvent.setup();
+    render(<VibeOS />);
+
+    const realityBtn = screen.getByRole('button', { name: /🌐 Reality Vector/i });
+    expect(realityBtn).toBeInTheDocument();
+
+    await user.click(realityBtn);
+    expect(await screen.findByText(/Reality Verification Vector \(REALITY\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/declared: YES · represented: YES · implemented: YES · tested: YES · verified: YES · deployed: UNKNOWN · healthy: UNKNOWN/i)).toBeInTheDocument();
+    expect(screen.getByText(/Invariant: VERIFY\(ΔREALITY\)/i)).toBeInTheDocument();
+  });
 });
