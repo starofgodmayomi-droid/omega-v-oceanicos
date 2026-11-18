@@ -431,4 +431,45 @@ describe('Vibe OS surface', () => {
     expect(screen.getByText(/COMPRESSED/i)).toBeInTheDocument();
     expect(screen.getByText(/ECOSYSTEM_BODY.md/i)).toBeInTheDocument();
   });
+
+  it('observes Therapeutic State Machine and displays calm KAI/ELION/OMEGA harmony', async () => {
+    installFetch({
+      '/api/v1/therapeutic/state': () =>
+        json({
+          success: true,
+          model: 'omega.therapeutic-state-machine.v1',
+          status: 'READY',
+          state: {
+            kai: {
+              status: 'READY',
+              authority: 'memory-only',
+              summary: 'continuity ledger and evidence lineage are preserved without claiming authority',
+            },
+            elion: {
+              status: 'READY',
+              authority: 'bounded-execution',
+              summary: 'execution remains limited to the declared scope, policy, and human boundary',
+            },
+            omega: {
+              status: 'READY',
+              authority: 'verification-gate',
+              summary: 'expected outcomes are reconciled against observed evidence before completion is claimed',
+            },
+          },
+          loop: ['observe', 'bound', 'execute', 'reconcile', 'remember'],
+        }),
+    });
+    const user = userEvent.setup();
+    render(<VibeOS />);
+
+    const therapeuticBtn = screen.getByRole('button', { name: /🕊️ Therapeutic State/i });
+    expect(therapeuticBtn).toBeInTheDocument();
+
+    await user.click(therapeuticBtn);
+    expect(await screen.findByText(/Therapeutic State Machine observed: READY/i)).toBeInTheDocument();
+    expect(screen.getByText(/KAI: READY \(memory-only\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/ELION: READY \(bounded-execution\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/OMEGA: READY \(verification-gate\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Loop: \[observe → bound → execute → reconcile → remember\]/i)).toBeInTheDocument();
+  });
 });

@@ -548,6 +548,53 @@ export function VibeOS({ onOpenDashboard }: { onOpenDashboard?: () => void }) {
     setVerifying(false);
   };
 
+  const runTherapeuticStateCheck = async () => {
+    if (verifying) return;
+    beginQuickAction('Inspect Therapeutic State');
+    let result: ChatMessage;
+    try {
+      const response = await fetch(apiUrl('/v1/therapeutic/state'), { headers: { accept: 'application/json' } });
+      let payload: any = null;
+      try {
+        payload = await response.json();
+      } catch {
+        payload = null;
+      }
+      if (!response.ok || !payload?.success || !payload?.state) {
+        result = {
+          role: 'ai',
+          content: '[UNKNOWN]',
+          verified: false,
+          status: 'UNKNOWN',
+          detail: `GET /v1/therapeutic/state · HTTP ${response.status}`,
+        };
+      } else {
+        const state = payload.state;
+        const kaiDesc = `KAI: ${state.kai?.status ?? 'UNKNOWN'} (${state.kai?.authority ?? 'memory-only'})`;
+        const elionDesc = `ELION: ${state.elion?.status ?? 'UNKNOWN'} (${state.elion?.authority ?? 'bounded-execution'})`;
+        const omegaDesc = `OMEGA: ${state.omega?.status ?? 'UNKNOWN'} (${state.omega?.authority ?? 'verification-gate'})`;
+        const loop = Array.isArray(payload.loop) ? payload.loop.join(' → ') : 'observe → bound → execute → reconcile → remember';
+        result = {
+          role: 'ai',
+          content: `Therapeutic State Machine observed: ${payload.status} (${payload.model}). ${kaiDesc} · ${elionDesc} · ${omegaDesc}. Loop: [${loop}].`,
+          verified: false,
+          status: 'OBSERVED',
+          detail: 'GET /v1/therapeutic/state · state machine evaluation only; not a deployment claim.',
+        };
+      }
+    } catch (error) {
+      result = {
+        role: 'ai',
+        content: '[UNKNOWN]',
+        verified: false,
+        status: 'UNKNOWN',
+        detail: `GET /v1/therapeutic/state unavailable${error instanceof Error ? ` · ${error.message}` : ''}`,
+      };
+    }
+    setMessages((previous) => [...previous, result]);
+    setVerifying(false);
+  };
+
   const empty = messages.length === 0 && !verifying;
 
   return (
@@ -844,6 +891,9 @@ export function VibeOS({ onOpenDashboard }: { onOpenDashboard?: () => void }) {
               </button>
               <button type="button" className="vibe-action" onClick={() => void runEquationCheck()} disabled={verifying}>
                 🌌 Ecosystem Equation
+              </button>
+              <button type="button" className="vibe-action" onClick={() => void runTherapeuticStateCheck()} disabled={verifying}>
+                🕊️ Therapeutic State
               </button>
             </div>
             <label className="vibe-model-toggle">
