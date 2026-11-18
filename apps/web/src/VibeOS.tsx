@@ -505,6 +505,49 @@ export function VibeOS({ onOpenDashboard }: { onOpenDashboard?: () => void }) {
     setVerifying(false);
   };
 
+  const runEquationCheck = async () => {
+    if (verifying) return;
+    beginQuickAction('Inspect Ecosystem Equation');
+    let result: ChatMessage;
+    try {
+      const response = await fetch(apiUrl('/v1/ecosystem/equation'), { headers: { accept: 'application/json' } });
+      let payload: any = null;
+      try {
+        payload = await response.json();
+      } catch {
+        payload = null;
+      }
+      if (!response.ok || !payload?.success) {
+        result = {
+          role: 'ai',
+          content: '[UNKNOWN]',
+          verified: false,
+          status: 'UNKNOWN',
+          detail: `GET /v1/ecosystem/equation · HTTP ${response.status}`,
+        };
+      } else {
+        const digest = payload.compression?.digest ? ` · digest ${payload.compression.digest.slice(0, 8)}` : '';
+        result = {
+          role: 'ai',
+          content: `Ecosystem Equation observed: ${payload.law} (${payload.reality}). Status: ${payload.compression?.status ?? 'UNKNOWN'}${digest}. Equation: "${payload.equation}". Source: ${payload.source}.`,
+          verified: false,
+          status: 'OBSERVED',
+          detail: 'GET /v1/ecosystem/equation · in-process law constant only; not a deployment claim.',
+        };
+      }
+    } catch (error) {
+      result = {
+        role: 'ai',
+        content: '[UNKNOWN]',
+        verified: false,
+        status: 'UNKNOWN',
+        detail: `GET /v1/ecosystem/equation unavailable${error instanceof Error ? ` · ${error.message}` : ''}`,
+      };
+    }
+    setMessages((previous) => [...previous, result]);
+    setVerifying(false);
+  };
+
   const empty = messages.length === 0 && !verifying;
 
   return (
@@ -798,6 +841,9 @@ export function VibeOS({ onOpenDashboard }: { onOpenDashboard?: () => void }) {
               </button>
               <button type="button" className="vibe-action" onClick={() => void runKernelCheck()} disabled={verifying}>
                 ⚙️ Kernel Capabilities
+              </button>
+              <button type="button" className="vibe-action" onClick={() => void runEquationCheck()} disabled={verifying}>
+                🌌 Ecosystem Equation
               </button>
             </div>
             <label className="vibe-model-toggle">

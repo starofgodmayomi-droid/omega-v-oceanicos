@@ -404,4 +404,31 @@ describe('Vibe OS surface', () => {
     expect(screen.getByText(/local-simulation-only/i)).toBeInTheDocument();
     expect(screen.getByText(/observe, verify, remember/i)).toBeInTheDocument();
   });
+
+  it('observes Ecosystem Equation and displays in-process law fixpoint', async () => {
+    installFetch({
+      '/api/v1/ecosystem/equation': () =>
+        json({
+          success: true,
+          law: 'omega.ecosystem-body.y.v1',
+          source: 'ECOSYSTEM_BODY.md',
+          reality: 'Expected ≡ Observed',
+          equation: 'Omega := Y(...)',
+          compression: {
+            status: 'COMPRESSED',
+            digest: '57e64fb1294dc84721425c55353b7aa24a7fb173d28f354fd60c39a7ff28741d',
+          },
+        }),
+    });
+    const user = userEvent.setup();
+    render(<VibeOS />);
+
+    const equationBtn = screen.getByRole('button', { name: /🌌 Ecosystem Equation/i });
+    expect(equationBtn).toBeInTheDocument();
+
+    await user.click(equationBtn);
+    expect(await screen.findByText(/Ecosystem Equation observed: omega.ecosystem-body.y.v1/i)).toBeInTheDocument();
+    expect(screen.getByText(/COMPRESSED/i)).toBeInTheDocument();
+    expect(screen.getByText(/ECOSYSTEM_BODY.md/i)).toBeInTheDocument();
+  });
 });
