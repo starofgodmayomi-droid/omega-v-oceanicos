@@ -458,6 +458,53 @@ export function VibeOS({ onOpenDashboard }: { onOpenDashboard?: () => void }) {
     setVerifying(false);
   };
 
+  const runKernelCheck = async () => {
+    if (verifying) return;
+    beginQuickAction('Inspect Kernel Capabilities');
+    let result: ChatMessage;
+    try {
+      const response = await fetch(apiUrl('/v1/kernel/capabilities'), { headers: { accept: 'application/json' } });
+      let payload: any = null;
+      try {
+        payload = await response.json();
+      } catch {
+        payload = null;
+      }
+      if (!response.ok || !payload?.success || !payload?.capability) {
+        result = {
+          role: 'ai',
+          content: '[UNKNOWN]',
+          verified: false,
+          status: 'UNKNOWN',
+          detail: `GET /v1/kernel/capabilities · HTTP ${response.status}`,
+        };
+      } else {
+        const cap = payload.capability;
+        const activeCaps = Object.entries(cap.capabilities || {})
+          .filter(([, v]) => v === true)
+          .map(([k]) => k)
+          .join(', ');
+        result = {
+          role: 'ai',
+          content: `Kernel observed: ${cap.contract} (${cap.execution}). Deterministic evidence: ${cap.deterministicEvidence ? 'yes' : 'no'}. Human authorization: ${cap.humanAuthorizationRequired ? 'required' : 'none'}. Active capabilities: ${activeCaps}. Limitations: ${cap.limitations?.join('; ') ?? 'local only'}.`,
+          verified: false,
+          status: 'OBSERVED',
+          detail: 'GET /v1/kernel/capabilities · capability snapshot only; not an execution claim.',
+        };
+      }
+    } catch (error) {
+      result = {
+        role: 'ai',
+        content: '[UNKNOWN]',
+        verified: false,
+        status: 'UNKNOWN',
+        detail: `GET /v1/kernel/capabilities unavailable${error instanceof Error ? ` · ${error.message}` : ''}`,
+      };
+    }
+    setMessages((previous) => [...previous, result]);
+    setVerifying(false);
+  };
+
   const empty = messages.length === 0 && !verifying;
 
   return (
@@ -748,6 +795,9 @@ export function VibeOS({ onOpenDashboard }: { onOpenDashboard?: () => void }) {
               </button>
               <button type="button" className="vibe-action" onClick={() => void runHealthCheck()} disabled={verifying}>
                 Verify System Health
+              </button>
+              <button type="button" className="vibe-action" onClick={() => void runKernelCheck()} disabled={verifying}>
+                ⚙️ Kernel Capabilities
               </button>
             </div>
             <label className="vibe-model-toggle">

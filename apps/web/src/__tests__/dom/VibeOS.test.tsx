@@ -373,4 +373,35 @@ describe('Vibe OS surface', () => {
     expect(badge).toHaveTextContent('llm:qwen2.5:0.5b');
     expect(badge).toHaveTextContent(VERIFIED_RESPONSE_SHA256.slice(0, 8));
   });
+
+  it('observes Kernel Capabilities and displays constitutional capability snapshot', async () => {
+    installFetch({
+      '/api/v1/kernel/capabilities': () =>
+        json({
+          success: true,
+          capability: {
+            contract: 'oceanicos-kernel.v1',
+            execution: 'local-simulation-only',
+            deterministicEvidence: true,
+            humanAuthorizationRequired: true,
+            capabilities: {
+              observe: true,
+              verify: true,
+              remember: true,
+            },
+            limitations: ['local process only'],
+          },
+        }),
+    });
+    const user = userEvent.setup();
+    render(<VibeOS />);
+
+    const kernelBtn = screen.getByRole('button', { name: /⚙️ Kernel Capabilities/i });
+    expect(kernelBtn).toBeInTheDocument();
+
+    await user.click(kernelBtn);
+    expect(await screen.findByText(/Kernel observed: oceanicos-kernel.v1/i)).toBeInTheDocument();
+    expect(screen.getByText(/local-simulation-only/i)).toBeInTheDocument();
+    expect(screen.getByText(/observe, verify, remember/i)).toBeInTheDocument();
+  });
 });
