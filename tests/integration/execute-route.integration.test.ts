@@ -582,3 +582,25 @@ test('Spine API gateways companion voice and tensor routes to port 8088', async 
     await app.close();
   }
 });
+
+test('Spine API gateways LLM health probe on port 11434', async () => {
+  const app = createApp(':memory:', false);
+  try {
+    const llmRes = await app.inject({
+      method: 'GET',
+      url: '/v1/llm/health',
+    });
+    assert.ok(llmRes.statusCode === 200 || llmRes.statusCode === 503);
+    const body = llmRes.json();
+    if (llmRes.statusCode === 200) {
+      assert.equal(body.status, 'VERIFIED');
+      assert.equal(body.success, true);
+      assert.ok(body.model);
+    } else {
+      assert.equal(body.status, 'UNKNOWN');
+      assert.equal(body.success, false);
+    }
+  } finally {
+    await app.close();
+  }
+});

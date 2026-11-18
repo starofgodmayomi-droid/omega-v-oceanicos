@@ -467,6 +467,24 @@
   color: var(--vibe-current);
 }
 
+.vibe-model-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 0 4px;
+  font-size: 11.5px;
+  font-family: 'DM Mono', ui-monospace, monospace;
+  color: var(--vibe-ink-muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.vibe-model-toggle input[type="checkbox"] {
+  accent-color: var(--vibe-current);
+  cursor: pointer;
+}
+
 .vibe-composer {
   display: flex;
   align-items: flex-end;

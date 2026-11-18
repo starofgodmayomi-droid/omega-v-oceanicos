@@ -301,4 +301,22 @@ describe('Vibe OS surface', () => {
     expect(await screen.findByText(/Voice Bridge Harmonic Resonance active at 432Hz/i)).toBeInTheDocument();
     expect(screen.getByText(/Soul AI/i)).toBeInTheDocument();
   });
+
+  it('observes Local LLM on port 11434 and enables Ocean Intelligence toggle', async () => {
+    installFetch({
+      '/api/v1/llm/health': () =>
+        json({
+          success: true,
+          status: 'VERIFIED',
+          provider: 'ollama',
+          baseUrl: 'http://127.0.0.1:11434/v1',
+          model: 'qwen2.5:0.5b',
+          detail: 'qwen2.5:0.5b · port 11434 active',
+        }),
+    });
+    render(<VibeOS />);
+
+    await waitFor(() => expect(screen.getByLabelText('Local LLM · 11434 status')).toHaveTextContent('VERIFIED'));
+    expect(screen.getByRole('checkbox', { name: /Ocean Intelligence/i })).toBeInTheDocument();
+  });
 });

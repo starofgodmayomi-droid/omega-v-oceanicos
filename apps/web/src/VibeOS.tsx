@@ -104,6 +104,11 @@ export function VibeOS({ onOpenDashboard }: { onOpenDashboard?: () => void }) {
     status: 'UNKNOWN',
     detail: 'No voice bridge observation yet.',
   });
+  const [llmState, setLlmState] = useState<HealthObservation>({
+    status: 'UNKNOWN',
+    detail: 'No LLM observation yet.',
+  });
+  const [useExternalModel, setUseExternalModel] = useState(false);
   const logRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -149,6 +154,21 @@ export function VibeOS({ onOpenDashboard }: { onOpenDashboard?: () => void }) {
       } catch {
         // Voice bridge gracefully fails closed to UNKNOWN
       }
+      try {
+        const llmRes = await fetch(apiUrl('/v1/llm/health'), {
+          headers: { accept: 'application/json' },
+          signal: current.signal,
+        });
+        const llmData = await llmRes.json();
+        if (active && !current.signal.aborted && llmRes.ok && (llmData?.status === 'VERIFIED' || llmData?.status === 'OBSERVED')) {
+          setLlmState({
+            status: 'VERIFIED',
+            detail: llmData?.detail ?? `${llmData?.model ?? 'qwen2.5:0.5b'} · port 11434 active`,
+          });
+        }
+      } catch {
+        // LLM probe gracefully fails closed to UNKNOWN
+      }
     };
     void probe();
     const interval = window.setInterval(() => void probe(), 15_000);
@@ -172,7 +192,7 @@ export function VibeOS({ onOpenDashboard }: { onOpenDashboard?: () => void }) {
     setMessages((previous) => [...previous, { role: 'user', content: intent, verified: false }]);
     setVerifying(true);
 
-    const receipt = await submitIntent(intent);
+    const receipt = await submitIntent(intent, undefined, useExternalModel);
     setKaiStatus(receipt.status);
     setMessages((previous) => [...previous, receiptMessage(receipt)]);
     setVerifying(false);
@@ -421,8 +441,8 @@ export function VibeOS({ onOpenDashboard }: { onOpenDashboard?: () => void }) {
             />
             <StatusPill
               label="Local LLM · 11434"
-              status="UNKNOWN"
-              detail="No browser-safe health probe is exposed; the current API does not use Ollama."
+              status={llmState.status}
+              detail={llmState.detail}
             />
             <StatusPill
               label="System Mood"
@@ -586,6 +606,15 @@ export function VibeOS({ onOpenDashboard }: { onOpenDashboard?: () => void }) {
                 Verify System Health
               </button>
             </div>
+            <label className="vibe-model-toggle">
+              <input
+                type="checkbox"
+                checked={useExternalModel}
+                onChange={(e) => setUseExternalModel(e.target.checked)}
+                disabled={verifying}
+              />
+              <span>🌊 Ocean Intelligence (Ollama qwen2.5:0.5b · Port 11434)</span>
+            </label>
             <form className="vibe-composer" onSubmit={onSubmit}>
               <textarea
                 className="vibe-input"

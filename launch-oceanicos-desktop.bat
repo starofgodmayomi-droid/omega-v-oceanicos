@@ -31,7 +31,7 @@ echo [2/4] Verifying Fastify Spine API (:5000)...
 netstat -ano | findstr ":5000 " | findstr "LISTENING" >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
     echo Starting Fastify API on port 5000...
-    start "OceanicOS API :5000" /b cmd /c "set PORT=5000 && set OMEGA_AUTH_MODE=local && node apps/api/dist/index.js"
+    start "OceanicOS API :5000" /b cmd /c "set PORT=5000 && set OMEGA_AUTH_MODE=local && set OMEGA_LLM_PROVIDER=ollama && set OMEGA_LLM_BASE_URL=http://127.0.0.1:11434/v1 && node apps/api/dist/index.js"
     timeout /t 2 /nobreak >nul
 ) else (
     echo Fastify Spine API on port 5000 is active.

@@ -296,9 +296,10 @@ export async function executeElion(
   useExternalModel = false
 ): Promise<ElionResult> {
   const configuredBaseUrl = process.env.OMEGA_LLM_BASE_URL?.trim();
+  const configuredProvider = process.env.OMEGA_LLM_PROVIDER?.trim();
   const isLocalOllama = Boolean(
     configuredBaseUrl?.includes('11434') ||
-    process.env.OMEGA_LLM_PROVIDER === 'ollama'
+    configuredProvider === 'ollama'
   );
 
   let apiKey = useExternalModel ? process.env.OMEGA_LLM_API_KEY?.trim() : '';
@@ -314,7 +315,8 @@ export async function executeElion(
     };
   }
 
-  const baseUrl = (configuredBaseUrl || DEFAULT_MODEL_BASE_URL).replace(
+  const defaultBaseUrl = isLocalOllama ? 'http://127.0.0.1:11434/v1' : DEFAULT_MODEL_BASE_URL;
+  const baseUrl = (configuredBaseUrl || defaultBaseUrl).replace(
     /\/$/,
     ''
   );

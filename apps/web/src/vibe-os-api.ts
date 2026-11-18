@@ -56,13 +56,13 @@ async function sha256Hex(value: string): Promise<string> {
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
-export async function submitIntent(intent: string, signal?: AbortSignal): Promise<IntentReceipt> {
+export async function submitIntent(intent: string, signal?: AbortSignal, useExternalModel = false): Promise<IntentReceipt> {
   let response: Response;
   try {
     response = await fetch(executeUrl(), {
       method: 'POST',
       headers: { 'content-type': 'application/json', accept: 'application/json' },
-      body: JSON.stringify({ intent }),
+      body: JSON.stringify(useExternalModel ? { intent, useExternalModel: true } : { intent }),
       signal,
     });
   } catch (err) {

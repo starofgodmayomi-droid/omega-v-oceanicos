@@ -365,4 +365,47 @@ export function registerExecuteRoute(
   for (const path of ['/v1/companion/tensor/:n', '/api/v1/companion/tensor/:n', '/companion/tensor/:n']) {
     fastify.get(path, companionTensorHandler);
   }
+
+  const llmHealthHandler = async (_request: any, reply: any) => {
+    const configuredBaseUrl = process.env.OMEGA_LLM_BASE_URL?.trim();
+    const configuredProvider = process.env.OMEGA_LLM_PROVIDER?.trim();
+    const isLocalOllama = Boolean(
+      configuredBaseUrl?.includes('11434') ||
+      configuredProvider === 'ollama'
+    );
+    const baseUrl = (configuredBaseUrl || (isLocalOllama ? 'http://127.0.0.1:11434/v1' : 'https://api.openai.com/v1')).replace(/\/$/, '');
+    const model = process.env.OMEGA_LLM_MODEL?.trim() || (isLocalOllama ? 'qwen2.5:0.5b' : 'gpt-4o-mini');
+    const probeUrl = baseUrl.includes('11434') ? (baseUrl.replace(/\/v1$/, '') || 'http://127.0.0.1:11434') : `${baseUrl}/models`;
+
+    try {
+      const response = await fetch(probeUrl, {
+        signal: AbortSignal.timeout(3000),
+      });
+      if (response.ok) {
+        return reply.status(200).send({
+          success: true,
+          status: 'VERIFIED',
+          provider: isLocalOllama ? 'ollama' : 'external',
+          baseUrl,
+          model,
+          detail: `${model} · ${isLocalOllama ? 'port 11434 active' : 'configured'}`,
+        });
+      }
+      return reply.status(503).send({
+        success: false,
+        status: 'UNKNOWN',
+        error: `LLM service returned status ${response.status}`,
+      });
+    } catch (err) {
+      return reply.status(503).send({
+        success: false,
+        status: 'UNKNOWN',
+        error: err instanceof Error ? err.message : 'LLM offline',
+      });
+    }
+  };
+
+  for (const path of ['/v1/llm/health', '/api/v1/llm/health', '/llm/health']) {
+    fastify.get(path, llmHealthHandler);
+  }
 }
