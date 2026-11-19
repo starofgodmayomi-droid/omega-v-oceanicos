@@ -917,6 +917,52 @@ export function VibeOS({ onOpenDashboard }: { onOpenDashboard?: () => void }) {
     setVerifying(false);
   };
 
+  const runBoundedWorkersCheck = async () => {
+    if (verifying) return;
+    beginQuickAction('Inspect Bounded Workers');
+    let result: ChatMessage;
+    try {
+      const response = await fetch(apiUrl('/v1/omega/workers'), { headers: { accept: 'application/json' } });
+      let payload: any = null;
+      try {
+        payload = await response.json();
+      } catch {
+        payload = null;
+      }
+      if (!response.ok || !payload?.success || !Array.isArray(payload.workers)) {
+        result = {
+          role: 'ai',
+          content: '[UNKNOWN]',
+          verified: false,
+          status: 'UNKNOWN',
+          detail: `GET /v1/omega/workers · HTTP ${response.status}`,
+        };
+      } else {
+        const workers = payload.workers;
+        const readOnlyCount = workers.filter((w: any) => w.risk === 'read-only').length;
+        const mutatingCount = workers.filter((w: any) => w.risk === 'local-mutating').length;
+        const activeCount = Array.isArray(payload.activeWorkers) ? payload.activeWorkers.length : 0;
+        result = {
+          role: 'ai',
+          content: `Bounded Workers observed: ${workers.length} roles registered (${readOnlyCount} read-only · ${mutatingCount} human-gated mutating) · Active: ${activeCount} · Principle: "worker output is evidence, not authority".`,
+          verified: false,
+          status: 'OBSERVED',
+          detail: 'GET /v1/omega/workers · durable SQLite coordination; worker output does not grant authority.',
+        };
+      }
+    } catch (error) {
+      result = {
+        role: 'ai',
+        content: '[UNKNOWN]',
+        verified: false,
+        status: 'UNKNOWN',
+        detail: `GET /v1/omega/workers unavailable${error instanceof Error ? ` · ${error.message}` : ''}`,
+      };
+    }
+    setMessages((previous) => [...previous, result]);
+    setVerifying(false);
+  };
+
   const empty = messages.length === 0 && !verifying;
 
   return (
@@ -1236,6 +1282,9 @@ export function VibeOS({ onOpenDashboard }: { onOpenDashboard?: () => void }) {
               </button>
               <button type="button" className="vibe-action" onClick={() => void runDependenciesCheck()} disabled={verifying}>
                 📦 Dependency Map
+              </button>
+              <button type="button" className="vibe-action" onClick={() => void runBoundedWorkersCheck()} disabled={verifying}>
+                🤖 Bounded Workers
               </button>
             </div>
             <label className="vibe-model-toggle">

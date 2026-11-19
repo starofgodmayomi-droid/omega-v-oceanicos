@@ -693,4 +693,30 @@ describe('Vibe OS surface', () => {
     expect(screen.getByText(/Invariant: "PRESENT ≠ WORKSPACE ≠ IMPORTED ≠ VERIFIED"/i)).toBeInTheDocument();
     expect(screen.getByText(/Migration: DEPENDENCY MAP reconciled to pnpm-workspace\.yaml/i)).toBeInTheDocument();
   });
+
+  it('observes Bounded Workers and displays role registrations and governance limits', async () => {
+    installFetch({
+      '/api/v1/omega/workers': () =>
+        json({
+          success: true,
+          workers: [
+            { id: 'observer', risk: 'read-only' },
+            { id: 'researcher', risk: 'read-only' },
+            { id: 'planner', risk: 'read-only' },
+            { id: 'tester', risk: 'local-mutating' },
+            { id: 'repo-builder', risk: 'local-mutating' },
+          ],
+          activeWorkers: [{ id: 'worker-1' }],
+        }),
+    });
+    const user = userEvent.setup();
+    render(<VibeOS />);
+
+    const workerBtn = screen.getByRole('button', { name: /🤖 Bounded Workers/i });
+    expect(workerBtn).toBeInTheDocument();
+
+    await user.click(workerBtn);
+    expect(await screen.findByText(/Bounded Workers observed: 5 roles registered \(3 read-only · 2 human-gated mutating\) · Active: 1/i)).toBeInTheDocument();
+    expect(screen.getByText(/Principle: "worker output is evidence, not authority"/i)).toBeInTheDocument();
+  });
 });
