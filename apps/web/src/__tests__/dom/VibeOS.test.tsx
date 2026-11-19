@@ -655,4 +655,42 @@ describe('Vibe OS surface', () => {
     expect(screen.getByText(/Integrity: verified-local-hash-chain/i)).toBeInTheDocument();
     expect(screen.getByText(/Journal: local append-only hash chain · Bounded economic value optimization\./i)).toBeInTheDocument();
   });
+
+  it('observes Dependency Map and displays architectural package nodes', async () => {
+    installFetch({
+      '/api/v1/dependencies': () =>
+        json({
+          success: true,
+          contract: {
+            name: 'omega-v-oceanicos',
+            version: '1.0.0',
+            invariant: 'PRESENT ≠ WORKSPACE ≠ IMPORTED ≠ VERIFIED',
+            migrationStep: 'DEPENDENCY MAP reconciled to pnpm-workspace.yaml',
+          },
+          nodes: [
+            { name: 'types', classification: 'BUILT' },
+            { name: 'kernel', classification: 'BUILT' },
+            { name: 'gateway', classification: 'WORKSPACE' },
+            { name: 'sdk', classification: 'SOURCE-ONLY' },
+          ],
+          summary: {
+            built: 2,
+            workspace: 1,
+            sourceOnly: 1,
+            stub: 0,
+            total: 4,
+          },
+        }),
+    });
+    const user = userEvent.setup();
+    render(<VibeOS />);
+
+    const depBtn = screen.getByRole('button', { name: /📦 Dependency Map/i });
+    expect(depBtn).toBeInTheDocument();
+
+    await user.click(depBtn);
+    expect(await screen.findByText(/Dependency Map observed: 4 package nodes \(2 built · 1 workspace · 1 source-only · 0 stub\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Invariant: "PRESENT ≠ WORKSPACE ≠ IMPORTED ≠ VERIFIED"/i)).toBeInTheDocument();
+    expect(screen.getByText(/Migration: DEPENDENCY MAP reconciled to pnpm-workspace\.yaml/i)).toBeInTheDocument();
+  });
 });

@@ -873,6 +873,50 @@ export function VibeOS({ onOpenDashboard }: { onOpenDashboard?: () => void }) {
     setVerifying(false);
   };
 
+  const runDependenciesCheck = async () => {
+    if (verifying) return;
+    beginQuickAction('Inspect Dependency Map');
+    let result: ChatMessage;
+    try {
+      const response = await fetch(apiUrl('/v1/dependencies'), { headers: { accept: 'application/json' } });
+      let payload: any = null;
+      try {
+        payload = await response.json();
+      } catch {
+        payload = null;
+      }
+      if (!response.ok || !payload?.success || !Array.isArray(payload.nodes)) {
+        result = {
+          role: 'ai',
+          content: '[UNKNOWN]',
+          verified: false,
+          status: 'UNKNOWN',
+          detail: `GET /v1/dependencies · HTTP ${response.status}`,
+        };
+      } else {
+        const s = payload.summary ?? {};
+        const invariant = payload.contract?.invariant ?? 'PRESENT ≠ WORKSPACE ≠ IMPORTED ≠ VERIFIED';
+        result = {
+          role: 'ai',
+          content: `Dependency Map observed: ${payload.nodes.length} package nodes (${s.built ?? 0} built · ${s.workspace ?? 0} workspace · ${s.sourceOnly ?? 0} source-only · ${s.stub ?? 0} stub). Invariant: "${invariant}". Migration: ${payload.contract?.migrationStep ?? 'reconciled'}.`,
+          verified: false,
+          status: 'OBSERVED',
+          detail: 'GET /v1/dependencies · pnpm workspace dependency map; local architectural audit.',
+        };
+      }
+    } catch (error) {
+      result = {
+        role: 'ai',
+        content: '[UNKNOWN]',
+        verified: false,
+        status: 'UNKNOWN',
+        detail: `GET /v1/dependencies unavailable${error instanceof Error ? ` · ${error.message}` : ''}`,
+      };
+    }
+    setMessages((previous) => [...previous, result]);
+    setVerifying(false);
+  };
+
   const empty = messages.length === 0 && !verifying;
 
   return (
@@ -1189,6 +1233,9 @@ export function VibeOS({ onOpenDashboard }: { onOpenDashboard?: () => void }) {
               </button>
               <button type="button" className="vibe-action" onClick={() => void runValueProposalsCheck()} disabled={verifying}>
                 💎 Value Proposals
+              </button>
+              <button type="button" className="vibe-action" onClick={() => void runDependenciesCheck()} disabled={verifying}>
+                📦 Dependency Map
               </button>
             </div>
             <label className="vibe-model-toggle">
