@@ -719,4 +719,28 @@ describe('Vibe OS surface', () => {
     expect(await screen.findByText(/Bounded Workers observed: 5 roles registered \(3 read-only · 2 human-gated mutating\) · Active: 1/i)).toBeInTheDocument();
     expect(screen.getByText(/Principle: "worker output is evidence, not authority"/i)).toBeInTheDocument();
   });
+
+  it('observes Divergence Ledger and preserves dissent conflicts without retry', async () => {
+    installFetch({
+      '/api/v1/omega/divergences': () =>
+        json({
+          success: true,
+          count: 0,
+          alerts: [],
+          redacted: true,
+          nextAction: 'review the divergent evidence and preserve the conflict; no retry or authorization was performed',
+        }),
+    });
+    const user = userEvent.setup();
+    render(<VibeOS />);
+
+    const divBtn = screen.getByRole('button', { name: /🛡️ Divergence Ledger/i });
+    expect(divBtn).toBeInTheDocument();
+
+    await user.click(divBtn);
+    expect(await screen.findByText(/Divergence & Dissent Ledger: 0 recorded divergence\(s\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Redacted: YES/i)).toBeInTheDocument();
+    expect(screen.getByText(/Action: "review the divergent evidence and preserve the conflict; no retry or authorization was performed"/i)).toBeInTheDocument();
+    expect(screen.getByText(/Epistemic law: "preserve the conflict; never fabricate consensus"/i)).toBeInTheDocument();
+  });
 });

@@ -963,6 +963,51 @@ export function VibeOS({ onOpenDashboard }: { onOpenDashboard?: () => void }) {
     setVerifying(false);
   };
 
+  const runDivergenceLedgerCheck = async () => {
+    if (verifying) return;
+    beginQuickAction('Inspect Divergence Ledger');
+    let result: ChatMessage;
+    try {
+      const response = await fetch(apiUrl('/v1/omega/divergences'), { headers: { accept: 'application/json' } });
+      let payload: any = null;
+      try {
+        payload = await response.json();
+      } catch {
+        payload = null;
+      }
+      if (!response.ok || !payload?.success || typeof payload?.count !== 'number') {
+        result = {
+          role: 'ai',
+          content: '[UNKNOWN]',
+          verified: false,
+          status: 'UNKNOWN',
+          detail: `GET /v1/omega/divergences · HTTP ${response.status}`,
+        };
+      } else {
+        const count = payload.count;
+        const redacted = payload.redacted ? 'YES' : 'NO';
+        const nextAction = payload.nextAction ?? 'review the divergent evidence and preserve the conflict';
+        result = {
+          role: 'ai',
+          content: `Divergence & Dissent Ledger: ${count} recorded divergence(s) · Redacted: ${redacted} · Action: "${nextAction}" · Epistemic law: "preserve the conflict; never fabricate consensus".`,
+          verified: false,
+          status: 'OBSERVED',
+          detail: 'GET /v1/omega/divergences · constitutional dissent ledger; conflicts are preserved, not retried.',
+        };
+      }
+    } catch (error) {
+      result = {
+        role: 'ai',
+        content: '[UNKNOWN]',
+        verified: false,
+        status: 'UNKNOWN',
+        detail: `GET /v1/omega/divergences unavailable${error instanceof Error ? ` · ${error.message}` : ''}`,
+      };
+    }
+    setMessages((previous) => [...previous, result]);
+    setVerifying(false);
+  };
+
   const empty = messages.length === 0 && !verifying;
 
   return (
@@ -1285,6 +1330,9 @@ export function VibeOS({ onOpenDashboard }: { onOpenDashboard?: () => void }) {
               </button>
               <button type="button" className="vibe-action" onClick={() => void runBoundedWorkersCheck()} disabled={verifying}>
                 🤖 Bounded Workers
+              </button>
+              <button type="button" className="vibe-action" onClick={() => void runDivergenceLedgerCheck()} disabled={verifying}>
+                🛡️ Divergence Ledger
               </button>
             </div>
             <label className="vibe-model-toggle">
