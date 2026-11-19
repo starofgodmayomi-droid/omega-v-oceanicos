@@ -777,6 +777,57 @@ export function VibeOS({ onOpenDashboard }: { onOpenDashboard?: () => void }) {
     setVerifying(false);
   };
 
+  const runEcosystemStatusCheck = async () => {
+    if (verifying) return;
+    beginQuickAction('Inspect Ecosystem Composite Status');
+    let result: ChatMessage;
+    try {
+      const response = await fetch(apiUrl('/v1/ecosystem/status'), { headers: { accept: 'application/json' } });
+      let payload: any = null;
+      try {
+        payload = await response.json();
+      } catch {
+        payload = null;
+      }
+      if (!response.ok || !payload?.success || !payload?.contract) {
+        result = {
+          role: 'ai',
+          content: '[UNKNOWN]',
+          verified: false,
+          status: 'UNKNOWN',
+          detail: `GET /v1/ecosystem/status · HTTP ${response.status}`,
+        };
+      } else {
+        const stage = payload.contract?.currentStage ?? 'ECOSYSTEM';
+        const growthLaw = payload.contract?.growthLaw ?? '0 → MINI → FULL STACK → ECOSYSTEM → REALITY ↺ ∞';
+        const layers = Array.isArray(payload.layers) ? payload.layers : [];
+        const supportedCount = layers.filter((l: any) => l.evidenceStatus === 'SUPPORTED').length;
+        const unverifiedCount = layers.filter((l: any) => l.evidenceStatus === 'UNVERIFIED').length;
+        const unknownCount = layers.filter((l: any) => l.evidenceStatus === 'UNKNOWN').length;
+        const govStatus = payload.governance?.status ?? 'SUPPORTED';
+        const humanReq = payload.governance?.humanAuthorizationRequired ? 'YES' : 'NO';
+        const valueStatus = payload.valueAssessment?.status ?? 'SUPPORTED';
+        result = {
+          role: 'ai',
+          content: `Ecosystem Composite Status observed: Stage ${stage} (${payload.contract?.name ?? 'omega-v-oceanicos'} v${payload.contract?.version ?? '1.0.0'}). Layers (${layers.length}): ${supportedCount} SUPPORTED · ${unverifiedCount} UNVERIFIED · ${unknownCount} UNKNOWN. Governance: ${govStatus} (Human Gate: ${humanReq}). Value Assessment: ${valueStatus}. Growth Law: "${growthLaw}".`,
+          verified: false,
+          status: 'OBSERVED',
+          detail: 'GET /v1/ecosystem/status · whole ecosystem composite status; local runtime observation only.',
+        };
+      }
+    } catch (error) {
+      result = {
+        role: 'ai',
+        content: '[UNKNOWN]',
+        verified: false,
+        status: 'UNKNOWN',
+        detail: `GET /v1/ecosystem/status unavailable${error instanceof Error ? ` · ${error.message}` : ''}`,
+      };
+    }
+    setMessages((previous) => [...previous, result]);
+    setVerifying(false);
+  };
+
   const empty = messages.length === 0 && !verifying;
 
   return (
@@ -1088,6 +1139,9 @@ export function VibeOS({ onOpenDashboard }: { onOpenDashboard?: () => void }) {
               </button>
               <button type="button" className="vibe-action" onClick={() => void runNavigatorEvidenceCheck()} disabled={verifying}>
                 🧭 Navigator Evidence
+              </button>
+              <button type="button" className="vibe-action" onClick={() => void runEcosystemStatusCheck()} disabled={verifying}>
+                🏛️ Ecosystem Status
               </button>
             </div>
             <label className="vibe-model-toggle">

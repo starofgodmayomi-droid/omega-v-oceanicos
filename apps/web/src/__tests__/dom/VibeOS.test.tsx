@@ -588,4 +588,45 @@ describe('Vibe OS surface', () => {
     expect(screen.getByText(/Repository: starofgodmayomi-droid\/omega-v-oceanicos/i)).toBeInTheDocument();
     expect(screen.getByText(/omega-api-contract-v1: SUPPORTED/i)).toBeInTheDocument();
   });
+
+  it('observes Ecosystem Composite Status and displays multi-layer architecture telemetry', async () => {
+    installFetch({
+      '/api/v1/ecosystem/status': () =>
+        json({
+          success: true,
+          contract: {
+            name: 'omega-v-oceanicos',
+            version: '1.0.0',
+            currentStage: 'ECOSYSTEM',
+            growthLaw: '0 → MINI → FULL STACK → ECOSYSTEM → REALITY ↺ ∞',
+            invariant: 'VERIFY(ΔREALITY)',
+          },
+          layers: [
+            { layer: 'Reality Observation', evidenceStatus: 'SUPPORTED' },
+            { layer: 'Verification & Dissent', evidenceStatus: 'SUPPORTED' },
+            { layer: 'Attestation', evidenceStatus: 'UNVERIFIED' },
+            { layer: 'Distribution & Deployment', evidenceStatus: 'UNKNOWN' },
+          ],
+          governance: {
+            status: 'SUPPORTED',
+            humanAuthorizationRequired: true,
+          },
+          valueAssessment: {
+            status: 'SUPPORTED',
+          },
+        }),
+    });
+    const user = userEvent.setup();
+    render(<VibeOS />);
+
+    const ecoBtn = screen.getByRole('button', { name: /🏛️ Ecosystem Status/i });
+    expect(ecoBtn).toBeInTheDocument();
+
+    await user.click(ecoBtn);
+    expect(await screen.findByText(/Ecosystem Composite Status observed: Stage ECOSYSTEM \(omega-v-oceanicos v1\.0\.0\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Layers \(4\): 2 SUPPORTED · 1 UNVERIFIED · 1 UNKNOWN/i)).toBeInTheDocument();
+    expect(screen.getByText(/Governance: SUPPORTED \(Human Gate: YES\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Value Assessment: SUPPORTED/i)).toBeInTheDocument();
+    expect(screen.getByText(/Growth Law: "0 → MINI → FULL STACK → ECOSYSTEM → REALITY ↺ ∞"/i)).toBeInTheDocument();
+  });
 });
