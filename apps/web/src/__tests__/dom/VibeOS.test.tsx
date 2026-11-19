@@ -8,6 +8,86 @@ import { installFetch, json, type FakeResponse } from './harness';
 const VERIFIED_RESPONSE = 'Observed: the ledger is intact.';
 const VERIFIED_RESPONSE_SHA256 = '7e1fb64de987a8e0f7d01b596fdfe68802338fddc3c33b4fc9c4ef72b2a1124d';
 
+function singleBodyResponse() {
+  const axes = [
+    ['reality', 'system', 'evidence', 'authority'],
+    ['sense', 'verify', 'remember', 'express'],
+    ['runtime', 'contract', 'intent', 'boundary'],
+    ['VERIFIED', 'SUPPORTED', 'UNVERIFIED', 'UNKNOWN'],
+  ];
+  const cells = Array.from({ length: 7 }, (_, index) => {
+    const address = [0, Math.floor(index / 4), index % 4, 0];
+    const key = address.map((coordinate, axis) => axes[axis]![coordinate]!).join('/');
+    return {
+      address,
+      key,
+      digest: 'a'.repeat(64),
+      entries: [{ index, id: `layer-${index}`, name: `Layer ${index}`, source: 'test', status: 'READY' }],
+    };
+  });
+
+  return {
+    success: true,
+    status: 'VERIFIED',
+    fixpoint: { equation: 'omega.ecosystem-body.fixpoint.v1', status: 'VERIFIED' },
+    compression: {
+      space: { notation: '4×4×4×4', rank: 4, shape: [4, 4, 4, 4], capacity: 256 },
+      projection: 'body.layers.v1',
+      projectionBoundary: 'coordinates are a declared projection of each runtime layer, not inferred truth',
+      count: 7,
+      filled: 7,
+      empty: 249,
+      digest: 'b52fcb6c8b59a88423973a84fae8646f7fde49b396921927617f09d85020fbf0',
+      evidence: 'LOCAL_REPRESENTATION',
+      cells,
+      expansion: {
+        status: 'VERIFIED',
+        entries: 7,
+        digestMatches: true,
+        lossless: true,
+        evidence: 'LOCAL_ROUND_TRIP_ONLY',
+      },
+    },
+  };
+}
+
+const malformedSingleBodyResponses: Array<{ name: string; payload: () => unknown }> = [
+  { name: 'an empty response body', payload: () => null },
+  { name: 'missing compression fields', payload: () => ({ success: true, fixpoint: singleBodyResponse().fixpoint, compression: {} }) },
+  {
+    name: 'a malformed digest',
+    payload: () => {
+      const body = singleBodyResponse();
+      body.compression.digest = 'not-a-sha256';
+      return body;
+    },
+  },
+  {
+    name: 'inconsistent cell counts',
+    payload: () => {
+      const body = singleBodyResponse();
+      body.compression.filled -= 1;
+      return body;
+    },
+  },
+  {
+    name: 'a non-lossless expansion',
+    payload: () => {
+      const body = singleBodyResponse();
+      body.compression.expansion.lossless = false;
+      return body;
+    },
+  },
+  {
+    name: 'an unverified fixpoint',
+    payload: () => {
+      const body = singleBodyResponse();
+      body.fixpoint.status = 'UNKNOWN';
+      return body;
+    },
+  },
+];
+
 describe('Vibe OS surface', () => {
   it('opens on one calm conversation instead of the instrument panel', async () => {
     installFetch();
@@ -746,29 +826,7 @@ describe('Vibe OS surface', () => {
 
   it('observes Single Body 4x4x4x4 Compression and displays lossless cell projection', async () => {
     installFetch({
-      '/api/v1/ecosystem/body': () =>
-        json({
-          success: true,
-          status: 'VERIFIED',
-          fixpoint: {
-            equation: 'omega.ecosystem-body.fixpoint.v1',
-            status: 'VERIFIED',
-          },
-          compression: {
-            space: {
-              notation: '4×4×4×4',
-              rank: 4,
-              capacity: 256,
-            },
-            count: 7,
-            filled: 7,
-            digest: 'b52fcb6c8b59a88423973a84fae8646f7fde49b396921927617f09d85020fbf0',
-            expansion: {
-              status: 'VERIFIED',
-              lossless: true,
-            },
-          },
-        }),
+      '/api/v1/ecosystem/body': () => json(singleBodyResponse()),
     });
     const user = userEvent.setup();
     render(<VibeOS />);
@@ -781,5 +839,39 @@ describe('Vibe OS surface', () => {
     expect(screen.getByText(/Digest: b52fcb6c8b\.\.\./i)).toBeInTheDocument();
     expect(screen.getByText(/Expansion: VERIFIED \(lossless: YES\)/i)).toBeInTheDocument();
     expect(screen.getByText(/Fixpoint: omega\.ecosystem-body\.fixpoint\.v1 \(VERIFIED\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/body\.layers\.v1: coordinates are a declared projection/i)).toBeInTheDocument();
+    expect(screen.getByText(/LOCAL_ROUND_TRIP_ONLY/)).toBeInTheDocument();
+  });
+
+  it.each(malformedSingleBodyResponses)('keeps $name as UNKNOWN', async ({ payload }) => {
+    installFetch({ '/api/v1/ecosystem/body': () => json(payload()) });
+    const user = userEvent.setup();
+    render(<VibeOS />);
+
+    await user.click(screen.getByRole('button', { name: /🧊 Single Body \(4×4×4×4\)/i }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('[UNKNOWN]');
+    expect(screen.getByText(/incomplete or malformed compression proof/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Single Body 4×4×4×4 Compression:/i)).not.toBeInTheDocument();
+  });
+
+  it('keeps invalid JSON from the Single Body endpoint as UNKNOWN', async () => {
+    installFetch({
+      '/api/v1/ecosystem/body': () => ({
+        ok: true,
+        status: 200,
+        json: async () => { throw new SyntaxError('Unexpected end of JSON input'); },
+        text: async () => '',
+        headers: { get: () => 'application/json' },
+      }),
+    });
+    const user = userEvent.setup();
+    render(<VibeOS />);
+
+    await user.click(screen.getByRole('button', { name: /🧊 Single Body \(4×4×4×4\)/i }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('[UNKNOWN]');
+    expect(screen.getByText(/incomplete or malformed compression proof/i)).toBeInTheDocument();
   });
 });

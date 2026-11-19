@@ -28,6 +28,68 @@ function apiUrl(path: string): string {
   return `${API_BASE_URL}${path}`;
 }
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const isSha256 = (value: unknown): value is string =>
+  typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
+
+function isSingleBodyCompressionObservation(value: unknown): boolean {
+  if (!isRecord(value) || value.success !== true || !isRecord(value.fixpoint) || !isRecord(value.compression)) {
+    return false;
+  }
+
+  const { fixpoint, compression } = value;
+  const { space, expansion, cells } = compression;
+  if (!isRecord(space) || !isRecord(expansion) || !Array.isArray(cells)) return false;
+
+  const { count, filled, empty } = compression;
+  if (
+    typeof count !== 'number' || !Number.isSafeInteger(count) || count < 1 || count > 256
+    || typeof filled !== 'number' || !Number.isSafeInteger(filled) || filled < 1 || filled > 256
+    || typeof empty !== 'number' || empty !== 256 - filled || filled > count
+    || space.notation !== '4×4×4×4' || space.rank !== 4 || space.capacity !== 256
+    || !Array.isArray(space.shape) || space.shape.length !== 4 || space.shape.some((axis) => axis !== 4)
+    || compression.projection !== 'body.layers.v1'
+    || typeof compression.projectionBoundary !== 'string' || compression.projectionBoundary.length === 0
+    || compression.evidence !== 'LOCAL_REPRESENTATION'
+    || !isSha256(compression.digest)
+    || cells.length !== filled
+    || expansion.status !== 'VERIFIED' || expansion.entries !== count
+    || expansion.digestMatches !== true || expansion.lossless !== true
+    || expansion.evidence !== 'LOCAL_ROUND_TRIP_ONLY'
+    || fixpoint.equation !== 'omega.ecosystem-body.fixpoint.v1' || fixpoint.status !== 'VERIFIED'
+  ) return false;
+
+  let observedEntries = 0;
+  const addresses = new Set<string>();
+  const indexes = new Set<number>();
+  for (const cell of cells) {
+    if (!isRecord(cell) || typeof cell.key !== 'string' || cell.key.length === 0 || !isSha256(cell.digest)) {
+      return false;
+    }
+    if (!Array.isArray(cell.address) || cell.address.length !== 4) return false;
+    if (cell.address.some((axis) => typeof axis !== 'number' || !Number.isInteger(axis) || axis < 0 || axis > 3)) {
+      return false;
+    }
+    const address = cell.address.join(',');
+    if (addresses.has(address) || !Array.isArray(cell.entries) || cell.entries.length === 0) return false;
+    addresses.add(address);
+
+    for (const entry of cell.entries) {
+      if (
+        !isRecord(entry) || typeof entry.index !== 'number' || !Number.isSafeInteger(entry.index)
+        || entry.index < 0 || entry.index >= count || indexes.has(entry.index)
+        || typeof entry.id !== 'string' || entry.id.length === 0
+      ) return false;
+      indexes.add(entry.index);
+      observedEntries += 1;
+    }
+  }
+
+  return observedEntries === count && indexes.size === count;
+}
+
 async function observeSpineHealth(signal?: AbortSignal): Promise<HealthObservation> {
   try {
     const response = await fetch(apiUrl('/health'), {
@@ -1020,31 +1082,25 @@ export function VibeOS({ onOpenDashboard }: { onOpenDashboard?: () => void }) {
       } catch {
         payload = null;
       }
-      if (!response.ok || !payload?.success || !payload?.compression) {
+      if (!response.ok || !isSingleBodyCompressionObservation(payload)) {
         result = {
           role: 'ai',
           content: '[UNKNOWN]',
           verified: false,
           status: 'UNKNOWN',
-          detail: `GET /v1/ecosystem/body · HTTP ${response.status}`,
+          detail: response.ok
+            ? 'GET /v1/ecosystem/body returned an incomplete or malformed compression proof.'
+            : `GET /v1/ecosystem/body · HTTP ${response.status}`,
         };
       } else {
         const c = payload.compression;
-        const notation = c.space?.notation ?? '4×4×4×4';
-        const rank = c.space?.rank ?? 4;
-        const capacity = c.space?.capacity ?? 256;
-        const filled = c.filled ?? 7;
-        const digest = typeof c.digest === 'string' ? `${c.digest.slice(0, 10)}...` : 'n/a';
-        const expansionStatus = c.expansion?.status ?? 'VERIFIED';
-        const lossless = c.expansion?.lossless ? 'YES' : 'NO';
-        const fixpointEq = payload.fixpoint?.equation ?? 'omega.ecosystem-body.fixpoint.v1';
-        const fixpointStatus = payload.fixpoint?.status ?? 'VERIFIED';
+        const expansion = c.expansion;
         result = {
           role: 'ai',
-          content: `Single Body 4×4×4×4 Compression: ${filled}/${capacity} cells (${notation} rank ${rank}) · Digest: ${digest} · Expansion: ${expansionStatus} (lossless: ${lossless}) · Fixpoint: ${fixpointEq} (${fixpointStatus}).`,
+          content: `Single Body 4×4×4×4 Compression: ${c.filled}/${c.space.capacity} cells (${c.space.notation} rank ${c.space.rank}) · Digest: ${c.digest.slice(0, 10)}... · Expansion: ${expansion.status} (lossless: YES) · Fixpoint: ${payload.fixpoint.equation} (${payload.fixpoint.status}).`,
           verified: false,
           status: 'OBSERVED',
-          detail: 'GET /v1/ecosystem/body · 4×4×4×4 single body compression; declared projection, not inferred truth.',
+          detail: `GET /v1/ecosystem/body · ${c.projection}: ${c.projectionBoundary}; ${expansion.evidence}.`,
         };
       }
     } catch (error) {

@@ -1027,6 +1027,20 @@
       "tests_passed": true,
       "evidence_hash": "1853612d2d1c7caa70ced397162b7f666cb4af532b93540e99832d0a30ed9cb3",
       "next_delta": "Add dedicated Single Body 4x4x4x4 Compression probe to VibeOS quick actions and author Order 020."
+    },
+    {
+      "agent_id": "manus",
+      "branch": "agent/manus/single-body-fail-closed",
+      "status": "VERIFIED",
+      "files_touched": [
+        "apps/web/src/VibeOS.tsx",
+        "apps/web/src/__tests__/dom/VibeOS.test.tsx",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "60b0682b8ddbe5ef474937b69ff41a721a1c9ca6bbc074a89708868b1c244a0c",
+      "next_delta": "Human review this Single Body fail-closed PR and decide whether to merge.",
+      "timestamp": "2026-11-19T14:38:10.438Z"
     }
   ]
 }
