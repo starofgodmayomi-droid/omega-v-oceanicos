@@ -629,4 +629,30 @@ describe('Vibe OS surface', () => {
     expect(screen.getByText(/Value Assessment: SUPPORTED/i)).toBeInTheDocument();
     expect(screen.getByText(/Growth Law: "0 → MINI → FULL STACK → ECOSYSTEM → REALITY ↺ ∞"/i)).toBeInTheDocument();
   });
+
+  it('observes Value Navigator Proposals and displays journal hash-chain integrity', async () => {
+    installFetch({
+      '/api/v1/value-navigator/proposals': () =>
+        json({
+          success: true,
+          entries: [
+            { id: 'prop-001', phase: 'PROPOSAL', title: 'Solar compute cluster proposal' },
+            { id: 'prop-002', phase: 'PROPOSAL', title: 'Deep sea telemetry node expansion' },
+          ],
+          total: 2,
+          truncated: false,
+          integrity: 'verified-local-hash-chain',
+        }),
+    });
+    const user = userEvent.setup();
+    render(<VibeOS />);
+
+    const valBtn = screen.getByRole('button', { name: /💎 Value Proposals/i });
+    expect(valBtn).toBeInTheDocument();
+
+    await user.click(valBtn);
+    expect(await screen.findByText(/Value Navigator Proposals: 2 proposal\(s\) recorded/i)).toBeInTheDocument();
+    expect(screen.getByText(/Integrity: verified-local-hash-chain/i)).toBeInTheDocument();
+    expect(screen.getByText(/Journal: local append-only hash chain · Bounded economic value optimization\./i)).toBeInTheDocument();
+  });
 });

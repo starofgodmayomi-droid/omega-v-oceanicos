@@ -828,6 +828,51 @@ export function VibeOS({ onOpenDashboard }: { onOpenDashboard?: () => void }) {
     setVerifying(false);
   };
 
+  const runValueProposalsCheck = async () => {
+    if (verifying) return;
+    beginQuickAction('Inspect Value Proposals');
+    let result: ChatMessage;
+    try {
+      const response = await fetch(apiUrl('/v1/value-navigator/proposals'), { headers: { accept: 'application/json' } });
+      let payload: any = null;
+      try {
+        payload = await response.json();
+      } catch {
+        payload = null;
+      }
+      if (!response.ok || !payload?.success || typeof payload?.total !== 'number') {
+        result = {
+          role: 'ai',
+          content: '[UNKNOWN]',
+          verified: false,
+          status: 'UNKNOWN',
+          detail: `GET /v1/value-navigator/proposals · HTTP ${response.status}`,
+        };
+      } else {
+        const total = payload.total;
+        const integrity = payload.integrity ?? 'verified-local-hash-chain';
+        const truncated = payload.truncated ? ' (truncated)' : '';
+        result = {
+          role: 'ai',
+          content: `Value Navigator Proposals: ${total} proposal(s) recorded${truncated} · Integrity: ${integrity} · Journal: local append-only hash chain · Bounded economic value optimization.`,
+          verified: false,
+          status: 'OBSERVED',
+          detail: 'GET /v1/value-navigator/proposals · local hash-chained journal; not a transaction claim.',
+        };
+      }
+    } catch (error) {
+      result = {
+        role: 'ai',
+        content: '[UNKNOWN]',
+        verified: false,
+        status: 'UNKNOWN',
+        detail: `GET /v1/value-navigator/proposals unavailable${error instanceof Error ? ` · ${error.message}` : ''}`,
+      };
+    }
+    setMessages((previous) => [...previous, result]);
+    setVerifying(false);
+  };
+
   const empty = messages.length === 0 && !verifying;
 
   return (
@@ -1090,8 +1135,7 @@ export function VibeOS({ onOpenDashboard }: { onOpenDashboard?: () => void }) {
                 }}
                 disabled={verifying}
               >
-                💧 Water Flow Magic (8)
-              </button>
+                💧 Water Flow Magic (8)              </button>
               <button
                 type="button"
                 className="vibe-action"
@@ -1142,6 +1186,9 @@ export function VibeOS({ onOpenDashboard }: { onOpenDashboard?: () => void }) {
               </button>
               <button type="button" className="vibe-action" onClick={() => void runEcosystemStatusCheck()} disabled={verifying}>
                 🏛️ Ecosystem Status
+              </button>
+              <button type="button" className="vibe-action" onClick={() => void runValueProposalsCheck()} disabled={verifying}>
+                💎 Value Proposals
               </button>
             </div>
             <label className="vibe-model-toggle">
