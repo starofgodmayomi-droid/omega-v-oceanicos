@@ -27,5 +27,4 @@ export function registerTensorDavRoutes(fastify: FastifyInstance): void {
   };
 
   fastify.get<{ Params: { size: string } }>('/tensor/:size', handler);
-  fastify.get<{ Params: { size: string } }>('/api/tensor/:size', handler);
 }

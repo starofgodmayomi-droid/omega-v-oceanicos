@@ -36,6 +36,8 @@ import { registerExecuteRoute } from './execute-route.js';
 import { registerTensorDavRoutes } from './tensor-dav-route.js';
 import { registerLocalActionsStatusRoutes } from './local-actions-status-route.js';
 import { scanIntent } from './invisible-computer.js';
+import { checkPythonHealth, registerTensorRoute } from './tensor-route.js';
+import { checkOllamaHealth, registerChatRoute } from './chat-route.js';
 import {
   ENCRYPTION_ALGORITHM,
   appendEvent,
@@ -305,8 +307,11 @@ export function createApp(
   });
   registerMeshValidationRoute(fastify, ledgerMemory, requireReadAccess, jsonError);
   registerExecuteRoute(fastify, kaiMemory, jsonError, attestationSigningKey);
+  registerTensorRoute(fastify, ledgerMemory);
+  registerChatRoute(fastify);
 
   fastify.get('/health', async (_request, reply) => {
+    const [pythonStatus, ollamaStatus] = await Promise.all([checkPythonHealth(), checkOllamaHealth()]);
     let ledgerIntegrity;
     try {
       ledgerIntegrity = ledgerMemory.verifyChain();
@@ -332,6 +337,7 @@ export function createApp(
       readiness: ready ? 'ready' : 'degraded',
       checks: {
         observer: 'ready', verifier: 'ready', attester: attestationSigningKey ? 'ready' : 'degraded',
+        dependencies: { python: pythonStatus, ollama: ollamaStatus },
         memory: { status: memoryReady ? 'ready' : 'degraded', integrity: ledgerIntegrity.valid, height: ledgerIntegrity.height, reason: ledgerIntegrity.reason ?? null, encryption: 'disabled' },
         persistence: {
           mode: persistenceEnabled ? 'file' : 'memory',

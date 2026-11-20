@@ -42,6 +42,8 @@ and what remains only a proposal or local evidence state.
 ## At a glance
 
 - 📋 **[Manifest](MANIFEST.md)** — Project mission, principles, and architecture
+- 🏠 **[ΔVRØ HOUSE × Ω∞v OCEANICOS](docs/DVRO-HOUSE.md)** — human house, platform current, and verification boundary
+- 🌊 **[ΔVRØ HOUSE FLOW](docs/DVRO-HOUSE-FLOW.md)** — intent → verification → human review → observed next Δ
 - 💧 **[Entity Manifest](ECOSYSTEM_BODY.md)** — the constitutional compression of Ω∞v OCEANICOS as a sovereign digital entity
 - 💧 **[Therapeutic State Machine](docs/THERAPEUTIC-STATE-MACHINE.md)** — KAI / ELION / OMEGA operating prompt for bounded human-centered execution
 - 💧 **[Mirror-Water Universal Body](docs/MIRROR-WATER-UNIVERSAL-BODY.md)** — one body, one current, bounded transitions, and evidence-bound truth
@@ -67,6 +69,7 @@ and what remains only a proposal or local evidence state.
 - 📌 **[Bounded repository transition](skills/omega-bounded-repository-transition/SKILL.md)** — pin a commit, inspect, and write an evidence-bound report
 - 🛡️ **[Omega sovereign](skills/omega-sovereign/SKILL.md)** — human-rooted operating frame; symbols are not authority
 - 🧊 **[Unified Entity DAV](skills/unified-entity-dav/SKILL.md)** — the entity tensor method; a diagram is not a running service
+- 🧬 **[Unified Entity Architecture](docs/UNIFIED-ENTITY-ARCHITECTURE.md)** — five-layer local reality engine with explicit evidence boundaries
 - 🌐 **[Full-stack reality-access handoff](docs/upgrades/FULL_STACK_REALITY_ACCESS_2026-09-28.md)** — connector taxonomy without implicit ownership or authority
 - 🗺️ **[Repository inventory](docs/REPO_INVENTORY.md)** — workspace vs disk (current evidence)
 - ⚙️ **[Development Setup](docs/DEVELOPMENT.md)** — Get the project running locally

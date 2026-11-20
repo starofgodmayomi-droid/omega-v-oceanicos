@@ -41,6 +41,8 @@
     "oceanicos": "node bin/oceanicos.mjs",
     "start:api": "pnpm --filter api run start",
     "start:web": "pnpm --filter web run start",
+    "start:python": "python3 companion/python/tensor_server.py",
+    "health:local": "sh -c 'curl -fsS http://localhost:11434/api/tags >/dev/null && echo Ollama:OBSERVED || echo Ollama:UNKNOWN; curl -fsS http://localhost:8088/health >/dev/null && echo Python:OBSERVED || echo Python:UNKNOWN; curl -fsS http://localhost:5000/health >/dev/null && echo Fastify:OBSERVED || echo Fastify:UNKNOWN; curl -fsS http://localhost:3000 >/dev/null && echo Web:OBSERVED || echo Web:UNKNOWN'",
     "dev": "node bin/dev-server.mjs",
     "dev:api": "pnpm --filter api run dev",
     "dev:web": "pnpm --filter web run dev",

@@ -328,7 +328,9 @@ export function registerExecuteRoute(
         signal: AbortSignal.timeout(3000),
       });
       const data = await response.json();
-      return reply.status(response.status).send(data);
+      return response.ok
+        ? reply.status(200).send(data)
+        : reply.status(503).send({ success: false, status: 'UNKNOWN', error: 'COMPANION_ROUTE_UNAVAILABLE', upstreamStatus: response.status });
     } catch (err) {
       return reply.status(503).send({
         success: false,
@@ -348,7 +350,9 @@ export function registerExecuteRoute(
         signal: AbortSignal.timeout(3000),
       });
       const data = await response.json();
-      return reply.status(response.status).send(data);
+      return response.ok
+        ? reply.status(200).send(data)
+        : reply.status(503).send({ success: false, status: 'UNKNOWN', error: 'COMPANION_ROUTE_UNAVAILABLE', upstreamStatus: response.status });
     } catch (err) {
       return reply.status(503).send({
         success: false,

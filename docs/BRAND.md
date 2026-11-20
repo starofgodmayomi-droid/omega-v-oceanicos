@@ -11,6 +11,11 @@ across the repository, product, website, API, CLI, community, and future surface
 and `Ω∞v` for the verification engine.
 Do not use the obsolete `Ω∞v Oceanicos Max` suffix in public product copy.
 
+**House layer:** `ΔVRØ HOUSE` is the human, cultural, and creative container
+around the platform. It does not replace `OCEANICOS`, grant authority, or turn
+symbolic language into evidence. See the [ΔVRØ HOUSE contract](DVRO-HOUSE.md).
+The finite operating current is defined in the [ΔVRØ HOUSE FLOW](DVRO-HOUSE-FLOW.md).
+
 ## 1. Brand core
 
 | Layer | Canonical definition |
@@ -83,6 +88,7 @@ INFINITE FORMS.
 - **OMEGA OS** — the surrounding operating environment and execution context.
 - **Ω∞v** — the intelligence/verification engine and kernel identity.
 - **Verified Current** — the system's connective execution layer between intelligence and real-world consequence.
+- **ΔVRØ HOUSE** — the human-facing house for culture, craft, voice, and stewardship around the platform.
 
 ## 6. Symbol
 

@@ -69,6 +69,7 @@ export const API_ROUTE_INVENTORY = [
   'POST /execute',
   'POST /chat',
   'POST /api/chat',
+  'POST /api/chat/local',
   'GET /api/kai/memory',
   'GET /kai/memory',
   'GET /api/kai/memory/:id',

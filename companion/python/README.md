@@ -1,6 +1,8 @@
 # Oceanicos Python Companion
 
-This is the first Python companion integration slice for the Omega OS platform. It is a **stdlib-only, execution-free evidence adapter**.
+This is the Python companion integration slice for the Omega OS platform. The
+ledger adapter remains execution-free; the separate tensor daemon is an
+explicit local FastAPI/NumPy runtime with no cloud fallback.
 
 ## Contract
 
@@ -41,6 +43,21 @@ cat ledger.json | python3 companion/python/oceanicos_companion.py
 ```bash
 python3 -m unittest discover -s companion/python -p 'test_*.py'
 ```
+
+## 4D Tensor DAV companion
+
+The FastAPI/NumPy-backed `tensor_server.py` exposes bounded local endpoints for
+the exact contract `T[i,j,k,l] = i + j + k + l`:
+
+```bash
+python3 companion/python/tensor_server.py
+curl http://127.0.0.1:8088/health
+curl http://127.0.0.1:8088/tensor/4
+```
+
+Only sizes `4`, `6`, and `8` are admitted. The Fastify API uses this companion
+when reachable. If the daemon is unavailable, the API fails closed with HTTP
+503 and `UNKNOWN`; it does not silently substitute a TypeScript computation.
 
 This local companion slice does not claim deployment, external execution, provider authentication, or physical-world observation.
 
