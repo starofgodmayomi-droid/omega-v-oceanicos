@@ -22,6 +22,10 @@ except ImportError:
     HAS_NUMPY = False
 
 
+class TensorDivergenceError(ValueError):
+    """The companion-generated evidence failed its checksum invariant."""
+
+
 def compute_tensor_dav(n: int) -> Dict[str, Any]:
     """Compute the 4D hypercube tensor T[i,j,k,l] = i + j + k + l projected to 2D."""
     if n not in (4, 6, 8):
@@ -56,7 +60,7 @@ def compute_tensor_dav(n: int) -> Dict[str, Any]:
     actual_checksum = sum(flat_values)
 
     if actual_checksum != expected_checksum:
-        raise ValueError(f"Checksum mismatch: expected {expected_checksum}, observed {actual_checksum}")
+        raise TensorDivergenceError(f"Checksum mismatch: expected {expected_checksum}, observed {actual_checksum}")
 
     payload = {
         "success": True,
@@ -161,6 +165,11 @@ async def app(scope: Dict[str, Any], receive: Any, send: Any) -> None:
                 await send({"type": "http.response.start", "status": 200, "headers": headers})
                 await send({"type": "http.response.body", "body": body})
                 return
+            except TensorDivergenceError as err:
+                body = json.dumps({"success": False, "status": "DIVERGENT", "error": str(err)}).encode("utf-8")
+                await send({"type": "http.response.start", "status": 422, "headers": headers})
+                await send({"type": "http.response.body", "body": body})
+                return
             except Exception as err:
                 body = json.dumps({"success": False, "status": "UNKNOWN", "error": str(err)}).encode("utf-8")
                 await send({"type": "http.response.start", "status": 400, "headers": headers})
@@ -171,6 +180,37 @@ async def app(scope: Dict[str, Any], receive: Any, send: Any) -> None:
     await send({"type": "http.response.start", "status": 404, "headers": headers})
     await send({"type": "http.response.body", "body": body})
 
+
+# Prefer the declared FastAPI surface when dependencies are installed; the ASGI fallback above keeps local smoke tests execution-free.
+try:
+    from fastapi import FastAPI
+    from fastapi.responses import JSONResponse
+
+    fastapi_app = FastAPI(title="ΔVRØ HOUSE Python Companion", docs_url=None, redoc_url=None)
+
+    @fastapi_app.get("/health")
+    def fastapi_health() -> dict:
+        return {"status": "ok", "service": "companion-dav", "port": 8088, "engine": "python-numpy" if HAS_NUMPY else "python-stdlib"}
+
+    @fastapi_app.get("/voice")
+    @fastapi_app.get("/voice/status")
+    @fastapi_app.get("/api/voice")
+    @fastapi_app.get("/api/voice/status")
+    def fastapi_voice() -> dict:
+        return compute_voice_bridge()
+
+    @fastapi_app.get("/tensor/{n}")
+    def fastapi_tensor(n: int):
+        try:
+            return compute_tensor_dav(n)
+        except TensorDivergenceError as err:
+            return JSONResponse(status_code=422, content={"success": False, "status": "DIVERGENT", "error": str(err)})
+        except ValueError as err:
+            return JSONResponse(status_code=400, content={"success": False, "status": "UNKNOWN", "error": str(err)})
+
+    app = fastapi_app
+except ImportError:
+    pass
 
 # --- Standalone HTTP Server fallback ---
 
@@ -220,6 +260,13 @@ class CompanionHTTPHandler(BaseHTTPRequestHandler):
                     self.send_header("Access-Control-Allow-Origin", "*")
                     self.end_headers()
                     self.wfile.write(json.dumps(data).encode("utf-8"))
+                    return
+                except TensorDivergenceError as err:
+                    self.send_response(422)
+                    self.send_header("Content-Type", "application/json")
+                    self.send_header("Access-Control-Allow-Origin", "*")
+                    self.end_headers()
+                    self.wfile.write(json.dumps({"success": False, "status": "DIVERGENT", "error": str(err)}).encode("utf-8"))
                     return
                 except Exception as err:
                     self.send_response(400)

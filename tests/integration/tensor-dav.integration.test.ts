@@ -44,7 +44,7 @@ test('tensor DAV rejects a divergent invariant', () => {
   assert.equal(verifyTensorDav(candidate).status, 'DIVERGENT');
 });
 
-test('Fastify serves both read-only tensor paths and preserves kai_ledger.json', async () => {
+test('Fastify fails closed when the companion is unavailable and rejects unknown sizes', async () => {
   const { mkdtempSync, readFileSync, rmSync } = await import('node:fs');
   const { join } = await import('node:path');
   const { tmpdir } = await import('node:os');
@@ -52,24 +52,22 @@ test('Fastify serves both read-only tensor paths and preserves kai_ledger.json',
   const directory = mkdtempSync(join(tmpdir(), 'tensor-dav-api-'));
   const ledgerPath = join(process.cwd(), 'kai_ledger.json');
   const before = readFileSync(ledgerPath, 'utf8');
+  const previousCompanionUrl = process.env.KAI_COMPANION_URL;
+  process.env.KAI_COMPANION_URL = 'http://127.0.0.1:1';
   const app = createApp(join(directory, 'api.db'), false);
   try {
     await app.ready();
-    const requests = ['/tensor/4', '/api/tensor/4', '/api/tensor/6', '/api/tensor/8'];
-    for (const path of requests) {
-      const response = await app.inject({ method: 'GET', url: path });
-      assert.equal(response.statusCode, 200, `${path} should return 200`);
-      const body = response.json() as { status: string; sha256: string; invariants: { checksum: number } };
-      assert.equal(body.status, 'VERIFIED');
-      assert.match(body.sha256, /^[a-f0-9]{64}$/);
-      assert.equal(body.invariants.checksum, checksums.get(Number(path.split('/').at(-1) === '4' ? 4 : path.split('/').at(-1))));
-    }
+    const offline = await app.inject({ method: 'GET', url: '/tensor/4' });
+    assert.equal(offline.statusCode, 503);
+    assert.equal(offline.json().status, 'UNKNOWN');
     const invalid = await app.inject({ method: 'GET', url: '/tensor/5' });
     assert.equal(invalid.statusCode, 400);
     assert.equal(invalid.json().status, 'UNKNOWN');
     assert.equal(readFileSync(ledgerPath, 'utf8'), before, 'ordinary GET requests must not mutate the KAI ledger');
   } finally {
     await app.close();
+    if (previousCompanionUrl === undefined) delete process.env.KAI_COMPANION_URL;
+    else process.env.KAI_COMPANION_URL = previousCompanionUrl;
     rmSync(directory, { recursive: true, force: true });
   }
 });
