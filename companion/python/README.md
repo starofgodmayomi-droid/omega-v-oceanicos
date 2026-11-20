@@ -1,6 +1,6 @@
 # Oceanicos Python Companion
 
-This is the first Python companion integration slice for the Omega OS platform. It is a **stdlib-only, execution-free evidence adapter**.
+This directory contains two distinct Python surfaces. `oceanicos_companion.py` is the **stdlib-only, execution-free evidence adapter** described below. `main.py` is an optional standalone tensor/voice HTTP observer; it is not required by the canonical TypeScript DAV API path and must not be treated as running merely because the file exists.
 
 ## Contract
 
@@ -43,6 +43,12 @@ python3 -m unittest discover -s companion/python -p 'test_*.py'
 ```
 
 This local companion slice does not claim deployment, external execution, provider authentication, or physical-world observation.
+
+## Optional tensor observer (`main.py`)
+
+`main.py` exposes an ASGI-compatible `app` and a zero-dependency `http.server` fallback for `/health`, `/tensor/{size}`, and `/api/tensor/{size}` when explicitly started on port `8088`. It computes the same deterministic `T[i,j,k,l] = i + j + k + l` projection for sizes `4`, `6`, and `8`, with a stdlib fallback when NumPy is unavailable. Its response digest is SHA-256 over canonical JSON; it is not an HMAC signature or an external attestation.
+
+The Fastify API does not fetch this observer under the current Option A architecture. If the process is absent, the state of `:8088` is `UNKNOWN`; do not infer health or deployment from source presence. Unsupported input currently returns HTTP `400` with `UNKNOWN`, while invariant failures are surfaced as `UNKNOWN` by the observer. Changing those semantics or making the observer a required dependency is a separate Option B architecture change requiring explicit review.
 
 ---
 
