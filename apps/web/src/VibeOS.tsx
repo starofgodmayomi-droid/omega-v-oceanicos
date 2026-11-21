@@ -1667,6 +1667,61 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
     setVerifying(false);
   };
 
+  const runComposioGatewayCheck = async () => {
+    if (verifying) return;
+    beginQuickAction('Inspect Composio Gateway');
+    let result: ChatMessage;
+    try {
+      const response = await fetch(apiUrl('/v1/omega/composio/read'), {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', accept: 'application/json' },
+        body: JSON.stringify({
+          toolSlug: 'GITHUB_GET_A_REPOSITORY',
+          arguments: { owner: 'workmail900000-wq', repo: 'OceanicOS-Living-Charter' },
+        }),
+      });
+      let payload: any = null;
+      try {
+        payload = await response.json();
+      } catch {
+        payload = null;
+      }
+      if (!response.ok || !payload?.success || !payload?.observation) {
+        result = {
+          role: 'ai',
+          content: '[UNKNOWN]',
+          verified: false,
+          status: 'UNKNOWN',
+          detail: `POST /v1/omega/composio/read · HTTP ${response.status}`,
+        };
+      } else {
+        const observation = payload.observation;
+        const toolkit = payload.toolkit ?? 'unknown';
+        const toolSlug = payload.toolSlug ?? 'unknown';
+        const status = payload.status ?? observation.status ?? 'UNKNOWN';
+        const decision = observation.admission?.decision ?? 'UNKNOWN';
+        const journalSeq = payload.journal?.sequence ?? 0;
+        result = {
+          role: 'ai',
+          content: `Composio Gateway: Toolkit ${toolkit} · Tool ${toolSlug} · Status: ${status} · Admission: ${decision} · Journal #${journalSeq} · Principle: "A Composio response is an observation only; this route does not independently verify provider data or authorize write actions".`,
+          verified: false,
+          status: 'OBSERVED',
+          detail: 'POST /v1/omega/composio/read · read-only gateway connector observation.',
+        };
+      }
+    } catch (error) {
+      result = {
+        role: 'ai',
+        content: '[UNKNOWN]',
+        verified: false,
+        status: 'UNKNOWN',
+        detail: `POST /v1/omega/composio/read unavailable${error instanceof Error ? ` · ${error.message}` : ''}`,
+      };
+    }
+    setMessages((previous) => [...previous, result]);
+    setVerifying(false);
+  };
+
   const empty = messages.length === 0 && !verifying;
 
   return (
@@ -2040,6 +2095,9 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
               </button>
               <button type="button" className="vibe-action" onClick={() => void runTokenizerCharterCheck()} disabled={verifying}>
                 🧬 Charter BPE
+              </button>
+              <button type="button" className="vibe-action" onClick={() => void runComposioGatewayCheck()} disabled={verifying}>
+                🔌 Composio Gateway
               </button>
             </div>
             <label className="vibe-model-toggle">

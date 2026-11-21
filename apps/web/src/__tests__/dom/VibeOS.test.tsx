@@ -1211,4 +1211,53 @@ describe('Vibe OS surface', () => {
     expect(screen.getByText(/Receive. Hold. Clarify. Connect. Adapt. Nourish. Restore. Flow. Return Better./i)).toBeInTheDocument();
     expect(screen.getByText(/tokenization is transparent byte-pair compression, not opaque embedding/i)).toBeInTheDocument();
   });
+
+  it('observes Composio Gateway read connector observation without asserting write authorization', async () => {
+    installFetch({
+      '/api/v1/omega/composio/read': () =>
+        json({
+          success: true,
+          status: 'NOT_EXECUTED',
+          toolSlug: 'GITHUB_GET_A_REPOSITORY',
+          toolkit: 'github',
+          result: null,
+          evidenceHash: null,
+          observation: {
+            admission: {
+              decision: 'DENY',
+              admitted: false,
+              issues: ['connector authority evidence is missing'],
+            },
+            status: 'NOT_EXECUTED',
+            authorized: false,
+            executed: false,
+            observed: false,
+            expectedObservation: 'Provider result independently reconciled against a declared expected state.',
+            evidence: 'sha256:4ffb6fba28023235d9d9f507b021ef08c2c3935e3da4ae96b8b507f435a06ca2',
+            issues: ['connector is not admitted; execution is refused'],
+            observedAt: '2026-11-21T21:19:26.940Z',
+            verificationScope: 'admitted-connector-observation-only',
+          },
+          journal: {
+            sequence: 1,
+            hash: 'e58cf16dc61296a1de238a8e590bc6f5db71aa60db5f8724b35bc86a98f6a966',
+            limitation: 'local-hash-chain-is-not-deployment-health-or-live-github',
+          },
+          limitation: 'A Composio response is an observation only. This route does not independently verify provider data or authorize write actions.',
+        }),
+    });
+    const user = userEvent.setup();
+    render(<VibeOS />);
+
+    const composioBtn = screen.getByRole('button', { name: /🔌 Composio Gateway/i });
+    expect(composioBtn).toBeInTheDocument();
+
+    await user.click(composioBtn);
+    expect(await screen.findByText(/Composio Gateway: Toolkit github/i)).toBeInTheDocument();
+    expect(screen.getByText(/Tool GITHUB_GET_A_REPOSITORY/i)).toBeInTheDocument();
+    expect(screen.getByText(/Status: NOT_EXECUTED/i)).toBeInTheDocument();
+    expect(screen.getByText(/Admission: DENY/i)).toBeInTheDocument();
+    expect(screen.getByText(/Journal #1/i)).toBeInTheDocument();
+    expect(screen.getByText(/A Composio response is an observation only; this route does not independently verify provider data or authorize write actions/i)).toBeInTheDocument();
+  });
 });
