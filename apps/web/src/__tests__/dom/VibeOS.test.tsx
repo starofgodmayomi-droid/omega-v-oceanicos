@@ -1176,4 +1176,39 @@ describe('Vibe OS surface', () => {
     expect(screen.getByText(/Receipt: DIVERGENT/i)).toBeInTheDocument();
     expect(screen.getByText(/regional convergence is simulated local evidence; it is not external consensus, deployment proof, or truth attestation/i)).toBeInTheDocument();
   });
+
+  it('observes Living Charter BPE tokenization compression without asserting opaque embedding', async () => {
+    installFetch({
+      '/api/v1/tokenizer/charter': () =>
+        json({
+          success: true,
+          status: 'VERIFIED',
+          charter: {
+            constitution: 'Receive. Hold. Clarify. Connect. Adapt. Nourish. Restore. Flow. Return Better.',
+            law: 'Living Platform-Agnostic Byte-Pair Encoding',
+          },
+          tokenization: {
+            originalByteLength: 395,
+            compressedTokenLength: 298,
+            compressionRatio: 1.33,
+            vocabSize: 272,
+            mergesCount: 16,
+            topMerges: [],
+          },
+          evidenceBoundary: 'tokenization is transparent byte-pair compression, not opaque embedding',
+        }),
+    });
+    const user = userEvent.setup();
+    render(<VibeOS />);
+
+    const bpeBtn = screen.getByRole('button', { name: /🧬 Charter BPE/i });
+    expect(bpeBtn).toBeInTheDocument();
+
+    await user.click(bpeBtn);
+    expect(await screen.findByText(/Living Charter BPE: Compression 1.33x/i)).toBeInTheDocument();
+    expect(screen.getByText(/395B ➔ 298 tokens/i)).toBeInTheDocument();
+    expect(screen.getByText(/Merges: 16/i)).toBeInTheDocument();
+    expect(screen.getByText(/Receive. Hold. Clarify. Connect. Adapt. Nourish. Restore. Flow. Return Better./i)).toBeInTheDocument();
+    expect(screen.getByText(/tokenization is transparent byte-pair compression, not opaque embedding/i)).toBeInTheDocument();
+  });
 });

@@ -224,6 +224,27 @@ export type {
   RepoUpgradeCompression,
 } from './ecosystem-body-equation.js';
 
+export {
+  trainBPE,
+  encode as encodeBPE,
+  decode as decodeBPE,
+  getStats as getBPEStats,
+  merge as mergeBPE,
+  bytesToString as bpeBytesToString,
+  serializeMerges,
+  deserializeMerges,
+  mergesToArray,
+  arrayToMerges,
+  getTokenFrequencies,
+  getVocabSizeDistribution,
+  OCEANIC_LIVING_CHARTER_CORE_TEXT,
+} from './minbpe.js';
+export type {
+  MergeStep,
+  TrainResult,
+  TokenizerConfig,
+} from './minbpe.js';
+
 export function executeOceanicosMaxExpansion(): CryptographicBlock {
   const kernelChain = new PluralisticHashChain();
   const telemetry = observePlanetaryBase();

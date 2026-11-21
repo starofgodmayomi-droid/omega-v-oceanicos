@@ -1620,6 +1620,53 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
     setVerifying(false);
   };
 
+  const runTokenizerCharterCheck = async () => {
+    if (verifying) return;
+    beginQuickAction('Inspect Living Charter BPE');
+    let result: ChatMessage;
+    try {
+      const response = await fetch(apiUrl('/v1/tokenizer/charter'), { headers: { accept: 'application/json' } });
+      let payload: any = null;
+      try {
+        payload = await response.json();
+      } catch {
+        payload = null;
+      }
+      if (!response.ok || !payload?.success || !payload?.tokenization) {
+        result = {
+          role: 'ai',
+          content: '[UNKNOWN]',
+          verified: false,
+          status: 'UNKNOWN',
+          detail: `GET /v1/tokenizer/charter · HTTP ${response.status}`,
+        };
+      } else {
+        const tokenization = payload.tokenization;
+        const ratio = tokenization.compressionRatio ?? 1;
+        const origBytes = tokenization.originalByteLength ?? 0;
+        const tokenCount = tokenization.compressedTokenLength ?? 0;
+        const mergesCount = tokenization.mergesCount ?? 0;
+        result = {
+          role: 'ai',
+          content: `Living Charter BPE: Compression ${ratio.toFixed(2)}x (${origBytes}B ➔ ${tokenCount} tokens) · Merges: ${mergesCount} · Constitution: "Receive. Hold. Clarify. Connect. Adapt. Nourish. Restore. Flow. Return Better." · Principle: "tokenization is transparent byte-pair compression, not opaque embedding".`,
+          verified: false,
+          status: 'OBSERVED',
+          detail: 'GET /v1/tokenizer/charter · living BPE tokenization engine ported from karpathy/minbpe.',
+        };
+      }
+    } catch (error) {
+      result = {
+        role: 'ai',
+        content: '[UNKNOWN]',
+        verified: false,
+        status: 'UNKNOWN',
+        detail: `GET /v1/tokenizer/charter unavailable${error instanceof Error ? ` · ${error.message}` : ''}`,
+      };
+    }
+    setMessages((previous) => [...previous, result]);
+    setVerifying(false);
+  };
+
   const empty = messages.length === 0 && !verifying;
 
   return (
@@ -1990,6 +2037,9 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
               </button>
               <button type="button" className="vibe-action" onClick={() => void runMeshValidationCheck()} disabled={verifying}>
                 ⚡ Mesh Validation
+              </button>
+              <button type="button" className="vibe-action" onClick={() => void runTokenizerCharterCheck()} disabled={verifying}>
+                🧬 Charter BPE
               </button>
             </div>
             <label className="vibe-model-toggle">

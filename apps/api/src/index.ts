@@ -6,7 +6,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { MAX_PROOF_OF_WORK_ATTEMPTS, RememberEngine } from '@oceanicos/remember';
-import { FileConnectorObservationStore, FileValueNavigatorStore, MiniKernel, buildOmegaWaterFlow, compressRepoEquation, compressRepoTowardUpgrade, compressSingleBody, evaluateEcosystemFixpoint, executeAuthorizedTransition, expandRepoEquation, expandSingleBody, ECOSYSTEM_BODY_EQUATION_ID, ECOSYSTEM_BODY_EQUATION_SOURCE, ECOSYSTEM_BODY_REALITY, EQUATION_LAW_OBSERVATION, EQUATION_TEXT, REPO_OUTWARD_RING, resolveChangeAdmission, verifyExecutedReality } from '@oceanicos/mini';
+import { FileConnectorObservationStore, FileValueNavigatorStore, MiniKernel, buildOmegaWaterFlow, compressRepoEquation, compressRepoTowardUpgrade, compressSingleBody, evaluateEcosystemFixpoint, executeAuthorizedTransition, expandRepoEquation, expandSingleBody, ECOSYSTEM_BODY_EQUATION_ID, ECOSYSTEM_BODY_EQUATION_SOURCE, ECOSYSTEM_BODY_REALITY, EQUATION_LAW_OBSERVATION, EQUATION_TEXT, REPO_OUTWARD_RING, resolveChangeAdmission, verifyExecutedReality, trainBPE, mergesToArray, OCEANIC_LIVING_CHARTER_CORE_TEXT } from '@oceanicos/mini';
 import type { SingleBodyEntry } from '@oceanicos/mini';
 import { AsymmetricValidationGuard, DeclarativeVerificationEngine, MultiRegionMeshConvergence } from '@oceanicos/verification';
 import { ObserverEngine } from '@oceanicos/observer';
@@ -983,6 +983,51 @@ export function createApp(
   fastify.post('/v1/auth/keypair', async () => ({ success: true, ...AsymmetricValidationGuard.generateKeyPair() }));
   fastify.post('/v1/block/sign', async (request: any, reply) => { const { data, privateKey } = request.body || {}; if (!data || !privateKey) return jsonError(reply, 400, 'MISSING_DATA_OR_PRIVATE_KEY'); return { success: true, signature: AsymmetricValidationGuard.sign(data, privateKey) }; });
   fastify.post('/v1/block/verify-signature', async (request: any, reply) => { const { data, signature, publicKey } = request.body || {}; if (!data || !signature || !publicKey) return jsonError(reply, 400, 'MISSING_FIELDS'); return { success: true, valid: AsymmetricValidationGuard.verify(data, signature, publicKey) }; });
+
+  fastify.get('/v1/tokenizer/charter', async () => {
+    const text = OCEANIC_LIVING_CHARTER_CORE_TEXT;
+    const trained = trainBPE(text, 272);
+    return {
+      success: true,
+      status: 'VERIFIED',
+      charter: {
+        constitution: 'Receive. Hold. Clarify. Connect. Adapt. Nourish. Restore. Flow. Return Better.',
+        law: 'Living Platform-Agnostic Byte-Pair Encoding',
+      },
+      tokenization: {
+        originalByteLength: trained.originalByteLength,
+        compressedTokenLength: trained.compressedTokenLength,
+        compressionRatio: Math.round(trained.compressionRatio * 100) / 100,
+        vocabSize: trained.vocab.size,
+        mergesCount: trained.merges.size,
+        topMerges: trained.steps.slice(0, 5),
+      },
+      evidenceBoundary: 'tokenization is transparent byte-pair compression, not opaque embedding',
+    };
+  });
+
+  fastify.post('/v1/tokenizer/train', { preHandler: requireReadAccess }, async (request: any, reply) => {
+    const rawText = typeof request.body?.text === 'string' ? request.body.text : '';
+    if (!rawText.trim()) return jsonError(reply, 400, 'TEXT_REQUIRED');
+    const rawVocabSize = typeof request.body?.vocabSize === 'number' ? request.body.vocabSize : 260;
+    const vocabSize = Math.max(256, Math.min(1000, Math.floor(rawVocabSize)));
+    try {
+      const trained = trainBPE(rawText, vocabSize);
+      return {
+        success: true,
+        status: 'VERIFIED',
+        originalByteLength: trained.originalByteLength,
+        compressedTokenLength: trained.compressedTokenLength,
+        compressionRatio: Math.round(trained.compressionRatio * 100) / 100,
+        vocabSize: trained.vocab.size,
+        mergesCount: trained.merges.size,
+        merges: mergesToArray(trained.merges),
+        steps: trained.steps,
+      };
+    } catch (err) {
+      return jsonError(reply, 500, 'TOKENIZATION_FAILED', { error: err instanceof Error ? err.message : String(err) });
+    }
+  });
 
   const persistenceStatus = () => ({ enabled: persistenceEnabled, snapshot, eventLog, rotationPending, operatorAction, recovery, deletion, custody, coordination });
   fastify.get('/persistence/status', { preHandler: requireReadAccess }, async () => ({ success: true, persistence: persistenceStatus() }));
