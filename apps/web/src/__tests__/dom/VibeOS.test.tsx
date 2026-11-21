@@ -1096,4 +1096,28 @@ describe('Vibe OS surface', () => {
     expect(screen.getByText(/Consistency: multi-process-single-volume/i)).toBeInTheDocument();
     expect(screen.getByText(/revocation journal audits locally revoked keys, not distributed consensus/i)).toBeInTheDocument();
   });
+
+  it('observes Mesh Nodes and displays simulated topology without asserting live reachability', async () => {
+    installFetch({
+      '/api/v1/mesh/nodes': () =>
+        json({
+          success: true,
+          nodes: [
+            { nodeId: 'node-us-virginia', region: 'US', jurisdiction: 'US-East', latencyFactorMs: 18 },
+            { nodeId: 'node-eu-frankfurt', region: 'EU', jurisdiction: 'EU-Central', latencyFactorMs: 42 },
+          ],
+        }),
+    });
+    const user = userEvent.setup();
+    render(<VibeOS />);
+
+    const nodesBtn = screen.getByRole('button', { name: /🌐 Mesh Nodes/i });
+    expect(nodesBtn).toBeInTheDocument();
+
+    await user.click(nodesBtn);
+    expect(await screen.findByText(/Mesh Nodes: 2 topology node\(s\) registered/i)).toBeInTheDocument();
+    expect(screen.getByText(/Regions: US, EU/i)).toBeInTheDocument();
+    expect(screen.getByText(/Avg Latency Factor: 30ms/i)).toBeInTheDocument();
+    expect(screen.getByText(/mesh node topology audits simulated multi-region endpoints, not live WAN reachability/i)).toBeInTheDocument();
+  });
 });

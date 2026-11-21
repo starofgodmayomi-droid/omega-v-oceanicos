@@ -1519,6 +1519,54 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
     setVerifying(false);
   };
 
+  const runMeshNodesCheck = async () => {
+    if (verifying) return;
+    beginQuickAction('Inspect Mesh Nodes');
+    let result: ChatMessage;
+    try {
+      const response = await fetch(apiUrl('/v1/mesh/nodes'), { headers: { accept: 'application/json' } });
+      let payload: any = null;
+      try {
+        payload = await response.json();
+      } catch {
+        payload = null;
+      }
+      if (!response.ok || !payload?.success || !Array.isArray(payload?.nodes)) {
+        result = {
+          role: 'ai',
+          content: '[UNKNOWN]',
+          verified: false,
+          status: 'UNKNOWN',
+          detail: `GET /v1/mesh/nodes · HTTP ${response.status}`,
+        };
+      } else {
+        const nodes: any[] = payload.nodes;
+        const total = nodes.length;
+        const regions = nodes.map((n) => n.region ?? 'unknown').join(', ');
+        const avgLatency = total > 0
+          ? Math.round(nodes.reduce((acc, n) => acc + (typeof n.latencyFactorMs === 'number' ? n.latencyFactorMs : 0), 0) / total)
+          : 0;
+        result = {
+          role: 'ai',
+          content: `Mesh Nodes: ${total} topology node(s) registered · Regions: ${regions} · Avg Latency Factor: ${avgLatency}ms · Principle: "mesh node topology audits simulated multi-region endpoints, not live WAN reachability".`,
+          verified: false,
+          status: 'OBSERVED',
+          detail: 'GET /v1/mesh/nodes · sovereign multi-region simulated node topology; not live network connectivity.',
+        };
+      }
+    } catch (error) {
+      result = {
+        role: 'ai',
+        content: '[UNKNOWN]',
+        verified: false,
+        status: 'UNKNOWN',
+        detail: `GET /v1/mesh/nodes unavailable${error instanceof Error ? ` · ${error.message}` : ''}`,
+      };
+    }
+    setMessages((previous) => [...previous, result]);
+    setVerifying(false);
+  };
+
   const empty = messages.length === 0 && !verifying;
 
   return (
@@ -1883,6 +1931,9 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
               </button>
               <button type="button" className="vibe-action" onClick={() => void runAttestationRevocationsCheck()} disabled={verifying}>
                 🚫 Attestation Revocations
+              </button>
+              <button type="button" className="vibe-action" onClick={() => void runMeshNodesCheck()} disabled={verifying}>
+                🌐 Mesh Nodes
               </button>
             </div>
             <label className="vibe-model-toggle">
