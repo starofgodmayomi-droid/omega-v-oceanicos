@@ -1567,6 +1567,59 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
     setVerifying(false);
   };
 
+  const runMeshValidationCheck = async () => {
+    if (verifying) return;
+    beginQuickAction('Inspect Mesh Validation');
+    let result: ChatMessage;
+    try {
+      const response = await fetch(
+        apiUrl('/v1/mesh/validate?siliconYield=0.99&gridLoadMegawatts=420&acceleratorInventory=8000'),
+        { headers: { accept: 'application/json' } }
+      );
+      let payload: any = null;
+      try {
+        payload = await response.json();
+      } catch {
+        payload = null;
+      }
+      if (!response.ok || !payload?.success || !payload?.validation) {
+        result = {
+          role: 'ai',
+          content: '[UNKNOWN]',
+          verified: false,
+          status: 'UNKNOWN',
+          detail: `GET /v1/mesh/validate · HTTP ${response.status}`,
+        };
+      } else {
+        const validation = payload.validation;
+        const mesh = validation.mesh ?? {};
+        const receipt = validation.receipt ?? {};
+        const convergence = payload.convergence ?? {};
+        const quorumReached = convergence.quorumReached ?? mesh.quorumReached ?? false;
+        const effectiveStatus = convergence.effectiveStatus ?? mesh.effectiveStatus ?? 'UNKNOWN';
+        const participatingNodes = convergence.participatingNodes ?? mesh.participatingNodes ?? 0;
+        const receiptStatus = receipt.status ?? 'UNKNOWN';
+        result = {
+          role: 'ai',
+          content: `Mesh Validation: Quorum ${quorumReached ? 'REACHED' : 'UNREACHED'} · Status: ${effectiveStatus} · Nodes: ${participatingNodes} · Receipt: ${receiptStatus} · Principle: "regional convergence is simulated local evidence; it is not external consensus, deployment proof, or truth attestation".`,
+          verified: false,
+          status: 'OBSERVED',
+          detail: 'GET /v1/mesh/validate · regional convergence simulated local evidence; not external consensus.',
+        };
+      }
+    } catch (error) {
+      result = {
+        role: 'ai',
+        content: '[UNKNOWN]',
+        verified: false,
+        status: 'UNKNOWN',
+        detail: `GET /v1/mesh/validate unavailable${error instanceof Error ? ` · ${error.message}` : ''}`,
+      };
+    }
+    setMessages((previous) => [...previous, result]);
+    setVerifying(false);
+  };
+
   const empty = messages.length === 0 && !verifying;
 
   return (
@@ -1934,6 +1987,9 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
               </button>
               <button type="button" className="vibe-action" onClick={() => void runMeshNodesCheck()} disabled={verifying}>
                 🌐 Mesh Nodes
+              </button>
+              <button type="button" className="vibe-action" onClick={() => void runMeshValidationCheck()} disabled={verifying}>
+                ⚡ Mesh Validation
               </button>
             </div>
             <label className="vibe-model-toggle">

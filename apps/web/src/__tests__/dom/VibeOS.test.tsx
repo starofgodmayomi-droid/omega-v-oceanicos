@@ -1120,4 +1120,60 @@ describe('Vibe OS surface', () => {
     expect(screen.getByText(/Avg Latency Factor: 30ms/i)).toBeInTheDocument();
     expect(screen.getByText(/mesh node topology audits simulated multi-region endpoints, not live WAN reachability/i)).toBeInTheDocument();
   });
+
+  it('observes Mesh Validation and displays simulated convergence telemetry without asserting external consensus', async () => {
+    installFetch({
+      '/api/v1/mesh/validate?siliconYield=0.99&gridLoadMegawatts=420&acceleratorInventory=8000': () =>
+        json({
+          success: true,
+          telemetry: {
+            uuid: '7b2b19c3-3868-4b3b-b98e-3f2c30817cca',
+            timestamp: '2026-11-21T19:52:22.979Z',
+            siliconYield: 0.99,
+            gridLoadMegawatts: 420,
+            acceleratorInventory: 8000,
+          },
+          validation: {
+            ledger: { intact: true, scope: 'local SQLite hash-chain recomputation' },
+            mesh: {
+              effectiveStatus: 'CONVERGED_PLURAL',
+              quorumReached: true,
+              participatingNodes: 4,
+              pluralismTriggered: true,
+            },
+            receipt: {
+              observationId: '7b2b19c3-3868-4b3b-b98e-3f2c30817cca',
+              verifiedAt: '2026-11-21T19:52:22.980Z',
+              status: 'DIVERGENT',
+              passedPredicates: [],
+              failedPredicates: [],
+              digest: 'a3aa7dea409c93ac23e41f3692aa28ebe30a279a964c9200e15cbca0ec460469',
+            },
+          },
+          evidenceBoundary: 'regional convergence is simulated local evidence; it is not external consensus, deployment proof, or truth attestation',
+          convergence: {
+            consensusRound: 'round-1795290742980-8eceafc4',
+            quorumReached: true,
+            pluralismTriggered: true,
+            participatingNodes: 4,
+            votes: [],
+            effectiveStatus: 'CONVERGED_PLURAL',
+            clusterSignatureProof: '711d1ef22c4ee6d705825401274b6b0076d5ba329be950b9ed3ae12ce28dd7e3',
+            timestamp: '2026-11-21T19:52:22.980Z',
+          },
+        }),
+    });
+    const user = userEvent.setup();
+    render(<VibeOS />);
+
+    const validateBtn = screen.getByRole('button', { name: /⚡ Mesh Validation/i });
+    expect(validateBtn).toBeInTheDocument();
+
+    await user.click(validateBtn);
+    expect(await screen.findByText(/Mesh Validation: Quorum REACHED/i)).toBeInTheDocument();
+    expect(screen.getByText(/Status: CONVERGED_PLURAL/i)).toBeInTheDocument();
+    expect(screen.getByText(/Nodes: 4/i)).toBeInTheDocument();
+    expect(screen.getByText(/Receipt: DIVERGENT/i)).toBeInTheDocument();
+    expect(screen.getByText(/regional convergence is simulated local evidence; it is not external consensus, deployment proof, or truth attestation/i)).toBeInTheDocument();
+  });
 });
