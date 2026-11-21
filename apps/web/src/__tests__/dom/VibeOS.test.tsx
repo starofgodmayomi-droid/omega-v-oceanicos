@@ -991,4 +991,53 @@ describe('Vibe OS surface', () => {
     expect(screen.getByText(/PoW Attempts Bound: 1000000/i)).toBeInTheDocument();
     expect(screen.getByText(/local mining simulation is bounded trial/i)).toBeInTheDocument();
   });
+
+  it('observes Command Provenance and displays lineage without asserting execution authority', async () => {
+    installFetch({
+      '/api/v1/omega/commands': () =>
+        json({
+          success: true,
+          count: 1,
+          commands: [
+            {
+              commandId: 'cmd-test-123',
+              intent: 'verify lineage continuity',
+              requestedBy: 'operator-1',
+              status: 'REVIEW',
+              createdAt: '2026-11-21T00:00:00Z',
+              workers: ['planner'],
+              decision: 'REVIEW',
+            },
+          ],
+        }),
+      '/api/v1/omega/commands/cmd-test-123/provenance': () =>
+        json({
+          success: true,
+          provenance: {
+            commandId: 'cmd-test-123',
+            intent: 'verify lineage continuity',
+            requestedBy: 'operator-1',
+            createdAt: '2026-11-21T00:00:00Z',
+            context: { stateBefore: 'abc', observationKind: 'supplied-state' },
+            workers: ['planner'],
+            status: 'REVIEW',
+            events: [{ type: 'command.proposed', commandId: 'cmd-test-123', status: 'REVIEW', at: '2026-11-21T00:00:00Z' }],
+            lineage: [{ type: 'command.proposed', at: '2026-11-21T00:00:00Z', status: 'REVIEW' }],
+            redacted: true,
+          },
+        }),
+    });
+    const user = userEvent.setup();
+    render(<VibeOS />);
+
+    const provBtn = screen.getByRole('button', { name: /🔍 Command Provenance/i });
+    expect(provBtn).toBeInTheDocument();
+
+    await user.click(provBtn);
+    expect(await screen.findByText(/Command Provenance \(cmd-test-123\): Status: REVIEW/i)).toBeInTheDocument();
+    expect(screen.getByText(/Lineage: 1 step\(s\) · Events: 1/i)).toBeInTheDocument();
+    expect(screen.getByText(/Intent: "verify lineage continuity"/i)).toBeInTheDocument();
+    expect(screen.getByText(/Requested by: operator-1/i)).toBeInTheDocument();
+    expect(screen.getByText(/command lineage audits transitions, not execution authority/i)).toBeInTheDocument();
+  });
 });

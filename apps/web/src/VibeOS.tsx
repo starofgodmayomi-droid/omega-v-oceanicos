@@ -141,7 +141,8 @@ function generateWaterFlowFrames(state: string, intent: string): readonly WaterF
   }));
 }
 
-export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: () => void; active?: boolean }) {  const [messages, setMessages] = useState<ChatMessage[]>([]);
+export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: () => void; active?: boolean }) {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState('');
   const [verifying, setVerifying] = useState(false);
   const [spine, setSpine] = useState<HealthObservation>({
@@ -1344,6 +1345,84 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
     setVerifying(false);
   };
 
+  const runCommandProvenanceCheck = async () => {
+    if (verifying) return;
+    beginQuickAction('Inspect Command Provenance');
+    let result: ChatMessage;
+    try {
+      const listResponse = await fetch(apiUrl('/v1/omega/commands'), { headers: { accept: 'application/json' } });
+      let listPayload: any = null;
+      try {
+        listPayload = await listResponse.json();
+      } catch {
+        listPayload = null;
+      }
+      if (!listResponse.ok || !listPayload?.success || !Array.isArray(listPayload?.commands)) {
+        result = {
+          role: 'ai',
+          content: '[UNKNOWN]',
+          verified: false,
+          status: 'UNKNOWN',
+          detail: `GET /v1/omega/commands · HTTP ${listResponse.status}`,
+        };
+      } else {
+        const commands: any[] = listPayload.commands;
+        if (commands.length === 0) {
+          result = {
+            role: 'ai',
+            content: 'Command Provenance: no commands found in sovereign command store.',
+            verified: false,
+            status: 'OBSERVED',
+            detail: 'GET /v1/omega/commands · empty command ledger; no command available for provenance probe.',
+          };
+        } else {
+          const targetId = commands[0].commandId;
+          const provResponse = await fetch(apiUrl(`/v1/omega/commands/${encodeURIComponent(targetId)}/provenance`), { headers: { accept: 'application/json' } });
+          let provPayload: any = null;
+          try {
+            provPayload = await provResponse.json();
+          } catch {
+            provPayload = null;
+          }
+          if (!provResponse.ok || !provPayload?.success || typeof provPayload?.provenance !== 'object') {
+            result = {
+              role: 'ai',
+              content: '[UNKNOWN]',
+              verified: false,
+              status: 'UNKNOWN',
+              detail: `GET /v1/omega/commands/${targetId}/provenance · HTTP ${provResponse.status}`,
+            };
+          } else {
+            const p = provPayload.provenance;
+            const status = p.status ?? 'UNKNOWN';
+            const lineageCount = Array.isArray(p.lineage) ? p.lineage.length : 0;
+            const eventsCount = Array.isArray(p.events) ? p.events.length : 0;
+            const intent = typeof p.intent === 'string' ? p.intent : 'unknown';
+            const requestedBy = typeof p.requestedBy === 'string' ? p.requestedBy : 'unknown';
+            const redacted = p.redacted === true ? 'YES' : 'NO';
+            result = {
+              role: 'ai',
+              content: `Command Provenance (${p.commandId}): Status: ${status} · Lineage: ${lineageCount} step(s) · Events: ${eventsCount} · Intent: "${intent}" · Requested by: ${requestedBy} · Redacted: ${redacted} · Principle: "command lineage audits transitions, not execution authority".`,
+              verified: false,
+              status: 'OBSERVED',
+              detail: `GET /v1/omega/commands/${p.commandId}/provenance · sovereign command lineage & event provenance; not execution authority.`,
+            };
+          }
+        }
+      }
+    } catch (error) {
+      result = {
+        role: 'ai',
+        content: '[UNKNOWN]',
+        verified: false,
+        status: 'UNKNOWN',
+        detail: `GET /v1/omega/commands/:id/provenance unavailable${error instanceof Error ? ` · ${error.message}` : ''}`,
+      };
+    }
+    setMessages((previous) => [...previous, result]);
+    setVerifying(false);
+  };
+
   const empty = messages.length === 0 && !verifying;
 
   return (
@@ -1699,6 +1778,9 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
               </button>
               <button type="button" className="vibe-action" onClick={() => void runMinerStatusCheck()} disabled={verifying}>
                 ⛏️ Miner Status
+              </button>
+              <button type="button" className="vibe-action" onClick={() => void runCommandProvenanceCheck()} disabled={verifying}>
+                🔍 Command Provenance
               </button>
             </div>
             <label className="vibe-model-toggle">

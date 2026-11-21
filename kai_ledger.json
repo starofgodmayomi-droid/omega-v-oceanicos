@@ -1193,6 +1193,21 @@
       "tests_passed": true,
       "evidence_hash": "5a1cba43614ae1de542d2e406ab8282abf6ccd4908afd9cda397de921ba64868",
       "next_delta": "Add dedicated Command Provenance probe to VibeOS quick actions and author Order 027."
+    },
+    {
+      "timestamp": "2026-11-21T03:00:00.000Z",
+      "agent_id": "antigravity",
+      "branch": "agent/gemini/vibeos-command-provenance",
+      "status": "VERIFIED",
+      "files_touched": [
+        "apps/web/src/VibeOS.tsx",
+        "apps/web/src/__tests__/dom/VibeOS.test.tsx",
+        "ΩVØØS/ASSIGNMENTS/027-beta-command-provenance-probe.md",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "2c5e024f6f0385e30e50fb2a8a5184b83a9206c6ac55e6a0a90c7c38a7843770",
+      "next_delta": "Add dedicated Attestation Policy probe to VibeOS quick actions and author Order 028."
     }
   ]
 }
