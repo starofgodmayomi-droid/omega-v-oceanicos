@@ -1040,4 +1040,32 @@ describe('Vibe OS surface', () => {
     expect(screen.getByText(/Requested by: operator-1/i)).toBeInTheDocument();
     expect(screen.getByText(/command lineage audits transitions, not execution authority/i)).toBeInTheDocument();
   });
+
+  it('observes Attestation Policy and displays cryptographic configuration without asserting validity', async () => {
+    installFetch({
+      '/api/attest/policy': () =>
+        json({
+          success: true,
+          policy: {
+            authMode: 'local',
+            revocationEnabled: true,
+            revocationRevision: 0,
+            revocationConsistency: 'multi-process-single-volume',
+            attestationAlgorithm: 'HMAC-SHA256',
+          },
+        }),
+    });
+    const user = userEvent.setup();
+    render(<VibeOS />);
+
+    const policyBtn = screen.getByRole('button', { name: /📜 Attestation Policy/i });
+    expect(policyBtn).toBeInTheDocument();
+
+    await user.click(policyBtn);
+    expect(await screen.findByText(/Attestation Policy: Auth: local/i)).toBeInTheDocument();
+    expect(screen.getByText(/Algorithm: HMAC-SHA256/i)).toBeInTheDocument();
+    expect(screen.getByText(/Revocation: ENABLED \(rev 0\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Consistency: multi-process-single-volume/i)).toBeInTheDocument();
+    expect(screen.getByText(/attestation policy audits cryptographic configuration, not signature validity/i)).toBeInTheDocument();
+  });
 });

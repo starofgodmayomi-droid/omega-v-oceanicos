@@ -1423,6 +1423,54 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
     setVerifying(false);
   };
 
+  const runAttestationPolicyCheck = async () => {
+    if (verifying) return;
+    beginQuickAction('Inspect Attestation Policy');
+    let result: ChatMessage;
+    try {
+      const response = await fetch(apiUrl('/attest/policy'), { headers: { accept: 'application/json' } });
+      let payload: any = null;
+      try {
+        payload = await response.json();
+      } catch {
+        payload = null;
+      }
+      if (!response.ok || !payload?.success || typeof payload?.policy !== 'object') {
+        result = {
+          role: 'ai',
+          content: '[UNKNOWN]',
+          verified: false,
+          status: 'UNKNOWN',
+          detail: `GET /attest/policy · HTTP ${response.status}`,
+        };
+      } else {
+        const pol = payload.policy;
+        const authMode = pol.authMode ?? 'unknown';
+        const algo = pol.attestationAlgorithm ?? 'HMAC-SHA256';
+        const revocation = pol.revocationEnabled === true ? 'ENABLED' : 'DISABLED';
+        const revision = typeof pol.revocationRevision === 'number' ? pol.revocationRevision : 0;
+        const consistency = pol.revocationConsistency ?? 'single-process';
+        result = {
+          role: 'ai',
+          content: `Attestation Policy: Auth: ${authMode} · Algorithm: ${algo} · Revocation: ${revocation} (rev ${revision}) · Consistency: ${consistency} · Principle: "attestation policy audits cryptographic configuration, not signature validity".`,
+          verified: false,
+          status: 'OBSERVED',
+          detail: 'GET /attest/policy · cryptographic attestation parameters; not proof of signature validity.',
+        };
+      }
+    } catch (error) {
+      result = {
+        role: 'ai',
+        content: '[UNKNOWN]',
+        verified: false,
+        status: 'UNKNOWN',
+        detail: `GET /attest/policy unavailable${error instanceof Error ? ` · ${error.message}` : ''}`,
+      };
+    }
+    setMessages((previous) => [...previous, result]);
+    setVerifying(false);
+  };
+
   const empty = messages.length === 0 && !verifying;
 
   return (
@@ -1781,6 +1829,9 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
               </button>
               <button type="button" className="vibe-action" onClick={() => void runCommandProvenanceCheck()} disabled={verifying}>
                 🔍 Command Provenance
+              </button>
+              <button type="button" className="vibe-action" onClick={() => void runAttestationPolicyCheck()} disabled={verifying}>
+                📜 Attestation Policy
               </button>
             </div>
             <label className="vibe-model-toggle">
