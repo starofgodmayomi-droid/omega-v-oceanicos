@@ -1068,4 +1068,32 @@ describe('Vibe OS surface', () => {
     expect(screen.getByText(/Consistency: multi-process-single-volume/i)).toBeInTheDocument();
     expect(screen.getByText(/attestation policy audits cryptographic configuration, not signature validity/i)).toBeInTheDocument();
   });
+
+  it('observes Attestation Revocations and displays local journal without asserting distributed consensus', async () => {
+    installFetch({
+      '/api/attest/revocations': () =>
+        json({
+          success: true,
+          data: [],
+          meta: {
+            integrity: 'intact',
+            revision: 0,
+            consistency: 'multi-process-single-volume',
+            verified: true,
+          },
+        }),
+    });
+    const user = userEvent.setup();
+    render(<VibeOS />);
+
+    const revocationsBtn = screen.getByRole('button', { name: /🚫 Attestation Revocations/i });
+    expect(revocationsBtn).toBeInTheDocument();
+
+    await user.click(revocationsBtn);
+    expect(await screen.findByText(/Attestation Revocations: 0 revoked attestation\(s\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Revision: 0/i)).toBeInTheDocument();
+    expect(screen.getByText(/Integrity: intact/i)).toBeInTheDocument();
+    expect(screen.getByText(/Consistency: multi-process-single-volume/i)).toBeInTheDocument();
+    expect(screen.getByText(/revocation journal audits locally revoked keys, not distributed consensus/i)).toBeInTheDocument();
+  });
 });

@@ -1471,6 +1471,54 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
     setVerifying(false);
   };
 
+  const runAttestationRevocationsCheck = async () => {
+    if (verifying) return;
+    beginQuickAction('Inspect Attestation Revocations');
+    let result: ChatMessage;
+    try {
+      const response = await fetch(apiUrl('/attest/revocations'), { headers: { accept: 'application/json' } });
+      let payload: any = null;
+      try {
+        payload = await response.json();
+      } catch {
+        payload = null;
+      }
+      if (!response.ok || !payload?.success || !Array.isArray(payload?.data) || typeof payload?.meta !== 'object') {
+        result = {
+          role: 'ai',
+          content: '[UNKNOWN]',
+          verified: false,
+          status: 'UNKNOWN',
+          detail: `GET /attest/revocations · HTTP ${response.status}`,
+        };
+      } else {
+        const count = payload.data.length;
+        const meta = payload.meta;
+        const integrity = meta.integrity ?? 'intact';
+        const revision = typeof meta.revision === 'number' ? meta.revision : count;
+        const consistency = meta.consistency ?? 'single-process';
+        const verified = meta.verified === true ? 'VERIFIED' : 'UNVERIFIED';
+        result = {
+          role: 'ai',
+          content: `Attestation Revocations: ${count} revoked attestation(s) · Revision: ${revision} · Integrity: ${integrity} · Consistency: ${consistency} · Store State: ${verified} · Principle: "revocation journal audits locally revoked keys, not distributed consensus".`,
+          verified: false,
+          status: 'OBSERVED',
+          detail: 'GET /attest/revocations · local attestation revocation journal; not distributed authority consensus.',
+        };
+      }
+    } catch (error) {
+      result = {
+        role: 'ai',
+        content: '[UNKNOWN]',
+        verified: false,
+        status: 'UNKNOWN',
+        detail: `GET /attest/revocations unavailable${error instanceof Error ? ` · ${error.message}` : ''}`,
+      };
+    }
+    setMessages((previous) => [...previous, result]);
+    setVerifying(false);
+  };
+
   const empty = messages.length === 0 && !verifying;
 
   return (
@@ -1832,6 +1880,9 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
               </button>
               <button type="button" className="vibe-action" onClick={() => void runAttestationPolicyCheck()} disabled={verifying}>
                 📜 Attestation Policy
+              </button>
+              <button type="button" className="vibe-action" onClick={() => void runAttestationRevocationsCheck()} disabled={verifying}>
+                🚫 Attestation Revocations
               </button>
             </div>
             <label className="vibe-model-toggle">
