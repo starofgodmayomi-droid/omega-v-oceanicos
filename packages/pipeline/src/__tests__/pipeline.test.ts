@@ -1,3 +1,4 @@
+import { beforeEach, describe, expect, it } from '@jest/globals';
 import { OceanicosPipelineEngine } from '../index';
 import { OceanicosWorkerPool } from '@omega-v/worker';
 
@@ -8,6 +9,54 @@ describe('OceanicosPipelineEngine — Automated CI/CD Pipeline Orchestrator', ()
   beforeEach(() => {
     pool = new OceanicosWorkerPool('test-pipeline-key');
     engine = new OceanicosPipelineEngine('test-pipeline-key');
+  });
+
+  describe('Stage graph admission', () => {
+    const expectRejectedWithoutDispatch = async (
+      stages: Parameters<OceanicosPipelineEngine['executePipeline']>[0]['stages'],
+      error: RegExp
+    ) => {
+      let submittedJobs = 0;
+      const workerPool = {
+        submitJob: () => {
+          submittedJobs++;
+          throw new Error('Invalid graph must not dispatch work');
+        },
+      } as unknown as OceanicosWorkerPool;
+
+      await expect(
+        engine.executePipeline({ name: 'Invalid graph', stages, workerPool })
+      ).rejects.toThrow(error);
+      expect(submittedJobs).toBe(0);
+      expect(engine.getRuns()).toHaveLength(0);
+    };
+
+    it('rejects duplicate stage IDs before creating a run', async () => {
+      await expectRejectedWithoutDispatch(
+        [
+          { stageId: 'duplicate', name: 'First', capability: 'COMPILE' },
+          { stageId: 'duplicate', name: 'Second', capability: 'VERIFY' },
+        ],
+        /duplicate stage ID 'duplicate'/
+      );
+    });
+
+    it('rejects dependencies that name no declared stage', async () => {
+      await expectRejectedWithoutDispatch(
+        [{ stageId: 'stage-a', name: 'Stage A', capability: 'COMPILE', dependsOn: ['missing'] }],
+        /depends on unknown stage 'missing'/
+      );
+    });
+
+    it('rejects dependency cycles before creating a run', async () => {
+      await expectRejectedWithoutDispatch(
+        [
+          { stageId: 'stage-a', name: 'Stage A', capability: 'COMPILE', dependsOn: ['stage-b'] },
+          { stageId: 'stage-b', name: 'Stage B', capability: 'VERIFY', dependsOn: ['stage-a'] },
+        ],
+        /dependency cycle detected/
+      );
+    });
   });
 
   it('rejects empty and legacy default signing keys', () => {
@@ -131,7 +180,7 @@ describe('OceanicosPipelineEngine — Automated CI/CD Pipeline Orchestrator', ()
       expect(result.stagesPassed).toBe(1);
     });
 
-    it('should evaluate REQUIRE_HUMAN gate (auto-approve in test mode)', async () => {
+    it('should block REQUIRE_HUMAN before dispatch when approval evidence is unavailable', async () => {
       const result = await engine.executePipeline({
         name: 'Human Gate Pipeline',
         workerPool: pool,
@@ -147,10 +196,20 @@ describe('OceanicosPipelineEngine — Automated CI/CD Pipeline Orchestrator', ()
               rollbackOnFail: false,
             },
           },
+          {
+            stageId: 'stage-after-human-gate',
+            name: 'Post-Approval Stage',
+            capability: 'COMPILE',
+            dependsOn: ['stage-human-gate'],
+          },
         ],
       });
 
-      expect(result.run.status).toBe('SUCCESS');
+      expect(result.run.status).toBe('FAILED');
+      expect(result.run.stages[0].status).toBe('GATE_BLOCKED');
+      expect(result.run.stages[0].assignedJobIds).toHaveLength(0);
+      expect(result.run.stages[0].error).toMatch(/cannot be verified/);
+      expect(result.run.stages[1].status).toBe('SKIPPED');
     });
   });
 

@@ -288,15 +288,24 @@ describe('Ω∞v Oceanicos Max Compress Full-Stack E2E Suite', () => {
     assert.strictEqual(nodesData.nodes.length, 4);
   });
 
-  it('14. Unified CLI "status" executes cleanly and reports ledger & telemetry state', async () => {
+  it('14. Unified CLI "status" uses OMEGA_API_URL and reports the configured API state', async () => {
     const { execFileSync } = await import('node:child_process');
     const path = await import('node:path');
+    const { pathToFileURL } = await import('node:url');
     const cliPath = path.resolve(process.cwd(), 'bin/oceanicos.mjs');
-    const stdout = execFileSync(process.execPath, [cliPath, 'status'], { encoding: 'utf-8' });
+    const configuredApi = 'http://configured-api.example:4312';
+    const fetchStub = pathToFileURL(path.resolve(process.cwd(), 'tests/cli-api-fetch.stub.mjs'));
+    const nodeOptions = [process.env.NODE_OPTIONS, `--import=${fetchStub.href}`].filter(Boolean).join(' ');
+    const stdout = execFileSync(process.execPath, [cliPath, 'status'], {
+      encoding: 'utf-8',
+      env: { ...process.env, OMEGA_API_URL: configuredApi, NODE_OPTIONS: nodeOptions },
+    });
     assert.ok(stdout.includes('OCEANICOS DEEP-TIER CRYPTOGRAPHIC CLI'));
     assert.ok(stdout.includes('Silicon Yield'));
     assert.ok(stdout.includes('Grid Load'));
     assert.ok(stdout.includes('Chain Genesis Block'));
+    assert.ok(stdout.includes('CONFIGURED_API_REACHED'), stdout);
+    assert.ok(stdout.includes('expected-cli-probe'));
   });
 
   it('14a. Unified CLI "offline" runs MINI without contacting the API', async () => {
