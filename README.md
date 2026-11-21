@@ -9,7 +9,7 @@
 <p align="center">REALITY, VERIFIED. · (Δ + Ø) = ΔVRØ HOUSE · ATTEST, DON&apos;T ASSERT.</p>
 
 <p align="center">
-  <a href="docs/BRAND.md">Brand system</a> ·
+  <a href="docs/BRAND.md">Brand system</a> ·\n  <a href="docs/architecture/NOTION-REPO-TOTAL-FULL-STACK-UNIFICATION.md">Notion ↔ Repo unified spine</a> ·
   <a href="MANIFEST.md">Manifest</a> ·
   <a href="CHARTER.md">Charter</a> ·
   <a href="SECURITY.md">Security</a> ·
