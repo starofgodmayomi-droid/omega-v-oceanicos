@@ -68,6 +68,7 @@ and what remains only a proposal or local evidence state.
 - 🛡️ **[Omega sovereign](skills/omega-sovereign/SKILL.md)** — human-rooted operating frame; symbols are not authority
 - 🧊 **[Unified Entity DAV](skills/unified-entity-dav/SKILL.md)** — the entity tensor method; a diagram is not a running service
 - 🌐 **[Full-stack reality-access handoff](docs/upgrades/FULL_STACK_REALITY_ACCESS_2026-09-28.md)** — connector taxonomy without implicit ownership or authority
+- 🔌 **[One-Current ecosystem integration contract](docs/ECOSYSTEM-INTEGRATION-CONTRACT.md)** — connector status vocabulary, authority boundaries, Notion/GitHub/Composio wiring, and finite implementation sequence
 - 🗺️ **[Repository inventory](docs/REPO_INVENTORY.md)** — workspace vs disk (current evidence)
 - ⚙️ **[Development Setup](docs/DEVELOPMENT.md)** — Get the project running locally
 | | Meaning |
