@@ -2,7 +2,7 @@ import React from 'react';
 import { boundedStatus, type RealityStatus } from './whole-ecosystem-dashboard-model';
 import { humanStatus, theme } from './oceanicosTheme';
 
-type SafetyStatus = RealityStatus;
+type SafetyStatus = RealityStatus | 'RECORDED';
 
 type SafetyControl = {
   label: string;
@@ -26,6 +26,7 @@ const STATUS_COLOR: Record<SafetyStatus, string> = {
   UNKNOWN: theme.unknown,
   DIVERGENT: theme.divergent,
   NOT_EXECUTED: theme.warning,
+  RECORDED: theme.warning,
 };
 
 function yesNoStatus(value: boolean, fallback: SafetyStatus = 'UNKNOWN'): SafetyStatus {
@@ -36,13 +37,13 @@ export function AgentSafetyBoundaryPanel(props: Props) {
   const controls: SafetyControl[] = [
     {
       label: 'Capability',
-      status: yesNoStatus(props.capabilityObserved),
-      evidence: props.capabilityObserved ? 'capability snapshot observed' : 'capability snapshot unavailable',
+      status: props.capabilityObserved ? 'RECORDED' : 'UNKNOWN',
+      evidence: props.capabilityObserved ? 'capability snapshot recorded; a snapshot is not independent verification' : 'capability snapshot unavailable',
     },
     {
       label: 'Policy',
-      status: yesNoStatus(props.policySatisfied),
-      evidence: props.policySatisfied ? 'command policy evidence observed' : 'policy satisfaction not observed',
+      status: props.policySatisfied ? 'RECORDED' : 'UNKNOWN',
+      evidence: props.policySatisfied ? 'command policy string recorded; a string is not independent verification' : 'policy satisfaction not observed',
     },
     {
       label: 'Authority',
@@ -51,8 +52,8 @@ export function AgentSafetyBoundaryPanel(props: Props) {
     },
     {
       label: 'Lease',
-      status: yesNoStatus(props.leaseObserved, 'NOT_EXECUTED'),
-      evidence: props.leaseObserved ? 'bounded lease observed' : 'no execution lease observed',
+      status: props.leaseObserved ? 'RECORDED' : 'NOT_EXECUTED',
+      evidence: props.leaseObserved ? 'bounded lease recorded; a lease is not independent verification' : 'no execution lease observed',
     },
     {
       label: 'Execution',
@@ -66,8 +67,8 @@ export function AgentSafetyBoundaryPanel(props: Props) {
     },
     {
       label: 'Revocation',
-      status: yesNoStatus(props.revocationObserved, 'NOT_EXECUTED'),
-      evidence: props.revocationObserved ? 'revocation evidence observed' : 'no revocation event observed',
+      status: props.revocationObserved ? 'RECORDED' : 'NOT_EXECUTED',
+      evidence: props.revocationObserved ? 'revocation record recorded; a record is not independent verification' : 'no revocation event observed',
     },
     {
       label: 'Reconciliation',
