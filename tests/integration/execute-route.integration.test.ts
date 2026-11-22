@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import test from 'node:test';
 import { createApp } from '../../apps/api/dist/index.js';
-import { KAI_SYSTEM_PROMPT, compressTowardUpgrade, verifyOmega } from '../../apps/api/src/invisible-computer.ts';
+import { KAI_SYSTEM_PROMPT, compressTowardUpgrade, reconcileEvidence, verifyOmega } from '../../apps/api/src/invisible-computer.ts';
 
 const sha256 = (value: string) => createHash('sha256').update(value, 'utf8').digest('hex');
 
@@ -17,36 +17,33 @@ test('POST /api/execute runs KAI → ELION → OMEGA → KAI and returns the evi
     const body = response.json();
 
     assert.equal(response.statusCode, 200);
-    assert.equal(body.status, 'VERIFIED');
+    assert.equal(body.status, 'UNKNOWN');
     assert.equal(body.engine, 'local-deterministic');
-    assert.match(body.evidence_hash, /^[0-9a-f]{64}$/);
-    assert.equal(body.evidence_hash, sha256(body.response));
+    assert.equal(body.evidence_hash, null);
+    assert.equal(body.memory, null);
+    assert.equal(body.contract, null);
+    assert.equal(body.cycle.ledgerMutation, false);
+    assert.equal(body.cycle.independentObservation, false);
+    assert.equal(body.attestation_status, 'NOT_ELIGIBLE');
     assert.ok(body.response.includes('Explain how evidence-bound verification works'));
-    assert.equal(body.contract.authority_level, 'READ_ONLY');
-    assert.ok(body.contract.expected_outcome.length > 0);
-    assert.ok(body.memory?.id, 'a verified outcome must be remembered');
     assert.equal(body.upgrade.execution, 'NOT_EXECUTED');
     assert.equal(body.upgrade.authority, 'compression-is-not-permission');
-    assert.equal(body.upgrade.selected.evidenceHash, body.evidence_hash);
-    assert.equal(body.upgrade.selected.id, `upgrade.${body.evidence_hash.slice(0, 16)}`);
+    assert.equal(body.upgrade.selected, null);
 
     assert.deepEqual(
       body.steps.map((step: any) => `${step.actor}:${step.phase}:${step.status}`),
       [
-        'KAI:OBSERVE:VERIFIED',
-        'ELION:EXECUTE:VERIFIED',
-        'OMEGA:VERIFY:VERIFIED',
-        'KAI:REMEMBER:VERIFIED',
+        'KAI:OBSERVE:OBSERVED',
+        'ELION:EXECUTE:COMPOSED',
+        'OMEGA:VERIFY:UNKNOWN',
+        'KAI:REMEMBER:UNKNOWN',
       ]
     );
 
     const memory = await app.inject({ method: 'GET', url: '/api/kai/memory?limit=5' });
     const memoryBody = memory.json();
     assert.equal(memory.statusCode, 200);
-    assert.equal(memoryBody.total, 1);
-    assert.equal(memoryBody.records[0].id, body.memory.id);
-    assert.equal(memoryBody.records[0].evidence_hash, body.evidence_hash);
-    assert.equal(memoryBody.records[0].status, 'VERIFIED');
+    assert.equal(memoryBody.total, 0);
   } finally {
     await app.close();
   }
@@ -61,7 +58,7 @@ test('POST /execute (the Vite proxy target) answers identically', async () => {
       payload: { intent: 'Map the next finite step' },
     });
     assert.equal(response.statusCode, 200);
-    assert.equal(response.json().status, 'VERIFIED');
+    assert.equal(response.json().status, 'UNKNOWN');
   } finally {
     await app.close();
   }
@@ -391,17 +388,19 @@ test('authority below the required level halts NOT_EXECUTED and remembers nothin
       url: '/api/execute',
       payload: { intent: 'Deploy the production service', authorityLevel: 'AUTONOMOUS' },
     });
-    assert.equal(granted.json().status, 'VERIFIED');
-    assert.equal(granted.json().contract.authority_level, 'AUTONOMOUS');
+    assert.equal(granted.json().status, 'UNKNOWN');
+    assert.equal(granted.json().contract, null);
+    assert.equal(granted.json().memory, null);
+    assert.equal(granted.json().cycle.ledgerMutation, false);
 
     const memory = await app.inject({ method: 'GET', url: '/api/kai/memory' });
-    assert.equal(memory.json().total, 1, 'only the authorized run is remembered');
+    assert.equal(memory.json().total, 0, 'authority does not turn a local template into memory');
   } finally {
     await app.close();
   }
 });
 
-test('a remembered verdict is bound to its contract and reconciles after the fact', async () => {
+test('a local template is not remembered, and reconciliation still fails closed without a row', async () => {
   const app = createApp(':memory:', false);
   try {
     const run = await app.inject({
@@ -410,41 +409,143 @@ test('a remembered verdict is bound to its contract and reconciles after the fac
       payload: { intent: 'Explain how evidence-bound verification works' },
     });
     const body = run.json();
-    assert.equal(body.status, 'VERIFIED');
+    assert.equal(body.status, 'UNKNOWN');
+    assert.equal(body.memory, null);
 
-    const detail = await app.inject({
-      method: 'GET',
-      url: `/api/kai/memory/${body.memory.id}`,
-    });
-    const detailBody = detail.json();
-    assert.equal(detail.statusCode, 200);
-    assert.equal(detailBody.record.contract_id, body.contract.id);
-    assert.equal(detailBody.contract.id, body.contract.id);
-
-    const verified = await app.inject({
-      method: 'POST',
-      url: `/api/kai/memory/${body.memory.id}/reconcile`,
-      payload: { output: body.response },
-    });
-    assert.equal(verified.statusCode, 200);
-    assert.equal(verified.json().status, 'VERIFIED');
-
-    const tampered = await app.inject({
-      method: 'POST',
-      url: `/api/kai/memory/${body.memory.id}/reconcile`,
-      payload: { output: `${body.response} (edited)` },
-    });
-    assert.equal(tampered.json().status, 'DIVERGENT');
-
-    const missing = await app.inject({
-      method: 'POST',
-      url: `/api/kai/memory/${body.memory.id}/reconcile`,
-      payload: {},
-    });
-    assert.equal(missing.json().status, 'UNKNOWN');
+    const memory = await app.inject({ method: 'GET', url: '/api/kai/memory' });
+    assert.equal(memory.json().total, 0);
 
     const absent = await app.inject({ method: 'GET', url: '/api/kai/memory/does-not-exist' });
     assert.equal(absent.statusCode, 404);
+
+    const output = 'A bounded local sentence.';
+    const digest = sha256(output);
+    assert.equal(
+      reconcileEvidence({ output, evidenceHash: digest, expectedOutcome: 'A bounded answer.' }).status,
+      'VERIFIED'
+    );
+    assert.equal(
+      reconcileEvidence({ output: `${output} edited`, evidenceHash: digest, expectedOutcome: 'A bounded answer.' }).status,
+      'DIVERGENT'
+    );
+    assert.equal(
+      reconcileEvidence({ output: null, evidenceHash: digest, expectedOutcome: 'A bounded answer.' }).status,
+      'UNKNOWN'
+    );
+  } finally {
+    await app.close();
+  }
+});
+
+test('a caller who copies the expected sentence stays UNKNOWN and is not stored', async () => {
+  const app = createApp(':memory:', false);
+  try {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/execute',
+      payload: {
+        intent: 'Explain how evidence-bound verification works',
+        observed: 'No external effect was performed.',
+        observationSource: 'caller',
+        witness: sha256('No external effect was performed.'),
+      },
+    });
+    const body = response.json();
+    assert.equal(response.statusCode, 200);
+    assert.equal(body.status, 'UNKNOWN');
+    assert.equal(body.memory, null);
+    assert.equal(body.evidence_hash, null);
+    assert.equal(body.cycle.independentObservation, false);
+    assert.equal(body.cycle.ledgerMutation, false);
+    const memory = await app.inject({ method: 'GET', url: '/api/kai/memory' });
+    assert.equal(memory.json().total, 0);
+  } finally {
+    await app.close();
+  }
+});
+
+test('an independent witness can match without writing KaiMemory', async () => {
+  const app = createApp(':memory:', false);
+  const observed = 'No external effect was performed.';
+  try {
+    const matched = await app.inject({
+      method: 'POST',
+      url: '/api/execute',
+      payload: {
+        intent: 'Explain how evidence-bound verification works',
+        observed,
+        observationSource: 'independent',
+        witness: sha256(observed),
+      },
+    });
+    const body = matched.json();
+    assert.equal(matched.statusCode, 200);
+    assert.equal(body.status, 'VERIFIED');
+    assert.equal(body.response, observed);
+    assert.equal(body.memory, null);
+    assert.equal(body.contract, null);
+    assert.equal(body.evidence_hash, null);
+    assert.equal(body.engine, null);
+    assert.equal(body.attestation, null);
+    assert.equal(body.attestation_status, 'NOT_ELIGIBLE');
+    assert.equal(body.cycle.ledgerMutation, false);
+    assert.equal(body.cycle.independentObservation, true);
+    assert.match(body.cycle.deltaHash, /^[a-f0-9]{64}$/);
+    assert.equal(body.upgrade.execution, 'NOT_EXECUTED');
+    assert.equal(body.upgrade.selected, null);
+    assert.equal(body.upgrade.cycleStatus, 'VERIFIED');
+
+    const mismatched = await app.inject({
+      method: 'POST',
+      url: '/api/execute',
+      payload: {
+        intent: 'Explain how evidence-bound verification works',
+        observed,
+        observationSource: 'independent',
+        witness: sha256('some other sentence'),
+      },
+    });
+    assert.equal(mismatched.json().status, 'DIVERGENT');
+    assert.equal(mismatched.json().response, null);
+    assert.equal(mismatched.json().memory, null);
+
+    const different = await app.inject({
+      method: 'POST',
+      url: '/api/execute',
+      payload: {
+        intent: 'Explain how evidence-bound verification works',
+        observed: 'A different local sentence.',
+        observationSource: 'independent',
+        witness: sha256('A different local sentence.'),
+      },
+    });
+    assert.equal(different.json().status, 'DIVERGENT');
+    assert.equal(different.json().memory, null);
+
+    const memory = await app.inject({ method: 'GET', url: '/api/kai/memory' });
+    assert.equal(memory.json().total, 0);
+  } finally {
+    await app.close();
+  }
+});
+
+test('a malformed witness is refused before the cycle runs', async () => {
+  const app = createApp(':memory:', false);
+  try {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/execute',
+      payload: {
+        intent: 'Explain how evidence-bound verification works',
+        observed: 'No external effect was performed.',
+        observationSource: 'independent',
+        witness: 'not-a-digest',
+      },
+    });
+    assert.equal(response.statusCode, 400);
+    assert.equal(response.json().error, 'WITNESS_INVALID');
+    const memory = await app.inject({ method: 'GET', url: '/api/kai/memory' });
+    assert.equal(memory.json().total, 0);
   } finally {
     await app.close();
   }
@@ -543,7 +644,7 @@ test('ELION connects to local Ollama on port 11434 when configured without requi
       payload: { intent: 'Test local Ollama integration', useExternalModel: true },
     });
     const body = response.json();
-    assert.equal(body.status, 'VERIFIED');
+    assert.equal(body.status, 'UNKNOWN');
     assert.equal(body.engine, 'llm:qwen2.5:0.5b');
     assert.equal(providerCalls.length, 1);
     assert.equal(providerCalls[0].url, 'http://localhost:11434/v1/chat/completions');

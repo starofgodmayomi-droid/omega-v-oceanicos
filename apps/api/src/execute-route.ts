@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { AttestationService } from '@oceanicos/attestation';
+import { MAX_CYCLE_OBSERVED, runKaixelionOmega } from '@oceanicos/mini';
 import type { Attestation } from '@oceanicos/types';
 import {
   authoritySatisfies,
@@ -7,19 +8,42 @@ import {
   deriveAuthorityLevel,
   executeElion,
   requiredAuthorityFor,
-  expectedOutcomeFor,
   reconcileEvidence,
   scanIntent,
-  sha256Hex,
-  verifyOmega,
   type AuthorityLevel,
 } from './invisible-computer.js';
-import type { KaiMemoryStore, KaiMemoryRecord, OmegaContract } from './kai-memory.js';
+import type { KaiMemoryStore } from './kai-memory.js';
 
 type JsonError = (reply: any, status: number, error: string, extra?: Record<string, unknown>) => unknown;
 
 const MAX_INTENT_LENGTH = 2000;
 const MIN_ATTESTATION_KEY_LENGTH = 32;
+const WITNESS_DIGEST = /^[a-f0-9]{64}$/;
+
+function readCycleObservation(body: Record<string, unknown>):
+  | { ok: true; observed: string; source: 'caller' | 'independent'; witness: string | null }
+  | { ok: false; error: string } {
+  const hasObserved = Object.prototype.hasOwnProperty.call(body, 'observed');
+  const hasSource = Object.prototype.hasOwnProperty.call(body, 'observationSource');
+  const hasWitness = Object.prototype.hasOwnProperty.call(body, 'witness');
+  if (!hasObserved && !hasSource && !hasWitness) {
+    return { ok: true, observed: '', source: 'caller', witness: null };
+  }
+  if (hasObserved && typeof body.observed !== 'string') return { ok: false, error: 'OBSERVATION_INVALID' };
+  const observed = hasObserved ? body.observed as string : '';
+  if (observed.length > MAX_CYCLE_OBSERVED) return { ok: false, error: 'OBSERVATION_TOO_LONG' };
+  if (hasSource && body.observationSource !== 'caller' && body.observationSource !== 'independent') {
+    return { ok: false, error: 'OBSERVATION_SOURCE_INVALID' };
+  }
+  const source = body.observationSource === 'independent' ? 'independent' : 'caller';
+  if (!hasWitness || body.witness === null) {
+    return { ok: true, observed, source, witness: null };
+  }
+  if (typeof body.witness !== 'string' || !WITNESS_DIGEST.test(body.witness)) {
+    return { ok: false, error: 'WITNESS_INVALID' };
+  }
+  return { ok: true, observed, source, witness: source === 'independent' ? body.witness : null };
+}
 
 type ExecutionAttestationStatus = 'SIGNED' | 'NOT_CONFIGURED' | 'KEY_TOO_WEAK' | 'NOT_ELIGIBLE';
 
@@ -83,10 +107,12 @@ function parseObject(body: unknown): Record<string, unknown> | null {
 /**
  * POST /api/execute — the Invisible Online Computer loop.
  *
- *   KAI observe → ELION execute → OMEGA verify → KAI remember → return
+ *   KAI observe → authority → runKaixelionOmega → return
  *
- * A blocked intent (DIVERGENT) or an unverifiable output (UNKNOWN) is a
- * successful HTTP response carrying a verdict, not an HTTP failure.
+ * No observation stays UNKNOWN. A caller who repeats the expected sentence
+ * stays UNKNOWN. An independent witness is VERIFIED only when the observation
+ * is the expected state and the witness is its SHA-256. KaiMemory is not
+ * written. A blocked intent is still HTTP 200 with a verdict.
  */
 export function registerExecuteRoute(
   fastify: FastifyInstance,
@@ -181,87 +207,140 @@ export function registerExecuteRoute(
         upgrade: compressTowardUpgrade({ cycleStatus: 'NOT_EXECUTED', evidenceHash: null }),
       });
     }
-    recordStep('KAI', 'OBSERVE', 'VERIFIED', 'No known fraud pattern matched; authority is sufficient.');
+    recordStep('KAI', 'OBSERVE', 'OBSERVED', 'No known fraud pattern matched; authority is sufficient. Observation is not verification.');
 
-    // The OmegaIR contract is written before execution so the output is
-    // verified against a declared expectation, not against itself.
-    const contract: OmegaContract = store.createContract({
+    const observation = readCycleObservation(body);
+    if (!observation.ok) return jsonError(reply, 400, observation.error);
+
+    const cycle = await runKaixelionOmega({
       intent,
-      authorityLevel,
-      expectedOutcome: expectedOutcomeFor(authorityLevel),
+      authority: authorityLevel,
+      observed: observation.observed,
+      source: observation.source,
+      witness: observation.witness,
+      memory: [],
     });
+    if (cycle.status === 'DIVERGENT' || cycle.status === 'NOT_EXECUTED') {
+      for (const step of cycle.steps) {
+        recordStep(step.actor, step.phase, step.status, step.detail);
+      }
+      const haltedAttestation = attestExecution({
+        status: cycle.status,
+        evidenceHash: null,
+        contractId: null,
+        checks: [],
+        signingKey: attestationSigningKey,
+      });
+      return reply.status(200).send({
+        success: true,
+        status: cycle.status,
+        intent,
+        response: null,
+        evidence_hash: null,
+        reason: cycle.reason,
+        matched_patterns: cycle.matchedLabels,
+        steps,
+        contract: null,
+        memory: null,
+        engine: null,
+        model_error: null,
+        evaluated_at: new Date().toISOString(),
+        attestation: haltedAttestation.attestation,
+        attestation_status: haltedAttestation.status,
+        cycle: {
+          equation: cycle.equation,
+          status: cycle.status,
+          ledgerMutation: cycle.ledgerMutation,
+          remembered: false,
+          independentObservation: false,
+        },
+        upgrade: compressTowardUpgrade({ cycleStatus: cycle.status, evidenceHash: null }),
+      });
+    }
 
-    // Step 2 — ELION execute: bounded answer, model or local composer.
+    if (cycle.status === 'VERIFIED' && cycle.independentObservation && cycle.ledgerMutation === false) {
+      recordStep('OMEGA', 'VERIFY', 'VERIFIED', cycle.reason);
+      recordStep('KAI', 'REMEMBER', 'VERIFIED', 'Hash is in the response tuple only. KaiMemory was not written.');
+      const witnessedAttestation = attestExecution({
+        status: 'VERIFIED',
+        evidenceHash: null,
+        contractId: null,
+        checks: [],
+        signingKey: attestationSigningKey,
+      });
+      return reply.status(200).send({
+        success: true,
+        status: 'VERIFIED',
+        intent,
+        response: observation.observed,
+        evidence_hash: null,
+        reason: cycle.reason,
+        matched_patterns: [],
+        steps,
+        contract: null,
+        memory: null,
+        engine: null,
+        model_error: null,
+        evaluated_at: new Date().toISOString(),
+        attestation: witnessedAttestation.attestation,
+        attestation_status: witnessedAttestation.status,
+        cycle: {
+          equation: cycle.equation,
+          status: cycle.status,
+          ledgerMutation: false,
+          remembered: cycle.remembered,
+          appended: cycle.appended,
+          deltaHash: cycle.deltaHash,
+          independentObservation: true,
+        },
+        upgrade: compressTowardUpgrade({ cycleStatus: 'VERIFIED', evidenceHash: null }),
+      });
+    }
+
     const elion = await executeElion(intent, authorityLevel, body.useExternalModel === true);
     recordStep(
       'ELION',
       'EXECUTE',
-      elion.error ? 'UNKNOWN' : 'VERIFIED',
+      elion.error ? 'UNKNOWN' : 'COMPOSED',
       elion.error
         ? `Answer unavailable from ${elion.engine}: ${elion.error}. UNKNOWN preserved.`
-        : `Bounded answer composed via ${elion.engine}.`
+        : `Sentence composed via ${elion.engine}. Composition is not verification.`
     );
-
-    // Step 3 — OMEGA verify: hash the output, compare it to the contract.
-    const evidenceHash = sha256Hex(elion.output);
-    const omega = verifyOmega({ output: elion.output, evidenceHash, authorityLevel });
-    recordStep(
-      'OMEGA',
-      'VERIFY',
-      omega.status,
-      omega.status === 'VERIFIED'
-        ? 'Output matches the contract and the SHA-256 digest recomputes.'
-        : omega.reason ?? 'Output could not be verified.'
-    );
-
-    // Step 4 — KAI remember: only a verified outcome is written to memory.
-    let memory: KaiMemoryRecord | null = null;
-    if (omega.status === 'VERIFIED') {
-      memory = store.remember({
-        intent,
-        evidenceHash,
-        status: omega.status,
-        contractId: contract.id,
-      });
-      recordStep('KAI', 'REMEMBER', 'VERIFIED', `Evidence stored as ${memory.id}.`);
-    } else {
-      recordStep(
-        'KAI',
-        'REMEMBER',
-        'NOT_EXECUTED',
-        'Nothing was remembered because verification did not pass.'
-      );
-    }
+    recordStep('OMEGA', 'VERIFY', cycle.status, cycle.reason);
+    recordStep('KAI', 'REMEMBER', cycle.status, 'Nothing was written to KaiMemory. The cycle tuple is not a ledger write.');
 
     const executionAttestation = attestExecution({
-      status: omega.status,
-      evidenceHash: elion.output ? evidenceHash : null,
-      contractId: contract.id,
-      checks: omega.checks,
+      status: cycle.status,
+      evidenceHash: null,
+      contractId: null,
+      checks: [],
       signingKey: attestationSigningKey,
     });
 
     return reply.status(200).send({
       success: true,
-      status: omega.status,
+      status: cycle.status,
       intent,
       response: elion.output || null,
-      evidence_hash: elion.output ? evidenceHash : null,
-      reason: omega.reason,
+      evidence_hash: null,
+      reason: cycle.reason,
       matched_patterns: [],
-      checks: omega.checks,
       steps,
-      contract,
-      memory,
+      contract: null,
+      memory: null,
       engine: elion.engine,
       model_error: elion.error,
       evaluated_at: new Date().toISOString(),
       attestation: executionAttestation.attestation,
       attestation_status: executionAttestation.status,
-      upgrade: compressTowardUpgrade({
-        cycleStatus: omega.status,
-        evidenceHash: elion.output ? evidenceHash : null,
-      }),
+      cycle: {
+        equation: cycle.equation,
+        status: cycle.status,
+        ledgerMutation: cycle.ledgerMutation,
+        remembered: false,
+        independentObservation: cycle.independentObservation,
+      },
+      upgrade: compressTowardUpgrade({ cycleStatus: cycle.status, evidenceHash: null }),
     });
   };
 
