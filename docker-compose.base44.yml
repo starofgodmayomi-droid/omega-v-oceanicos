@@ -2,6 +2,8 @@
 # Development-oriented: runs from bind-mounted source with live reload.
 volumes:
   pnpm-store:
+  ollama-models:
+    name: omega-ollama-models
 
 services:
   # One-shot: install deps + build the API's workspace dependency tree.
@@ -17,6 +19,40 @@ services:
     command: sh -c "corepack enable && corepack prepare pnpm@10 --activate && pnpm install --frozen-lockfile --store-dir=/pnpm-store && pnpm --filter api... run build"
     environment:
       - CI=true
+
+  companion:
+    image: python:3.14-slim
+    working_dir: /companion
+    volumes:
+      - ./companion/python:/companion:ro
+    command: ["python3", "main.py"]
+    environment:
+      - PORT=8088
+    expose:
+      - "8088"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8088/health', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama-models:/root/.ollama
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h
+    ports:
+      - "127.0.0.1:11434:11434"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
 
   # API: Fastify server (CommonJS, tsc --watch + node --watch live reload).
   api:
@@ -36,6 +72,10 @@ services:
       - OMEGA_AUTH_MODE=local
       - OMEGA_DB_PATH=/app/data/oceanicos.db
       - OMEGA_ALLOW_UNSIGNED_CYCLE=true
+      - OMEGA_COMPANION_URL=http://companion:8088
+      - OMEGA_LLM_BASE_URL=http://ollama:11434/v1
+      - OMEGA_LLM_PROVIDER=ollama
+      - OMEGA_LLM_MODEL=qwen2.5:0.5b
     env_file:
       - ./.env.base44-defaults
       - /run/base44/app.env
@@ -48,6 +88,10 @@ services:
     depends_on:
       setup:
         condition: service_completed_successfully
+      companion:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5000/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
       interval: 10s

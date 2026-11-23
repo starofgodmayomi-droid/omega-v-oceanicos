@@ -16,7 +16,7 @@ Activation reply: `🦑 ΩVØØS SWARM NODE ONLINE. 30013030. Sync complete. KAI
 - **pnpm monorepo** (Node 22, pnpm 10). Workspace packages in `packages/*`, apps in `apps/api` and `apps/web`.
 - **API** (`apps/api`): Fastify, CommonJS, port 5000. Depends on built workspace packages (`@oceanicos/*`, `@omega-v/kernel`).
 - **Web** (`apps/web`): Vite 6 + React 18, port 3000. No workspace package dependencies; Vite transpiles TSX on the fly.
-- **No external DB required.** Persistence is file-based SQLite (`node:sqlite` fallback when `better-sqlite3` isn't installed for the api package). Qdrant/Ollama are referenced in the original `docker-compose.yml` but are NOT used by the API code.
+- **No external DB required.** Persistence is file-based SQLite (`node:sqlite` fallback when `better-sqlite3` isn't installed for the api package). The Base44 stack runs the Python companion and Ollama as private Compose services; Qdrant remains outside the API path.
 
 ## Running
 ```bash
@@ -24,6 +24,8 @@ docker compose -f docker-compose.base44.yml up -d
 ```
 - `setup` (one-shot): `pnpm install --frozen-lockfile --store-dir=/pnpm-store` + `pnpm --filter api... run build` (builds the API and its workspace dependency tree; skips web).
   The pnpm content-addressable store lives on the `pnpm-store` compose volume, not in the checkout: the repo tracks a `.pnpm-store/` from an earlier commit and installing into it rewrote tracked files on every boot, leaving the working tree dirty. Keep `--store-dir` on any install you add to compose.
+- `companion`: runs `companion/python/main.py` with the Python standard-library fallback and is reachable only inside the Compose network on port 8088.
+- `ollama`: local inference service on the Compose network; host access is bound to `127.0.0.1:11434`. Pull the configured model once with `docker compose -f docker-compose.base44.yml exec ollama ollama pull qwen2.5:0.5b`.
 - `api`: runs `tsc --watch` (rebuilds `apps/api/dist` on source change) + `node --watch` (restarts on dist change). Live reload for API source edits. The command waits for tsc's first pass (`Watching for file changes` in `/tmp/tsc.log`) before starting `node --watch`: starting both at once made the initial emit of ~9 files restart the server nine times, so the WORKERS panel's 10 s poll hit a closed port and Vite logged `http proxy error … ECONNREFUSED`. After that one edit → one emit → one restart.
 - `web`: `npx vite --host 0.0.0.0` from `apps/web`. Vite HMR for frontend edits.
 
@@ -45,6 +47,7 @@ docker compose -f docker-compose.base44.yml up -d
 - `apps/api/tsconfig.json` `include` lists only `src/index.ts` + the `.d.ts`, but tsc follows imports so all src files compile.
 - **Transient `[vite] http proxy error: /v1/... ECONNREFUSED 172.18.0.x:5000` lines in the `web` log are expected while the API is restarting.** `tsc --watch` + `node --watch` in the `api` service leave a few seconds (longer if a compile errors mid-edit) where nothing listens on 5000, and the WORKERS panel polls every 10 s. The target is still correct: once the rebuild finishes the same lines stop and `curl http://localhost:3000/api/v1/omega/workers` returns 200. Only a *persistent* stream of them means a real misconfiguration (wrong `VITE_API_PROXY_TARGET`, or an API that never turns healthy).
 - **Workspace packages must be built** before the API can start — their `main` points to `dist/index.js`. The setup service builds them in dependency order.
+- **Local model availability**: Compose health confirms Ollama is serving, not that the configured model is installed. On a fresh volume, pull `qwen2.5:0.5b` with the command above before opting in to model inference.
 - **SSE through the preview proxy**: with the CORS header fix described above, `/v1/stream` does connect from the browser through the preview proxy (status bar reads "Connected", runtime stream marked VERIFIED). If the proxy drops a long-lived connection the UI shows "Reconnecting…" and retries; REST endpoints are unaffected either way.
 
 ## Invisible Online Computer (KAI → ELION → OMEGA → KAI)
