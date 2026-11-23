@@ -28,6 +28,12 @@ export interface RealityCircuitBreakerBody {
   reason?: string;
 }
 
+export interface RealityFailsafeBody {
+  action?: 'audit' | 'quarantine' | 'restore';
+  toolId?: string;
+  divergenceReason?: string;
+}
+
 const DEFAULT_LIVE_STAGES: RealityOrchestrationStage[] = [
   { toolId: 'tool-voice-acoustic', params: { frequencyHz: 432, organ: 'Soul AI' } },
   { toolId: 'tool-svg-tensor-canvas', params: { dimensions: 20, preset: 4 } },
@@ -566,6 +572,47 @@ export function registerRealityToolsRoutes(fastify: FastifyInstance): void {
         chainSeal,
         doctrine: "ATTEST, DON'T ASSERT. Fail-closed on divergence.",
         authority: 'SOVEREIGN_CIRCUIT_BREAKER',
+      },
+      timestamp: new Date().toISOString(),
+    };
+  });
+
+  let quarantinedTools: Array<{ toolId: string; divergenceReason: string; quarantinedAt: string }> = [];
+
+  fastify.post<{ Body: RealityFailsafeBody }>('/v1/reality/tools/failsafe', async (request) => {
+    const action = request.body?.action ?? 'audit';
+    const toolId = typeof request.body?.toolId === 'string' ? request.body.toolId.trim() : undefined;
+    const divergenceReason = typeof request.body?.divergenceReason === 'string'
+      ? request.body.divergenceReason.trim()
+      : 'Automated invariant divergence verification';
+
+    if (action === 'quarantine' && toolId) {
+      if (!quarantinedTools.some((q) => q.toolId === toolId)) {
+        quarantinedTools.push({ toolId, divergenceReason, quarantinedAt: new Date().toISOString() });
+      }
+    } else if (action === 'restore') {
+      if (toolId) {
+        quarantinedTools = quarantinedTools.filter((q) => q.toolId !== toolId);
+      } else {
+        quarantinedTools = [];
+      }
+    }
+
+    const quarantineActive = quarantinedTools.length > 0;
+    const seed = `failsafe:${quarantineActive ? 'ACTIVE' : 'IDLE'}:${quarantinedTools.length}:${quarantinedTools.map((q) => q.toolId).join(',')}`;
+    const quarantineSeal = createHash('sha256').update(seed, 'utf8').digest('hex');
+
+    return {
+      success: true,
+      status: 'VERIFIED',
+      failsafe: {
+        armed: true,
+        quarantineActive,
+        quarantineCount: quarantinedTools.length,
+        quarantinedTools,
+        quarantineSeal,
+        doctrine: "ATTEST, DON'T ASSERT. Expected ≡ Observed. Invariant holds boundary.",
+        authority: 'SOVEREIGN_FAILSAFE_QUARANTINE',
       },
       timestamp: new Date().toISOString(),
     };

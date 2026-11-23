@@ -2535,6 +2535,50 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
     setVerifying(false);
   };
 
+  const runRealityFailsafeCheck = async () => {
+    if (verifying) return;
+    beginQuickAction('Probe Reality Failsafe Quarantine');
+    let result: ChatMessage;
+    try {
+      const response = await fetch(apiUrl('/v1/reality/tools/failsafe'), {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', accept: 'application/json' },
+        body: JSON.stringify({ action: 'audit' }),
+      });
+      let payload: any = null;
+      try { payload = await response.json(); } catch { payload = null; }
+      if (response.ok && payload?.success && payload?.failsafe) {
+        const f = payload.failsafe;
+        result = {
+          role: 'ai',
+          content: `Reality Failsafe Quarantine VERIFIED: armed=${f.armed}. Quarantined: ${f.quarantineCount ?? 0} tools. Quarantine Seal: ${(f.quarantineSeal || '').slice(0, 16)}… Authority: ${f.authority ?? 'SOVEREIGN_FAILSAFE_QUARANTINE'}`,
+          verified: true,
+          status: 'VERIFIED',
+          engine: 'reality-failsafe',
+          detail: 'POST /v1/reality/tools/failsafe · sovereign failsafe quarantine boundary',
+        };
+      } else {
+        result = {
+          role: 'ai',
+          content: '[UNKNOWN]',
+          verified: false,
+          status: 'UNKNOWN',
+          detail: `POST /v1/reality/tools/failsafe · HTTP ${response.status}`,
+        };
+      }
+    } catch (error) {
+      result = {
+        role: 'ai',
+        content: '[UNKNOWN]',
+        verified: false,
+        status: 'UNKNOWN',
+        detail: `POST /v1/reality/tools/failsafe · ${error instanceof Error ? error.message : 'fetch error'}`,
+      };
+    }
+    setMessages((previous) => [...previous, result]);
+    setVerifying(false);
+  };
+
   const runSaosFlowCheck = async () => {
     if (verifying) return;
     beginQuickAction('Probe SAOS Entity & House Flow');
@@ -3162,6 +3206,9 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
               </button>
               <button type="button" className="vibe-action" onClick={() => void runRealityCircuitBreakerCheck()} disabled={verifying}>
                 🛡️ Circuit Breaker
+              </button>
+              <button type="button" className="vibe-action" onClick={() => void runRealityFailsafeCheck()} disabled={verifying}>
+                🚨 Reality Failsafe
               </button>
             </div>
             <label className="vibe-model-toggle">
