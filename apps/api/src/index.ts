@@ -42,6 +42,7 @@ import { registerEcosystemReleaseRoutes } from './ecosystem-release-route.js';
 import { registerSaosFlowRoutes } from './saos-flow-route.js';
 import { registerStudioRoutes } from './studio-route.js';
 import { registerRealityToolsRoutes } from './reality-tools-route.js';
+import { registerNotionUnificationRoutes } from './notion-route.js';
 import { scanIntent } from './invisible-computer.js';
 import {
   ENCRYPTION_ALGORITHM,
@@ -300,6 +301,7 @@ export function createApp(
   registerSaosFlowRoutes(fastify);
   registerStudioRoutes(fastify);
   registerRealityToolsRoutes(fastify);
+  registerNotionUnificationRoutes(fastify);
   fastify.register(async (scope) => {
     await scope.register(rateLimit, { global: false });
     registerPipelineRoute(scope, jsonError, options.pipelineAdmissionEvidence);
