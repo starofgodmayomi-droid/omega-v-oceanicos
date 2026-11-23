@@ -1862,5 +1862,35 @@ describe('Vibe OS surface', () => {
     expect(screen.getByText(/SOVEREIGN_FAILSAFE_QUARANTINE/i)).toBeInTheDocument();
     expect(screen.getByText(/a1b2c3d4e5f60718/i)).toBeInTheDocument();
   });
+
+  it('autonomously recognizes full-stack tool intent in conversational chat composer with screen wave pulse', async () => {
+    installFetch({
+      '/api/v1/reality/tools/circuit-breaker': () =>
+        json({
+          success: true,
+          status: 'VERIFIED',
+          circuitBreaker: {
+            status: 'ARMED',
+            tripsCount: 0,
+            activeBreakers: [],
+            chainSeal: 'c1rcu1t77889900112233445566778899aabbccddeeff00112233445566778899',
+            authority: 'SOVEREIGN_CIRCUIT_BREAKER',
+          },
+          timestamp: '2026-11-23T00:00:00.000Z',
+        }),
+    });
+    const user = userEvent.setup();
+    render(<VibeOS />);
+
+    const input = screen.getByRole('textbox', { name: 'Intent' });
+    await user.type(input, 'Check circuit breaker status for reality tools');
+
+    const sendBtn = screen.getByRole('button', { name: /Send intent/i });
+    await user.click(sendBtn);
+
+    expect(await screen.findByText(/Reality Circuit Breaker VERIFIED: ARMED/i)).toBeInTheDocument();
+    expect(screen.getByText(/SOVEREIGN_CIRCUIT_BREAKER/i)).toBeInTheDocument();
+    expect(screen.getByText(/c1rcu1t778899001/i)).toBeInTheDocument();
+  });
 });
 
