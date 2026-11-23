@@ -55,6 +55,12 @@ export function StudioSettingsModal({ onClose }: StudioSettingsModalProps) {
     integrityStatus?: string;
     loading?: boolean;
   }>({});
+  const [circuitBreakerState, setCircuitBreakerState] = useState<{
+    status?: string;
+    tripsCount?: number;
+    chainSeal?: string;
+    loading?: boolean;
+  }>({});
   const [canvasFrames, setCanvasFrames] = useState(0);
   const [canvasSeal, setCanvasSeal] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -265,6 +271,30 @@ export function StudioSettingsModal({ onClose }: StudioSettingsModalProps) {
       }
     } catch {
       setRealityStatusState({ loading: false });
+    }
+  };
+
+  const handleProbeCircuitBreaker = async () => {
+    setCircuitBreakerState((s) => ({ ...s, loading: true }));
+    try {
+      const response = await fetch(apiUrl('/v1/reality/tools/circuit-breaker'), {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', accept: 'application/json' },
+        body: JSON.stringify({ action: 'probe' }),
+      });
+      const data = await response.json();
+      if (data?.success && data?.circuitBreaker) {
+        setCircuitBreakerState({
+          status: data.circuitBreaker.status,
+          tripsCount: data.circuitBreaker.tripsCount,
+          chainSeal: data.circuitBreaker.chainSeal,
+          loading: false,
+        });
+      } else {
+        setCircuitBreakerState({ loading: false });
+      }
+    } catch {
+      setCircuitBreakerState({ loading: false });
     }
   };
 
@@ -668,6 +698,30 @@ export function StudioSettingsModal({ onClose }: StudioSettingsModalProps) {
                     <span>Healthy Tools: <strong>{realityStatusState.healthyTools}/{realityStatusState.totalTools}</strong></span>
                     <span>Chain Seal: <strong>{(realityStatusState.chainSeal || '').slice(0, 16)}…</strong></span>
                     <span>Integrity: <strong>{realityStatusState.integrityStatus}</strong></span>
+                  </div>
+                )}
+              </div>
+              <div className="studio-card" style={{ marginTop: '1rem', width: '100%', borderColor: '#ef4444' }}>
+                <h4>🛡️ Sovereign Reality Circuit Breaker</h4>
+                <p style={{ margin: '0.25rem 0 0.75rem', fontSize: '0.85rem', color: '#94a3b8' }}>
+                  Fail-closed circuit breaker telemetry preventing divergent downstream reality pipeline dispatch.
+                </p>
+                <button
+                  type="button"
+                  className="freq-btn"
+                  style={{ width: '100%', borderColor: '#ef4444', color: '#f87171' }}
+                  onClick={handleProbeCircuitBreaker}
+                  disabled={circuitBreakerState.loading}
+                >
+                  {circuitBreakerState.loading
+                    ? '⏳ Probing Circuit Breaker...'
+                    : '🛡️ Probe Circuit Breaker (Fail-Closed Safety)'}
+                </button>
+                {circuitBreakerState.status && (
+                  <div className="canvas-meta" style={{ marginTop: '0.75rem' }}>
+                    <span>Breaker Status: <strong>{circuitBreakerState.status}</strong></span>
+                    <span>Trips: <strong>{circuitBreakerState.tripsCount ?? 0}</strong></span>
+                    <span>Seal: <strong>{(circuitBreakerState.chainSeal || '').slice(0, 16)}…</strong></span>
                   </div>
                 )}
               </div>

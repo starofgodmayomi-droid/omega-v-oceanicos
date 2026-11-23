@@ -1805,5 +1805,33 @@ describe('Vibe OS surface', () => {
     expect(screen.getByText(/SOVEREIGN_REALITY_STATUS/i)).toBeInTheDocument();
     expect(screen.getByText(/c0de5afe12345678/i)).toBeInTheDocument();
   });
+
+  it('observes sovereign reality tools circuit breaker state without trip', async () => {
+    installFetch({
+      '/api/v1/reality/tools/circuit-breaker': () =>
+        json({
+          success: true,
+          status: 'VERIFIED',
+          circuitBreaker: {
+            status: 'ARMED',
+            tripsCount: 0,
+            activeBreakers: [],
+            chainSeal: 'b4ca771c99887766554433221100ffeeddccbbaa0099887766554433221100ff',
+            authority: 'SOVEREIGN_CIRCUIT_BREAKER',
+          },
+          timestamp: '2026-11-23T00:00:00.000Z',
+        }),
+    });
+    const user = userEvent.setup();
+    render(<VibeOS />);
+
+    const breakerBtn = screen.getByRole('button', { name: /🛡️ Circuit Breaker/i });
+    expect(breakerBtn).toBeInTheDocument();
+
+    await user.click(breakerBtn);
+    expect(await screen.findByText(/Reality Circuit Breaker VERIFIED: ARMED/i)).toBeInTheDocument();
+    expect(screen.getByText(/SOVEREIGN_CIRCUIT_BREAKER/i)).toBeInTheDocument();
+    expect(screen.getByText(/b4ca771c99887766/i)).toBeInTheDocument();
+  });
 });
 
