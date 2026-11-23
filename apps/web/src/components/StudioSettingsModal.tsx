@@ -61,6 +61,12 @@ export function StudioSettingsModal({ onClose }: StudioSettingsModalProps) {
     chainSeal?: string;
     loading?: boolean;
   }>({});
+  const [failsafeState, setFailsafeState] = useState<{
+    armed?: boolean;
+    quarantineCount?: number;
+    quarantineSeal?: string;
+    loading?: boolean;
+  }>({});
   const [canvasFrames, setCanvasFrames] = useState(0);
   const [canvasSeal, setCanvasSeal] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -295,6 +301,30 @@ export function StudioSettingsModal({ onClose }: StudioSettingsModalProps) {
       }
     } catch {
       setCircuitBreakerState({ loading: false });
+    }
+  };
+
+  const handleProbeFailsafe = async () => {
+    setFailsafeState((s) => ({ ...s, loading: true }));
+    try {
+      const response = await fetch(apiUrl('/v1/reality/tools/failsafe'), {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', accept: 'application/json' },
+        body: JSON.stringify({ action: 'audit' }),
+      });
+      const data = await response.json();
+      if (data?.success && data?.failsafe) {
+        setFailsafeState({
+          armed: data.failsafe.armed,
+          quarantineCount: data.failsafe.quarantineCount,
+          quarantineSeal: data.failsafe.quarantineSeal,
+          loading: false,
+        });
+      } else {
+        setFailsafeState({ loading: false });
+      }
+    } catch {
+      setFailsafeState({ loading: false });
     }
   };
 
@@ -722,6 +752,30 @@ export function StudioSettingsModal({ onClose }: StudioSettingsModalProps) {
                     <span>Breaker Status: <strong>{circuitBreakerState.status}</strong></span>
                     <span>Trips: <strong>{circuitBreakerState.tripsCount ?? 0}</strong></span>
                     <span>Seal: <strong>{(circuitBreakerState.chainSeal || '').slice(0, 16)}…</strong></span>
+                  </div>
+                )}
+              </div>
+              <div className="studio-card" style={{ marginTop: '1rem', width: '100%', borderColor: '#f59e0b' }}>
+                <h4>🚨 Sovereign Reality Failsafe Quarantine</h4>
+                <p style={{ margin: '0.25rem 0 0.75rem', fontSize: '0.85rem', color: '#94a3b8' }}>
+                  Autonomous invariant quarantine barrier safeguarding reality pipeline execution integrity.
+                </p>
+                <button
+                  type="button"
+                  className="freq-btn"
+                  style={{ width: '100%', borderColor: '#f59e0b', color: '#fbbf24' }}
+                  onClick={handleProbeFailsafe}
+                  disabled={failsafeState.loading}
+                >
+                  {failsafeState.loading
+                    ? '⏳ Probing Failsafe Quarantine...'
+                    : '🚨 Run Failsafe Quarantine Verification'}
+                </button>
+                {failsafeState.quarantineSeal && (
+                  <div className="canvas-meta" style={{ marginTop: '0.75rem' }}>
+                    <span>Failsafe Armed: <strong>{String(failsafeState.armed)}</strong></span>
+                    <span>Quarantined: <strong>{failsafeState.quarantineCount ?? 0} tools</strong></span>
+                    <span>Seal: <strong>{(failsafeState.quarantineSeal || '').slice(0, 16)}…</strong></span>
                   </div>
                 )}
               </div>

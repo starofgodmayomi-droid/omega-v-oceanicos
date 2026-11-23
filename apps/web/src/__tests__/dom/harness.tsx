@@ -889,6 +889,20 @@ export function installFetch(overrides: RouteOverrides = {}): jest.Mock {
         },
         timestamp: '2026-11-23T00:00:00.000Z',
       }),
+    '/api/v1/reality/tools/failsafe': () =>
+      json({
+        success: true,
+        status: 'VERIFIED',
+        failsafe: {
+          armed: true,
+          quarantineActive: false,
+          quarantineCount: 0,
+          quarantinedTools: [],
+          quarantineSeal: 'a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90',
+          authority: 'SOVEREIGN_FAILSAFE_QUARANTINE',
+        },
+        timestamp: '2026-11-23T00:00:00.000Z',
+      }),
   };
 
   const routes = { ...defaults, ...overrides };

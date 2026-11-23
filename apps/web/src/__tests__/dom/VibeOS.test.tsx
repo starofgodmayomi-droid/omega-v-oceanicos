@@ -1833,5 +1833,34 @@ describe('Vibe OS surface', () => {
     expect(screen.getByText(/SOVEREIGN_CIRCUIT_BREAKER/i)).toBeInTheDocument();
     expect(screen.getByText(/b4ca771c99887766/i)).toBeInTheDocument();
   });
+
+  it('verifies sovereign reality failsafe quarantine boundary', async () => {
+    installFetch({
+      '/api/v1/reality/tools/failsafe': () =>
+        json({
+          success: true,
+          status: 'VERIFIED',
+          failsafe: {
+            armed: true,
+            quarantineActive: false,
+            quarantineCount: 0,
+            quarantinedTools: [],
+            quarantineSeal: 'a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90',
+            authority: 'SOVEREIGN_FAILSAFE_QUARANTINE',
+          },
+          timestamp: '2026-11-23T00:00:00.000Z',
+        }),
+    });
+    const user = userEvent.setup();
+    render(<VibeOS />);
+
+    const failsafeBtn = screen.getByRole('button', { name: /🚨 Reality Failsafe/i });
+    expect(failsafeBtn).toBeInTheDocument();
+
+    await user.click(failsafeBtn);
+    expect(await screen.findByText(/Reality Failsafe Quarantine VERIFIED: armed=true/i)).toBeInTheDocument();
+    expect(screen.getByText(/SOVEREIGN_FAILSAFE_QUARANTINE/i)).toBeInTheDocument();
+    expect(screen.getByText(/a1b2c3d4e5f60718/i)).toBeInTheDocument();
+  });
 });
 
