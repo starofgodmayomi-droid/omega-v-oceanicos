@@ -2491,6 +2491,50 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
     setVerifying(false);
   };
 
+  const runRealityCircuitBreakerCheck = async () => {
+    if (verifying) return;
+    beginQuickAction('Probe Reality Circuit Breaker');
+    let result: ChatMessage;
+    try {
+      const response = await fetch(apiUrl('/v1/reality/tools/circuit-breaker'), {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', accept: 'application/json' },
+        body: JSON.stringify({ action: 'probe' }),
+      });
+      let payload: any = null;
+      try { payload = await response.json(); } catch { payload = null; }
+      if (response.ok && payload?.success && payload?.circuitBreaker?.status) {
+        const b = payload.circuitBreaker;
+        result = {
+          role: 'ai',
+          content: `Reality Circuit Breaker VERIFIED: ${b.status} (${b.tripsCount ?? 0} trips). Chain Seal: ${(b.chainSeal || '').slice(0, 16)}… Authority: ${b.authority ?? 'SOVEREIGN_CIRCUIT_BREAKER'}`,
+          verified: true,
+          status: 'VERIFIED',
+          engine: 'reality-circuit-breaker',
+          detail: 'POST /v1/reality/tools/circuit-breaker · fail-closed circuit breaker telemetry',
+        };
+      } else {
+        result = {
+          role: 'ai',
+          content: '[UNKNOWN]',
+          verified: false,
+          status: 'UNKNOWN',
+          detail: `POST /v1/reality/tools/circuit-breaker · HTTP ${response.status}`,
+        };
+      }
+    } catch (error) {
+      result = {
+        role: 'ai',
+        content: '[UNKNOWN]',
+        verified: false,
+        status: 'UNKNOWN',
+        detail: `POST /v1/reality/tools/circuit-breaker · ${error instanceof Error ? error.message : 'fetch error'}`,
+      };
+    }
+    setMessages((previous) => [...previous, result]);
+    setVerifying(false);
+  };
+
   const runSaosFlowCheck = async () => {
     if (verifying) return;
     beginQuickAction('Probe SAOS Entity & House Flow');
@@ -3115,6 +3159,9 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
               </button>
               <button type="button" className="vibe-action" onClick={() => void runRealityToolsStatusCheck()} disabled={verifying}>
                 📊 Reality Tools Status
+              </button>
+              <button type="button" className="vibe-action" onClick={() => void runRealityCircuitBreakerCheck()} disabled={verifying}>
+                🛡️ Circuit Breaker
               </button>
             </div>
             <label className="vibe-model-toggle">

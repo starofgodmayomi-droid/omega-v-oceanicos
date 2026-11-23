@@ -876,6 +876,19 @@ export function installFetch(overrides: RouteOverrides = {}): jest.Mock {
         },
         timestamp: '2026-11-22T00:00:00.000Z',
       }),
+    '/api/v1/reality/tools/circuit-breaker': () =>
+      json({
+        success: true,
+        status: 'VERIFIED',
+        circuitBreaker: {
+          status: 'ARMED',
+          tripsCount: 0,
+          activeBreakers: [],
+          chainSeal: 'b4ca771c99887766554433221100ffeeddccbbaa0099887766554433221100ff',
+          authority: 'SOVEREIGN_CIRCUIT_BREAKER',
+        },
+        timestamp: '2026-11-23T00:00:00.000Z',
+      }),
   };
 
   const routes = { ...defaults, ...overrides };
