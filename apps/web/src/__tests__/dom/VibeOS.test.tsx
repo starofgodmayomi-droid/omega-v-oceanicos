@@ -1892,5 +1892,35 @@ describe('Vibe OS surface', () => {
     expect(screen.getByText(/SOVEREIGN_CIRCUIT_BREAKER/i)).toBeInTheDocument();
     expect(screen.getByText(/c1rcu1t778899001/i)).toBeInTheDocument();
   });
+
+  it('probes Notion Unified Ecosystem Bridge and displays canonical roles', async () => {
+    installFetch({
+      '/api/v1/notion/unification': () =>
+        json({
+          success: true,
+          status: 'VERIFIED',
+          unification: {
+            id: 'notion.omega.unification.v1',
+            doctrine: "ATTEST, DON'T ASSERT. Expected ≡ Observed. Reality remains the final authority.",
+            axiom: 'ONE ROOT • ONE CURRENT • MANY BOUNDED FORMS • ONE TRUST BOUNDARY • REALITY FIRST',
+            rolesCount: 12,
+            roles: [],
+            authority: 'SOVEREIGN_NOTION_UNIFICATION',
+            evidenceHash: 'e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8',
+          },
+          timestamp: '2026-11-23T00:00:00.000Z',
+        }),
+    });
+    const user = userEvent.setup();
+    render(<VibeOS />);
+
+    const notionBtn = screen.getByRole('button', { name: /💧 Notion Bridge/i });
+    expect(notionBtn).toBeInTheDocument();
+
+    await user.click(notionBtn);
+    expect(await screen.findByText(/Notion Unified Ecosystem Bridge VERIFIED: 12 canonical roles bound/i)).toBeInTheDocument();
+    expect(screen.getByText(/SOVEREIGN_NOTION_UNIFICATION/i)).toBeInTheDocument();
+    expect(screen.getByText(/e7f8a9b0c1d2e3f4/i)).toBeInTheDocument();
+  });
 });
 

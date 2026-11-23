@@ -295,6 +295,10 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
       await runRealityFailsafeCheck();
       return;
     }
+    if (lower.includes('notion') || lower.includes('notion unification') || lower.includes('notion bridge')) {
+      await runNotionUnificationCheck();
+      return;
+    }
     if (lower.includes('reality tools status') || lower.includes('tools status') || lower.includes('tools health')) {
       await runRealityToolsStatusCheck();
       return;
@@ -2640,6 +2644,48 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
     setVerifying(false);
   };
 
+  const runNotionUnificationCheck = async () => {
+    if (verifying) return;
+    beginQuickAction('Probe Notion Unified Ecosystem Bridge');
+    let result: ChatMessage;
+    try {
+      const response = await fetch(apiUrl('/v1/notion/unification'), {
+        headers: { accept: 'application/json' },
+      });
+      let payload: any = null;
+      try { payload = await response.json(); } catch { payload = null; }
+      if (response.ok && payload?.success && payload?.unification) {
+        const u = payload.unification;
+        result = {
+          role: 'ai',
+          content: `Notion Unified Ecosystem Bridge VERIFIED: ${u.rolesCount} canonical roles bound. Axiom: "${u.axiom}". Evidence Hash: ${(u.evidenceHash || '').slice(0, 16)}… Authority: ${u.authority ?? 'SOVEREIGN_NOTION_UNIFICATION'}`,
+          verified: true,
+          status: 'VERIFIED',
+          engine: 'notion-unification',
+          detail: 'GET /v1/notion/unification · human command context & runtime evidence unified',
+        };
+      } else {
+        result = {
+          role: 'ai',
+          content: '[UNKNOWN]',
+          verified: false,
+          status: 'UNKNOWN',
+          detail: `GET /v1/notion/unification · HTTP ${response.status}`,
+        };
+      }
+    } catch (error) {
+      result = {
+        role: 'ai',
+        content: '[UNKNOWN]',
+        verified: false,
+        status: 'UNKNOWN',
+        detail: `GET /v1/notion/unification · ${error instanceof Error ? error.message : 'fetch error'}`,
+      };
+    }
+    setMessages((previous) => [...previous, result]);
+    setVerifying(false);
+  };
+
   const runSaosFlowCheck = async () => {
     if (verifying) return;
     beginQuickAction('Probe SAOS Entity & House Flow');
@@ -3291,6 +3337,9 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
               </button>
               <button type="button" className="vibe-action" onClick={() => void runRealityFailsafeCheck()} disabled={verifying}>
                 🚨 Reality Failsafe
+              </button>
+              <button type="button" className="vibe-action" onClick={() => void runNotionUnificationCheck()} disabled={verifying}>
+                💧 Notion Bridge
               </button>
             </div>
             <label className="vibe-model-toggle">
