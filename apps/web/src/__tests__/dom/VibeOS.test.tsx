@@ -1774,5 +1774,36 @@ describe('Vibe OS surface', () => {
       globalThis.EventSource = previous;
     }
   });
+
+  it('fetches the sovereign reality status dashboard and shows tool health chain seal', async () => {
+    installFetch({
+      '/api/v1/reality/tools/status': () =>
+        json({
+          success: true,
+          status: 'VERIFIED',
+          dashboard: {
+            platform: 'ΔVRØ HOUSE × Ω∞v OCEANICOS — REALITY STATUS DASHBOARD',
+            doctrine: "ATTEST, DON'T ASSERT. Expected ≡ Observed. Reality remains the final authority.",
+            totalTools: 8,
+            healthyTools: 8,
+            chainSeal: 'c0de5afe1234567890abcdef1234567890abcdef1234567890abcdef12345678',
+            integrityCheck: { status: 'VERIFIED', bundleSeal: 'deadbeef01234567' },
+            tools: [],
+            authority: 'SOVEREIGN_REALITY_STATUS',
+          },
+          timestamp: '2026-11-22T00:00:00.000Z',
+        }),
+    });
+    const user = userEvent.setup();
+    render(<VibeOS />);
+
+    const statusBtn = screen.getByRole('button', { name: /📊 Reality Tools Status/i });
+    expect(statusBtn).toBeInTheDocument();
+
+    await user.click(statusBtn);
+    expect(await screen.findByText(/Reality Status Dashboard VERIFIED: 8\/8 tools healthy/i)).toBeInTheDocument();
+    expect(screen.getByText(/SOVEREIGN_REALITY_STATUS/i)).toBeInTheDocument();
+    expect(screen.getByText(/c0de5afe12345678/i)).toBeInTheDocument();
+  });
 });
 

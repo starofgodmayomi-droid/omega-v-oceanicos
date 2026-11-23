@@ -851,6 +851,31 @@ export function installFetch(overrides: RouteOverrides = {}): jest.Mock {
       json({ data: { acknowledged: true, count: 1 } }, { status: 200 }),
     '/api/persistence/reencrypt': () =>
       json({ data: { reencrypted: true, recordsProcessed: 1 } }, { status: 200 }),
+    '/api/v1/reality/tools/status': () =>
+      json({
+        success: true,
+        status: 'VERIFIED',
+        dashboard: {
+          platform: 'ΔVRØ HOUSE × Ω∞v OCEANICOS — REALITY STATUS DASHBOARD',
+          doctrine: "ATTEST, DON'T ASSERT. Expected ≡ Observed. Reality remains the final authority.",
+          totalTools: 8,
+          healthyTools: 8,
+          chainSeal: 'c0de5afe1234567890abcdef1234567890abcdef1234567890abcdef12345678',
+          integrityCheck: { status: 'VERIFIED', bundleSeal: 'deadbeef01234567' },
+          tools: [
+            { toolId: 'tool-microvm-sandbox', status: 'VERIFIED', probe: 'aa01bb02cc03dd04', checkedAt: '2026-11-22T00:00:00.000Z' },
+            { toolId: 'tool-mcp-connectors', status: 'VERIFIED', probe: 'bb02cc03dd04ee05', checkedAt: '2026-11-22T00:00:00.000Z' },
+            { toolId: 'tool-ollama-neural', status: 'VERIFIED', probe: 'cc03dd04ee05ff06', checkedAt: '2026-11-22T00:00:00.000Z' },
+            { toolId: 'tool-voice-acoustic', status: 'VERIFIED', probe: 'dd04ee05ff060011', checkedAt: '2026-11-22T00:00:00.000Z' },
+            { toolId: 'tool-svg-tensor-canvas', status: 'VERIFIED', probe: 'ee05ff0600110022', checkedAt: '2026-11-22T00:00:00.000Z' },
+            { toolId: 'tool-sse-video-stream', status: 'VERIFIED', probe: 'ff060011002200ab', checkedAt: '2026-11-22T00:00:00.000Z' },
+            { toolId: 'tool-dav-tensor-validator', status: 'VERIFIED', probe: '001100220033abcd', checkedAt: '2026-11-22T00:00:00.000Z' },
+            { toolId: 'tool-kai-immutable-ledger', status: 'VERIFIED', probe: '00220033abcdef01', checkedAt: '2026-11-22T00:00:00.000Z' },
+          ],
+          authority: 'SOVEREIGN_REALITY_STATUS',
+        },
+        timestamp: '2026-11-22T00:00:00.000Z',
+      }),
   };
 
   const routes = { ...defaults, ...overrides };

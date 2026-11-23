@@ -2449,6 +2449,48 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
     });
   };
 
+  const runRealityToolsStatusCheck = async () => {
+    if (verifying) return;
+    beginQuickAction('Probe Reality Tools Status');
+    let result: ChatMessage;
+    try {
+      const response = await fetch(apiUrl('/v1/reality/tools/status'), {
+        headers: { accept: 'application/json' },
+      });
+      let payload: any = null;
+      try { payload = await response.json(); } catch { payload = null; }
+      if (response.ok && payload?.success && payload?.dashboard?.chainSeal) {
+        const d = payload.dashboard;
+        result = {
+          role: 'ai',
+          content: `Reality Status Dashboard VERIFIED: ${d.healthyTools}/${d.totalTools} tools healthy. Chain Seal: ${(d.chainSeal || '').slice(0, 16)}… Integrity: ${d.integrityCheck?.status ?? 'UNKNOWN'} Authority: ${d.authority ?? 'SOVEREIGN_REALITY_STATUS'}`,
+          verified: true,
+          status: 'VERIFIED',
+          engine: 'reality-tools-status',
+          detail: 'GET /v1/reality/tools/status · sovereign tool health aggregate with chain seal',
+        };
+      } else {
+        result = {
+          role: 'ai',
+          content: '[UNKNOWN]',
+          verified: false,
+          status: 'UNKNOWN',
+          detail: `GET /v1/reality/tools/status · HTTP ${response.status}`,
+        };
+      }
+    } catch (error) {
+      result = {
+        role: 'ai',
+        content: '[UNKNOWN]',
+        verified: false,
+        status: 'UNKNOWN',
+        detail: `GET /v1/reality/tools/status · ${error instanceof Error ? error.message : 'fetch error'}`,
+      };
+    }
+    setMessages((previous) => [...previous, result]);
+    setVerifying(false);
+  };
+
   const runSaosFlowCheck = async () => {
     if (verifying) return;
     beginQuickAction('Probe SAOS Entity & House Flow');
@@ -3070,6 +3112,9 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
               </button>
               <button type="button" className="vibe-action" onClick={() => void runPipelineCanvasStream()} disabled={verifying}>
                 Subscribe pipeline canvas
+              </button>
+              <button type="button" className="vibe-action" onClick={() => void runRealityToolsStatusCheck()} disabled={verifying}>
+                📊 Reality Tools Status
               </button>
             </div>
             <label className="vibe-model-toggle">
