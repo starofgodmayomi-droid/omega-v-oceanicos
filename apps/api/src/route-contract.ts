@@ -31,6 +31,7 @@ export const API_ROUTE_INVENTORY = [
   'POST /v1/reality/orchestrate',
   'POST /v1/reality/pipeline/execute',
   'GET /v1/reality/pipeline/stream',
+  'GET /v1/reality/tools/status',
   'POST /v1/companion/synthesize',
   'GET /v1/kernel/capabilities',
   'GET /v1/kernel/stats',
