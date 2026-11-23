@@ -192,6 +192,13 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
     }
   };
   const logRef = useRef<HTMLDivElement | null>(null);
+  const [waveActive, setWaveActive] = useState<boolean>(false);
+
+  const triggerWavePulse = (freq = 432) => {
+    playHarmonicTone(freq, 0.6);
+    setWaveActive(true);
+    setTimeout(() => setWaveActive(false), 2400);
+  };
 
   useEffect(() => {
     if (!active) return;
@@ -275,13 +282,67 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
     setDraft('');
     setMessages((previous) => [...previous, { role: 'user', content: intent, verified: false }]);
     setVerifying(true);
+    triggerWavePulse(432);
+
+    const lower = intent.toLowerCase();
+
+    // Autonomous Full-Stack Tool Agent Recognition
+    if (lower.includes('circuit breaker') || lower.includes('breaker status')) {
+      await runRealityCircuitBreakerCheck();
+      return;
+    }
+    if (lower.includes('failsafe') || lower.includes('quarantine')) {
+      await runRealityFailsafeCheck();
+      return;
+    }
+    if (lower.includes('reality tools status') || lower.includes('tools status') || lower.includes('tools health')) {
+      await runRealityToolsStatusCheck();
+      return;
+    }
+    if (lower.includes('dispatch tool') || lower.includes('tool dispatch') || lower.includes('reality dispatch')) {
+      await runRealityToolDispatchCheck();
+      return;
+    }
+    if (lower.includes('reality tools') || lower.includes('tools gateway')) {
+      await runRealityToolsGatewayCheck();
+      return;
+    }
+    if (lower.includes('orchestrate') || lower.includes('reality orchestration')) {
+      await runRealityOrchestrationCheck();
+      return;
+    }
+    if (lower.includes('execute pipeline') || lower.includes('pipeline execute')) {
+      await runRealityPipelineExecuteCheck();
+      return;
+    }
+    if (lower.includes('pipeline stream') || lower.includes('subscribe pipeline')) {
+      await runPipelineCanvasStream();
+      return;
+    }
+    if (lower.includes('voice bridge') || lower.includes('432hz') || lower.includes('harmonic resonance')) {
+      await runVoiceBridgeCheck();
+      return;
+    }
+    if (lower.includes('tensor') || lower.includes('dav proof') || lower.includes('dav visualizer')) {
+      setDavOpen(true);
+      await runKernelCheck();
+      return;
+    }
+    if (lower.includes('synthesize') || lower.includes('multimodal asset')) {
+      await runStudioSynthesisCheck();
+      return;
+    }
+    if (lower.includes('water flow') || lower.includes('water magic') || lower.includes('biomimetic water')) {
+      setWaterFrames(generateWaterFlowFrames('VERIFIED', intent));
+      setWaterOpen(true);
+    }
 
     const receipt = await submitIntent(intent, undefined, useExternalModel);
     setKaiStatus(receipt.status);
     setMessages((previous) => [...previous, receiptMessage(receipt)]);
     setWaterFrames(generateWaterFlowFrames(receipt.status, intent));
     if (receipt.verified) {
-      playHarmonicTone(432, 0.5);
+      triggerWavePulse(432);
     }
     setVerifying(false);
   };
@@ -2728,7 +2789,28 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
   const empty = messages.length === 0 && !verifying;
 
   return (
-    <div className="vibe-os">
+    <div className={`vibe-os ${waveActive ? 'vibe-wave-active' : ''}`}>
+      {waveActive && (
+        <svg
+          className="vibe-screen-wave-canvas"
+          viewBox="0 0 1200 90"
+          preserveAspectRatio="none"
+          aria-hidden="true"
+        >
+          <path
+            d="M 0,45 C 150,10 350,80 600,45 C 850,10 1050,80 1200,45 L 1200,0 L 0,0 Z"
+            fill="url(#wave-gradient)"
+            opacity="0.65"
+          />
+          <defs>
+            <linearGradient id="wave-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#8ce8c8" />
+              <stop offset="50%" stopColor="#38bdf8" />
+              <stop offset="100%" stopColor="#90e2b1" />
+            </linearGradient>
+          </defs>
+        </svg>
+      )}
       <div className="vibe-shell">
         <header className="vibe-topbar">
           <div className="vibe-brand">
