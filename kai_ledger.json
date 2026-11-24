@@ -1783,6 +1783,21 @@
       "status": "VERIFIED",
       "tests_passed": true,
       "timestamp": "2026-11-23T23:42:15.000Z"
+    },
+    {
+      "agent_id": "agent/gemini/fix-windows-pnpm-shims",
+      "branch": "agent/gemini/fix-windows-pnpm-shims",
+      "evidence_hash": "53b6a814748c6fca8889081ad8d1f948b5d56c4863fcd04ef970a268d75bacd5",
+      "files_touched": [
+        "pnpm.cmd",
+        "pnpm.ps1",
+        "ΩVØØS/ASSIGNMENTS/061-beta-windows-pnpm-shims-fix.md",
+        "kai_ledger.json"
+      ],
+      "next_delta": "Verify start-all scripts across Windows Git Bash, PowerShell, and Command Prompt environments.",
+      "status": "VERIFIED",
+      "tests_passed": true,
+      "timestamp": "2026-11-24T02:08:30.000Z"
     }
   ]
 }
