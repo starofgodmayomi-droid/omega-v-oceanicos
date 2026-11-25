@@ -37,7 +37,9 @@ infinity, consciousness, cosmology, or physical reality.
 
 The executable boundary is `packages/verification/src/continuum.ts`, exported by
 the verification package. It evaluates one finite transition and preserves
-`VERIFIED`, `DIVERGENT`, and `NOT_EXECUTED` as distinct states. A SHA-256 adapter
-may hash its canonical receipt for byte integrity; that hash is not proof that the
-underlying state is true. Repetition remains a sequence of finite, human-governed
-transitions, never hidden continuous self-modification.
+`VERIFIED`, `DIVERGENT`, and `NOT_EXECUTED` as distinct states. `VERIFIED` requires
+the declared candidate to match an explicitly supplied observed candidate; missing
+or conflicting observation remains `DIVERGENT` even when authorization is present.
+A SHA-256 adapter may hash its canonical receipt for byte integrity; that hash is
+not proof that the underlying state is true. Repetition remains a sequence of
+finite, human-governed transitions, never hidden continuous self-modification.

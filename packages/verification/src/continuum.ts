@@ -24,6 +24,8 @@ export interface ContinuumCheckInput {
   readonly transitionId: string;
   readonly baseline: string;
   readonly candidate: string;
+  /** The state actually observed after the bounded transition. */
+  readonly observedCandidate: string;
   readonly evidence: readonly string[];
   readonly authorized: boolean;
 }
@@ -32,7 +34,9 @@ export interface ContinuumTransition {
   readonly transitionId: string;
   readonly baseline: string;
   readonly candidate: string;
+  readonly observedCandidate: string;
   readonly delta: 'NO_CHANGE' | 'STATE_DELTA';
+  readonly reconciled: boolean;
   readonly evidence: readonly string[];
   readonly state: ContinuumEvidenceState;
   readonly authorized: boolean;
@@ -43,14 +47,18 @@ export interface ContinuumTransition {
 export function evaluateContinuumTransition(input: ContinuumCheckInput): ContinuumTransition {
   const hasIdentity = input.transitionId.trim().length > 0;
   const hasStates = input.baseline.trim().length > 0 && input.candidate.trim().length > 0;
+  const hasObservation = input.observedCandidate.trim().length > 0;
   const hasEvidence = input.evidence.length > 0 && input.evidence.every((item) => item.trim().length > 0);
-  const verified = hasIdentity && hasStates && hasEvidence && input.authorized;
+  const reconciled = hasObservation && input.candidate === input.observedCandidate;
+  const verified = hasIdentity && hasStates && hasObservation && reconciled && hasEvidence && input.authorized;
 
   return Object.freeze({
     transitionId: input.transitionId,
     baseline: input.baseline,
     candidate: input.candidate,
-    delta: input.baseline === input.candidate ? 'NO_CHANGE' : 'STATE_DELTA',
+    observedCandidate: input.observedCandidate,
+    delta: input.baseline === input.observedCandidate ? 'NO_CHANGE' : 'STATE_DELTA',
+    reconciled,
     evidence: Object.freeze([...input.evidence]),
     state: verified ? 'VERIFIED' : input.authorized ? 'DIVERGENT' : 'NOT_EXECUTED',
     authorized: input.authorized,
@@ -64,7 +72,9 @@ export function canonicalizeContinuumTransition(transition: ContinuumTransition)
     transitionId: transition.transitionId,
     baseline: transition.baseline,
     candidate: transition.candidate,
+    observedCandidate: transition.observedCandidate,
     delta: transition.delta,
+    reconciled: transition.reconciled,
     evidence: [...transition.evidence],
     state: transition.state,
     authorized: transition.authorized,
