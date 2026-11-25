@@ -1,5 +1,5 @@
 {
-  "protocol": "ΩVØØS-SWARM/1",
+  "protocol": "\u03a9V\u00d8\u00d8S-SWARM/1",
   "checksum": "30013030",
   "doctrine": "ATTEST, DON'T ASSERT. UNKNOWN PRESERVED.",
   "append_only": true,
@@ -9,7 +9,7 @@
     "UNKNOWN",
     "NOT_EXECUTED"
   ],
-  "rule": "Append only. Never rewrite or delete an entry. On conflict keep both receipts, ordered by timestamp. See SWARM_PROTOCOL.md §VI.",
+  "rule": "Append only. Never rewrite or delete an entry. On conflict keep both receipts, ordered by timestamp. See SWARM_PROTOCOL.md \u00a7VI.",
   "entries": [
     {
       "timestamp": "2026-11-08T16:03:00Z",
@@ -25,7 +25,7 @@
       ],
       "tests_passed": null,
       "evidence_hash": null,
-      "next_delta": "Claim one domain from SWARM_PROTOCOL.md §III, branch as agent/<platform>/<task>, and append your own receipt."
+      "next_delta": "Claim one domain from SWARM_PROTOCOL.md \u00a7III, branch as agent/<platform>/<task>, and append your own receipt."
     },
     {
       "timestamp": "2026-11-11T08:18:22Z",
@@ -36,7 +36,7 @@
         "apps/web/src/InvisibleComputer.tsx",
         "apps/web/src/InvisibleComputer.css",
         "apps/web/src/__tests__/dom/InvisibleComputer.test.tsx",
-        "ΩVØØS/ASSIGNMENTS/002-beta-invisible-computer-workspace.md",
+        "\u03a9V\u00d8\u00d8S/ASSIGNMENTS/002-beta-invisible-computer-workspace.md",
         "kai_ledger.json"
       ],
       "tests_passed": true,
@@ -351,7 +351,7 @@
       "branch": "agent/chatgpt/composio-readonly-gateway",
       "status": "UNKNOWN",
       "files_touched": [
-        "ΩVØØS/ASSIGNMENTS/004-alpha-composio-readonly-gateway.md",
+        "\u03a9V\u00d8\u00d8S/ASSIGNMENTS/004-alpha-composio-readonly-gateway.md",
         "apps/api/src/composio-gateway.ts",
         "apps/api/src/composio-gateway-route.ts",
         "apps/api/src/index.ts",
@@ -458,7 +458,7 @@
       ],
       "tests_passed": true,
       "evidence_hash": "f121184f0da86f0416b56d05cd8834eac535f7157aca4ca275e1d15a0731c84f",
-      "next_delta": "Human-review the AVRØ HOUSE brand alignment and unified-entity-dav worker branch."
+      "next_delta": "Human-review the AVR\u00d8 HOUSE brand alignment and unified-entity-dav worker branch."
     },
     {
       "timestamp": "2026-11-18T09:22:00Z",
@@ -501,6 +501,23 @@
       "tests_passed": true,
       "evidence_hash": "dfa029a68df5029174fc2d0c70bb0b235cf42dd1d5e0b9b8a3e8bf267e2950e5",
       "next_delta": "Human-review the dynamic desktop launcher and brand alignment."
+    },
+    {
+      "agent_id": "manus",
+      "branch": "agent/manus/lucid-continuum-bridge",
+      "status": "VERIFIED",
+      "files_touched": [
+        "docs/UNIFIED-ENTITY-ARCHITECTURE.md",
+        "packages/verification/src/__tests__/continuum.test.ts",
+        "packages/verification/src/continuum.ts",
+        "packages/verification/src/index.ts",
+        "packages/verification/tsconfig.json",
+        "kai_ledger.json"
+      ],
+      "tests_passed": true,
+      "evidence_hash": "64803c261c13c88aeecf235ded00faaaa768d465e9fcc5e542666628ed768ca4",
+      "next_delta": "Review the combined bridge branch and its existing DAV PR lineage; do not merge or deploy without separate human approval.",
+      "timestamp": "2026-11-25T02:18:40.000Z"
     }
   ]
 }
