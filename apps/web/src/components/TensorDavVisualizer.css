@@ -42,6 +42,7 @@
   font: 11px 'DM Mono', monospace;
   white-space: nowrap;
 }
+.tensor-dav__badge--reconciling { border-color: #806b3d; color: #f1d79b; background: rgba(103, 82, 32, 0.16); }
 .tensor-dav__controls { justify-content: flex-start; margin: 18px 0 12px; }
 .tensor-dav__controls button {
   border: 1px solid #31584f;
@@ -106,7 +107,7 @@
 .tensor-dav__heatmap {
   display: grid;
   grid-template-columns: repeat(var(--tensor-columns), minmax(14px, 1fr));
-  min-width: 500px;
+  min-width: 100%;
 }
 .tensor-dav__cell {
   display: grid;
@@ -138,9 +139,15 @@
 .tensor-dav__error--divergent { border-color: #894b45; color: #ffb0a2; background: #251614; }
 .tensor-dav__digest { align-items: flex-start; justify-content: flex-start; color: #71a294; font: 9px 'DM Mono', monospace; }
 .tensor-dav__digest code { color: #b0dfcf; overflow-wrap: anywhere; }
+.tensor-dav__observed { margin: 10px 0 0; color: #9fc9b9; font: 9px 'DM Mono', monospace; }
 .tensor-dav__boundary { margin: 14px 0 0; }
 @media (max-width: 600px) {
   .tensor-dav { padding: 15px; }
   .tensor-dav__summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .tensor-dav__summary span { justify-content: space-between; }
+  .tensor-dav__controls { align-items: stretch; }
+  .tensor-dav__controls button { flex: 1 1 calc(50% - 8px); min-height: 40px; }
+  .tensor-dav__projection { width: 100%; }
+  .tensor-dav__heatmap-wrap { -webkit-overflow-scrolling: touch; }
+  .tensor-dav__cell { min-width: 12px; font-size: 7px; }
 }

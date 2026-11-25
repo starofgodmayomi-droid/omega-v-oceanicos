@@ -21,3 +21,25 @@ The kernel recomputes the expected matrix and invariants before computing SHA-25
 ## Read and attestation boundary
 
 `GET /tensor/:size` and `GET /api/tensor/:size` are deterministic computations with no `kai_ledger.json` mutation. Append a matching swarm receipt only after the required verification gate has passed, following `SWARM_PROTOCOL.md §VI`; do not mark a failed, incomplete, or unobserved gate as `VERIFIED`. External publishing, pushing, merging, and deployment are outside this local implementation boundary and remain subject to human review.
+
+## LucidContinuum convergence axiom
+
+The supplied expression
+
+\[
+\lim_{N\to\infty}\oint_{M_V}\nabla\Psi(x,t)\,d\mu = 1
+\]
+
+is retained as a user-supplied symbolic design axiom. In this repository it means
+that repeated finite transitions may converge toward a state that satisfies its
+declared verification surface. It does not claim that the repository measures
+infinity, consciousness, cosmology, or physical reality.
+
+The executable boundary is `packages/verification/src/continuum.ts`, exported by
+the verification package. It evaluates one finite transition and preserves
+`VERIFIED`, `DIVERGENT`, and `NOT_EXECUTED` as distinct states. `VERIFIED` requires
+the declared candidate to match an explicitly supplied observed candidate; missing
+or conflicting observation remains `DIVERGENT` even when authorization is present.
+A SHA-256 adapter may hash its canonical receipt for byte integrity; that hash is
+not proof that the underlying state is true. Repetition remains a sequence of
+finite, human-governed transitions, never hidden continuous self-modification.

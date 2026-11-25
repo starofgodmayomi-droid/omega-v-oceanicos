@@ -44,6 +44,10 @@ export function TensorDavVisualizer() {
           setFailure(body.success === false ? body : { success: false, status: 'UNKNOWN', error: 'INVALID_API_RESPONSE' });
           return;
         }
+        if (body.size !== size) {
+          setFailure({ success: false, status: 'DIVERGENT', error: 'RECEIPT_SIZE_MISMATCH' });
+          return;
+        }
         setReceipt(body);
       })
       .catch((error: unknown) => {
@@ -64,7 +68,8 @@ export function TensorDavVisualizer() {
           <h2 id="tensor-dav-title">Entity tensor projection</h2>
           <p className="tensor-dav__description">T[i,j,k,l] = i + j + k + l · projected with row = i × N + j and column = k × N + l.</p>
         </div>
-        {!loading && receipt && <span className="tensor-dav__badge" aria-label="SHA-256 verified">🔒 Verified · SHA-256</span>}
+        {!loading && receipt && <span className="tensor-dav__badge" aria-label="SHA-256 verified">Verified · SHA-256</span>}
+        {loading && <span className="tensor-dav__badge tensor-dav__badge--reconciling">Reconciling request…</span>}
       </div>
 
       <div className="tensor-dav__controls" role="group" aria-label="Tensor dimensions">
@@ -78,10 +83,10 @@ export function TensorDavVisualizer() {
             {candidate}×{candidate}×{candidate}×{candidate}
           </button>
         ))}
-        <span className="tensor-dav__projection">{size ** 2} × {size ** 2} projection</span>
+        <span className="tensor-dav__projection">Requested: {size ** 2} × {size ** 2} projection</span>
       </div>
 
-      {loading && <p className="tensor-dav__state" role="status">Computing and verifying tensor…</p>}
+      {loading && <p className="tensor-dav__state" role="status">Computing and reconciling the {size}×{size}×{size}×{size} receipt…</p>}
       {!loading && failure && (
         <div className={`tensor-dav__error tensor-dav__error--${failure.status.toLowerCase()}`} role="alert">
           <strong>{failure.status}</strong><span>{failure.error ?? failure.issues?.join('; ') ?? 'Tensor verification failed closed.'}</span>
@@ -143,6 +148,7 @@ export function TensorDavVisualizer() {
             </div>
           </div>
           <p className="tensor-dav__digest"><span>SHA-256 receipt</span><code>{receipt.sha256}</code></p>
+          <p className="tensor-dav__observed">Observed receipt: {receipt.size}×{receipt.size}×{receipt.size}×{receipt.size} · {receipt.projection.rows}×{receipt.projection.columns} projection</p>
         </>
       )}
       <p className="tensor-dav__boundary">This badge verifies the displayed deterministic result against the kernel's declared invariants. It is not a signature, deployment claim, or ledger write.</p>

@@ -40,7 +40,8 @@ describe('TensorDavVisualizer', () => {
 
     await userEvent.click(screen.getByRole('button', { name: '6×6×6×6' }));
     await waitFor(() => expect(fetchMock.mock.calls.at(-1)?.[0]).toBe('/api/tensor/6'));
-    expect(await screen.findByText('36 × 36 projection')).toBeInTheDocument();
+    expect(await screen.findByText('Requested: 36 × 36 projection')).toBeInTheDocument();
+    expect(screen.getByText('Observed receipt: 6×6×6×6 · 36×36 projection')).toBeInTheDocument();
     expect(screen.queryByLabelText('Selected tensor coordinate')).not.toBeInTheDocument();
   });
 
@@ -52,6 +53,27 @@ describe('TensorDavVisualizer', () => {
     });
     render(<TensorDavVisualizer />);
     expect(await screen.findByRole('alert')).toHaveTextContent('UNKNOWN');
+    expect(screen.queryByLabelText('SHA-256 verified')).not.toBeInTheDocument();
+  });
+
+  it('keeps a mismatched observed receipt divergent and unverified', async () => {
+    (globalThis as unknown as { fetch: unknown }).fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        success: true,
+        status: 'VERIFIED',
+        size: 4,
+        projection: { rows: 16, columns: 16 },
+        values: [[0]],
+        invariants: { min: 0, max: 12, mean: 6, checksum: 1536 },
+        sha256: 'b'.repeat(64),
+      }),
+    });
+    render(<TensorDavVisualizer />);
+    await userEvent.click(await screen.findByRole('button', { name: '6×6×6×6' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('DIVERGENT');
+    expect(screen.getByRole('alert')).toHaveTextContent('RECEIPT_SIZE_MISMATCH');
     expect(screen.queryByLabelText('SHA-256 verified')).not.toBeInTheDocument();
   });
 });

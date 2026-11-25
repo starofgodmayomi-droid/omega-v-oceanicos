@@ -121,3 +121,4 @@ export * from './frontier.js';
 export * from './asymmetric.js';
 export * from './regional-mesh.js';
 export * from './tensor-dav.js';
+export * from './continuum.js';
