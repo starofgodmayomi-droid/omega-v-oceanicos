@@ -11,5 +11,5 @@
     "skipLibCheck": true,
     "types": ["node"]
   },
-  "include": ["src/index.ts", "src/frontier.ts", "src/asymmetric.ts", "src/regional-mesh.ts", "src/tensor-dav.ts"]
+  "include": ["src/index.ts", "src/frontier.ts", "src/asymmetric.ts", "src/regional-mesh.ts", "src/tensor-dav.ts", "src/continuum.ts"]
 }
