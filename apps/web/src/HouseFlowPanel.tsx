@@ -92,7 +92,7 @@ export function HouseFlowPanel() {
             One coordinated body: independent lanes move together, dependencies stay ordered, and consequential actions stop at the authority gate.
           </p>
         </div>
-        <button type="button" onClick={runDemo} disabled={running || loading || !status || (!adminToken.trim() && import.meta.env?.MODE === 'production')}
+        <button type="button" onClick={runDemo} disabled={running || loading || !status || ((!adminToken.trim() || !readToken.trim()) && import.meta.env?.MODE === 'production')}
           style={{ border: 0, borderRadius: '999px', padding: '11px 18px', background: '#b6e5dd', color: '#09252a', fontWeight: 700, cursor: running ? 'wait' : 'pointer', opacity: running || loading || !status ? .6 : 1 }}>
           {running ? 'Running flow…' : 'Run verification flow'}
         </button>

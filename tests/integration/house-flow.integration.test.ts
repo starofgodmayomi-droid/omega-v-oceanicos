@@ -100,6 +100,51 @@ test('House flow verifies actual organ outputs, reconciles them, and remembers a
   }
 });
 
+test('House flow separates admin admission from read-only organ credentials in required-auth mode', async () => {
+  const previous = {
+    authMode: process.env.OMEGA_AUTH_MODE,
+    readToken: process.env.OMEGA_READ_TOKEN,
+    adminToken: process.env.OMEGA_ADMIN_TOKEN,
+  };
+  process.env.OMEGA_AUTH_MODE = 'required';
+  process.env.OMEGA_READ_TOKEN = 'house-test-read-token';
+  process.env.OMEGA_ADMIN_TOKEN = 'house-test-admin-token';
+  const app = createApp(':memory:', false);
+  try {
+    await app.ready();
+    const denied = await app.inject({ method: 'GET', url: '/v1/house/flow/status' });
+    assert.equal(denied.statusCode, 401);
+
+    const status = await app.inject({
+      method: 'GET',
+      url: '/v1/house/flow/status',
+      headers: { authorization: 'Bearer house-test-read-token' },
+    });
+    assert.equal(status.statusCode, 200);
+
+    const run = await app.inject({
+      method: 'POST',
+      url: '/v1/house/flow/run',
+      headers: {
+        authorization: 'Bearer house-test-admin-token',
+        'x-omega-read-token': 'house-test-read-token',
+      },
+      payload: {
+        tasks: [{ id: 'protected-soul', organ: 'SOUL', action: 'OBSERVE_ORGAN' }],
+      },
+    });
+    assert.equal(run.statusCode, 200);
+    assert.equal(run.json().flow.state, 'SUCCEEDED');
+    assert.equal(run.json().flow.results['protected-soul'].value.status, 'OBSERVED');
+    assert.equal(run.json().memory.status, 'RECORDED_CHAIN_VERIFIED');
+  } finally {
+    await app.close();
+    if (previous.authMode === undefined) delete process.env.OMEGA_AUTH_MODE; else process.env.OMEGA_AUTH_MODE = previous.authMode;
+    if (previous.readToken === undefined) delete process.env.OMEGA_READ_TOKEN; else process.env.OMEGA_READ_TOKEN = previous.readToken;
+    if (previous.adminToken === undefined) delete process.env.OMEGA_ADMIN_TOKEN; else process.env.OMEGA_ADMIN_TOKEN = previous.adminToken;
+  }
+});
+
 test('House flow blocks dependent work and never executes external mutation without approval', async () => {
   const app = createApp(':memory:', false);
   try {
