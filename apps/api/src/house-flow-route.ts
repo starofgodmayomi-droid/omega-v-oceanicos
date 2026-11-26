@@ -230,7 +230,24 @@ function actionRunner(action: HouseAction, input: Record<string, unknown>, organ
 }
 
 export function registerHouseFlowRoutes(fastify: FastifyInstance, ledgerMemory: RememberEngine): void {
-  fastify.get('/v1/house/flow/status', async () => ({
+  fastify.get('/v1/house/flow/status', async () => {
+    const integrity = ledgerMemory.verifyChain();
+    let tipHouseReceipt: Record<string, unknown> | null = null;
+    if (integrity.valid) {
+      const tip = ledgerMemory.getVerifiedTip<Record<string, unknown>, Record<string, unknown>>();
+      const observation = objectValue(tip?.observation);
+      const evidence = objectValue(tip?.evidence);
+      if (tip && observation?.source === 'delta-vro-house-flow') {
+        tipHouseReceipt = {
+          blockIndex: tip.index,
+          blockHash: tip.hash,
+          runId: typeof observation.runId === 'string' ? observation.runId : 'UNKNOWN',
+          state: typeof observation.state === 'string' ? observation.state : 'UNKNOWN',
+          receiptDigest: typeof evidence?.receiptDigest === 'string' ? evidence.receiptDigest : null,
+        };
+      }
+    }
+    return {
     success: true,
     house: 'ΔVRØ HOUSE',
     equation: HOUSE_EQUATION,
@@ -257,13 +274,21 @@ export function registerHouseFlowRoutes(fastify: FastifyInstance, ledgerMemory: 
       { id: 'browser-automation', status: 'UNCONFIGURED', evidence: 'requires an active browser provider connection' },
       { id: 'local-computer-runner', status: 'DISABLED', evidence: 'existing local-action runner remains disabled' },
     ],
+    memory: {
+      status: integrity.valid ? 'VERIFIED' : 'DIVERGENT',
+      height: integrity.height,
+      tipHash: integrity.tipHash,
+      tipHouseReceipt,
+      evidence: 'full Remember ledger chain recomputed before exposing the verified tip',
+    },
     boundaries: [
       'This API flow executes only its explicit safe built-in actions.',
       'External mutations remain unexecuted pending a separate server-side authority and adapter.',
       'A digest proves integrity of supplied bytes, not external truth or provenance.',
       'House receipts are appended to the existing Remember ledger; chain integrity is reported separately from signing and attestation.',
     ],
-  }));
+  };
+  });
 
   fastify.post('/v1/house/flow/run', {
     config: { rateLimit: { max: 8, timeWindow: '1 minute' } },
@@ -347,7 +372,7 @@ export function registerHouseFlowRoutes(fastify: FastifyInstance, ledgerMemory: 
       try {
         const before = ledgerMemory.verifyChain();
         if (!before.valid) {
-          memory = { status: 'DIVERGENT', integrity: before, evidence: 'pre-append-ledger-verification-failed' };
+          memory = { status: 'DIVERGENT', contentStatus: flow.state, integrity: before, evidence: 'pre-append-ledger-verification-failed' };
         } else {
           const block = ledgerMemory.append(memoryObservation, {
             schema: 'omega.house-flow-evidence.v1',
@@ -365,11 +390,11 @@ export function registerHouseFlowRoutes(fastify: FastifyInstance, ledgerMemory: 
             observationUuid: string; signatureProof: string; receiptDigest: string; verification: string;
           }>();
           memory = after.valid && verifiedTip?.hash === block.hash
-            ? { status: 'RECORDED_CHAIN_VERIFIED', blockIndex: block.index, blockHash: block.hash, receiptDigest: memoryDigest, integrity: after }
-            : { status: 'DIVERGENT', blockIndex: block.index, blockHash: block.hash, integrity: after };
+            ? { status: 'RECORDED_CHAIN_VERIFIED', contentStatus: flow.state, blockIndex: block.index, blockHash: block.hash, receiptDigest: memoryDigest, integrity: after }
+            : { status: 'DIVERGENT', contentStatus: flow.state, blockIndex: block.index, blockHash: block.hash, integrity: after };
         }
       } catch (memoryError) {
-        memory = { status: 'NOT_REMEMBERED', error: memoryError instanceof Error ? memoryError.message.slice(0, 200) : 'MEMORY_APPEND_FAILED' };
+        memory = { status: 'NOT_REMEMBERED', contentStatus: flow.state, error: memoryError instanceof Error ? memoryError.message.slice(0, 200) : 'MEMORY_APPEND_FAILED' };
       }
       return { success: true, flow, memory };
     } catch (error) {

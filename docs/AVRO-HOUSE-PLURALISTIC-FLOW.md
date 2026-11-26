@@ -22,7 +22,7 @@ SOUL coordinates the run. KAI carries continuity and memory. MIRRIO reconciles e
 - In required-auth deployments, the status and internal organ GETs use the read bearer; the flow POST and append to Remember use the admin bearer. The UI keeps both tokens in component memory only and forwards the read token separately as `x-omega-read-token`.
 - `OBSERVE_ORGAN` maps named House organs to a fixed allowlist of same-process, read-only API routes; it forwards only existing request authority headers and never accepts arbitrary URLs.
 - `VERIFY_OBSERVATIONS` hashes actual organ outputs; `RECONCILE_OBSERVATIONS` independently recomputes the digest against the verification receipt.
-- Every completed flow appends a typed House receipt to the app's existing Remember ledger, then verifies the ledger chain and confirmed tip before reporting `RECORDED_CHAIN_VERIFIED`. The receipt is explicitly unsigned; ledger integrity is not a cryptographic identity signature.
+- Every completed flow appends a typed House receipt to the app's existing Remember ledger, then verifies the ledger chain and confirmed tip before reporting `RECORDED_CHAIN_VERIFIED`. The status endpoint exposes verified ledger height and the tip House receipt when the tip belongs to House. The receipt is explicitly unsigned; ledger integrity is not a cryptographic identity signature.
 - The VibeOS entry surface includes a House Flow panel with a safe verification demo.
 
 ## Safe built-in actions

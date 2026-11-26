@@ -11,6 +11,8 @@ test('ΔVRØ House exposes the pluralistic flow contract and explicit capability
     assert.equal(response.statusCode, 200);
     const body = response.json();
     assert.equal(body.house, 'ΔVRØ HOUSE');
+    assert.equal(body.memory.status, 'VERIFIED');
+    assert.equal(body.memory.height, 0);
     assert.match(body.equation, /FIXPOINT\(RECONCILE/);
     assert.equal(body.scheduling.model, 'dependency-aware DAG');
     assert.ok(body.capabilities.some((item: { id: string; status: string }) =>
@@ -95,6 +97,11 @@ test('House flow verifies actual organ outputs, reconciles them, and remembers a
     assert.match(body.memory.blockHash, /^[a-f0-9]{64}$/);
     assert.equal(body.memory.integrity.valid, true);
     assert.equal(body.memory.integrity.height, 1);
+    const statusAfter = await app.inject({ method: 'GET', url: '/v1/house/flow/status' });
+    assert.equal(statusAfter.statusCode, 200);
+    assert.equal(statusAfter.json().memory.height, 1);
+    assert.equal(statusAfter.json().memory.tipHouseReceipt.runId, body.flow.runId);
+    assert.equal(statusAfter.json().memory.tipHouseReceipt.state, 'SUCCEEDED');
   } finally {
     await app.close();
   }

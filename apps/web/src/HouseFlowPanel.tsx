@@ -8,6 +8,7 @@ type HouseStatus = {
   phases: string[];
   capabilities: Array<{ id: string; status: string; evidence?: string }>;
   scheduling: { model: string; maxConcurrency: number; maxTasks: number };
+  memory?: { status: string; height: number; tipHash: string | null; tipHouseReceipt: null | { runId: string; state: string; blockIndex: number; blockHash: string } };
 };
 
 export function HouseFlowPanel() {
@@ -119,6 +120,12 @@ export function HouseFlowPanel() {
       </div>
       {loading && <p>Observing House runtime…</p>}
       {error && <p role="alert" style={{ color: '#ffb9a9' }}>{error}</p>}
+      {status && (
+        <p style={{ fontSize: '12px', opacity: .75, margin: '10px 0' }}>
+          Remember ledger: {status.memory?.status || 'UNKNOWN'} · height {status.memory?.height ?? '—'}
+          {status.memory?.tipHouseReceipt ? ` · latest House run ${status.memory.tipHouseReceipt.runId} / ${status.memory.tipHouseReceipt.state}` : ''}
+        </p>
+      )}
       {status && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
           {status.capabilities.map((capability) => (
