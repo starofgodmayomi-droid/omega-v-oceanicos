@@ -510,17 +510,12 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
     beginQuickAction('Probe Voice Bridge (432Hz)');
     let result: ChatMessage;
     try {
-      const companionApiUrl = apiUrl('/v1/companion/voice');
-      const directVoiceUrl = (import.meta as any).env?.VITE_VOICE_URL || 'http://localhost:8088/voice';
-      let response: Response;
-      try {
-        response = await fetch(companionApiUrl, { headers: { accept: 'application/json' } });
-        if (!response.ok) {
-          response = await fetch(directVoiceUrl, { headers: { accept: 'application/json' } });
-        }
-      } catch {
-        response = await fetch(directVoiceUrl, { headers: { accept: 'application/json' } });
-      }
+      // Probe the same-origin API gateway only. A browser-side
+      // http://localhost:8088 fetch is refused whenever the web surface is
+      // reached through a proxy or from another host (ERR_CONNECTION_REFUSED),
+      // so the companion daemon is reached through /v1/companion/* instead.
+      const companionApiUrl = (import.meta as any).env?.VITE_VOICE_URL || apiUrl('/v1/companion/voice');
+      const response = await fetch(companionApiUrl, { headers: { accept: 'application/json' } });
       let payload: any = null;
       try {
         payload = await response.json();
