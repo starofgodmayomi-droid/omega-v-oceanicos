@@ -91,7 +91,7 @@ test('House flow verifies actual organ outputs, reconciles them, and remembers a
     assert.equal(body.flow.state, 'SUCCEEDED');
     assert.equal(body.flow.results['verify-observations'].value.status, 'VERIFIED');
     assert.equal(body.flow.results['reconcile-observations'].value.status, 'VERIFIED');
-    assert.equal(body.memory.status, 'REMEMBERED_VERIFIED');
+    assert.equal(body.memory.status, 'RECORDED_CHAIN_VERIFIED');
     assert.match(body.memory.blockHash, /^[a-f0-9]{64}$/);
     assert.equal(body.memory.integrity.valid, true);
     assert.equal(body.memory.integrity.height, 1);
@@ -120,7 +120,7 @@ test('House flow blocks dependent work and never executes external mutation with
     assert.equal(flow.tasks[0].status, 'REVIEW_REQUIRED');
     assert.equal(flow.tasks[1].status, 'BLOCKED');
     assert.equal(flow.started, 0);
-    assert.equal(response.json().memory.status, 'REMEMBERED_VERIFIED');
+    assert.equal(response.json().memory.status, 'RECORDED_CHAIN_VERIFIED');
   } finally {
     await app.close();
   }

@@ -63,7 +63,7 @@ export function HouseFlowPanel() {
       });
       const body = await response.json();
       if (!response.ok || !body.success) throw new Error(body.error || `HOUSE_FLOW_HTTP_${response.status}`);
-      setFlow(body.flow);
+      setFlow({ ...body.flow, memory: body.memory });
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'HOUSE_FLOW_FAILED');
     } finally {

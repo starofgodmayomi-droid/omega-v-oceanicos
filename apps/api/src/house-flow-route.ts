@@ -55,7 +55,7 @@ function canonicalJson(value: unknown): string {
     const record = value as Record<string, unknown>;
     return `{${Object.keys(record).sort().map((key) => `${JSON.stringify(key)}:${canonicalJson(record[key])}`).join(',')}}`;
   }
-  return JSON.stringify(value);
+  return JSON.stringify(value) ?? 'null';
 }
 
 function requiredNumber(input: Record<string, unknown>, key: string): number {
@@ -259,7 +259,7 @@ export function registerHouseFlowRoutes(fastify: FastifyInstance, ledgerMemory: 
       'This API flow executes only its explicit safe built-in actions.',
       'External mutations remain unexecuted pending a separate server-side authority and adapter.',
       'A digest proves integrity of supplied bytes, not external truth or provenance.',
-      'Memory and attestation are separate subsystems; this flow does not fabricate either.',
+      'House receipts are appended to the existing Remember ledger; chain integrity is reported separately from signing and attestation.',
     ],
   }));
 
@@ -362,7 +362,7 @@ export function registerHouseFlowRoutes(fastify: FastifyInstance, ledgerMemory: 
             observationUuid: string; signatureProof: string; receiptDigest: string; verification: string;
           }>();
           memory = after.valid && verifiedTip?.hash === block.hash
-            ? { status: 'REMEMBERED_VERIFIED', blockIndex: block.index, blockHash: block.hash, receiptDigest: memoryDigest, integrity: after }
+            ? { status: 'RECORDED_CHAIN_VERIFIED', blockIndex: block.index, blockHash: block.hash, receiptDigest: memoryDigest, integrity: after }
             : { status: 'DIVERGENT', blockIndex: block.index, blockHash: block.hash, integrity: after };
         }
       } catch (memoryError) {
