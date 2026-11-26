@@ -28,6 +28,8 @@
     "src/connector-observation-journal.ts",
     "src/github-public-repository.ts",
     "src/total-compress.ts",
-    "src/single-body.ts"
+    "src/single-body.ts",
+    "src/phi-flow-contract.ts",
+    "src/deepagents-adapter.ts"
   ]
 }

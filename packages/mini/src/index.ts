@@ -245,6 +245,24 @@ export type {
   TokenizerConfig,
 } from './minbpe.js';
 
+export {
+  PHI_LAWS,
+  PHI_STATUSES,
+  PhiFlowContractError,
+  assertPhiFlow,
+  hashPhiObservation,
+  isPhiFlow,
+  missingPhiLaws,
+  unexpectedPhiKeys,
+} from './phi-flow-contract.js';
+export type { PhiFlow, PhiFlowRecord, PhiLaw, PhiStatus } from './phi-flow-contract.js';
+export {
+  DEEPAGENTS_ADAPTER,
+  adaptDeepAgentObservation,
+  deepAgentObservationToPhi,
+} from './deepagents-adapter.js';
+export type { DeepAgentObservation } from './deepagents-adapter.js';
+
 export function executeOceanicosMaxExpansion(): CryptographicBlock {
   const kernelChain = new PluralisticHashChain();
   const telemetry = observePlanetaryBase();
