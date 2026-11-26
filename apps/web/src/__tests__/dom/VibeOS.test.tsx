@@ -1774,5 +1774,153 @@ describe('Vibe OS surface', () => {
       globalThis.EventSource = previous;
     }
   });
+
+  it('fetches the sovereign reality status dashboard and shows tool health chain seal', async () => {
+    installFetch({
+      '/api/v1/reality/tools/status': () =>
+        json({
+          success: true,
+          status: 'VERIFIED',
+          dashboard: {
+            platform: 'ΔVRØ HOUSE × Ω∞v OCEANICOS — REALITY STATUS DASHBOARD',
+            doctrine: "ATTEST, DON'T ASSERT. Expected ≡ Observed. Reality remains the final authority.",
+            totalTools: 8,
+            healthyTools: 8,
+            chainSeal: 'c0de5afe1234567890abcdef1234567890abcdef1234567890abcdef12345678',
+            integrityCheck: { status: 'VERIFIED', bundleSeal: 'deadbeef01234567' },
+            tools: [],
+            authority: 'SOVEREIGN_REALITY_STATUS',
+          },
+          timestamp: '2026-11-22T00:00:00.000Z',
+        }),
+    });
+    const user = userEvent.setup();
+    render(<VibeOS />);
+
+    const statusBtn = screen.getByRole('button', { name: /📊 Reality Tools Status/i });
+    expect(statusBtn).toBeInTheDocument();
+
+    await user.click(statusBtn);
+    expect(await screen.findByText(/Reality Status Dashboard VERIFIED: 8\/8 tools healthy/i)).toBeInTheDocument();
+    expect(screen.getByText(/SOVEREIGN_REALITY_STATUS/i)).toBeInTheDocument();
+    expect(screen.getByText(/c0de5afe12345678/i)).toBeInTheDocument();
+  });
+
+  it('observes sovereign reality tools circuit breaker state without trip', async () => {
+    installFetch({
+      '/api/v1/reality/tools/circuit-breaker': () =>
+        json({
+          success: true,
+          status: 'VERIFIED',
+          circuitBreaker: {
+            status: 'ARMED',
+            tripsCount: 0,
+            activeBreakers: [],
+            chainSeal: 'b4ca771c99887766554433221100ffeeddccbbaa0099887766554433221100ff',
+            authority: 'SOVEREIGN_CIRCUIT_BREAKER',
+          },
+          timestamp: '2026-11-23T00:00:00.000Z',
+        }),
+    });
+    const user = userEvent.setup();
+    render(<VibeOS />);
+
+    const breakerBtn = screen.getByRole('button', { name: /🛡️ Circuit Breaker/i });
+    expect(breakerBtn).toBeInTheDocument();
+
+    await user.click(breakerBtn);
+    expect(await screen.findByText(/Reality Circuit Breaker VERIFIED: ARMED/i)).toBeInTheDocument();
+    expect(screen.getByText(/SOVEREIGN_CIRCUIT_BREAKER/i)).toBeInTheDocument();
+    expect(screen.getByText(/b4ca771c99887766/i)).toBeInTheDocument();
+  });
+
+  it('verifies sovereign reality failsafe quarantine boundary', async () => {
+    installFetch({
+      '/api/v1/reality/tools/failsafe': () =>
+        json({
+          success: true,
+          status: 'VERIFIED',
+          failsafe: {
+            armed: true,
+            quarantineActive: false,
+            quarantineCount: 0,
+            quarantinedTools: [],
+            quarantineSeal: 'a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90',
+            authority: 'SOVEREIGN_FAILSAFE_QUARANTINE',
+          },
+          timestamp: '2026-11-23T00:00:00.000Z',
+        }),
+    });
+    const user = userEvent.setup();
+    render(<VibeOS />);
+
+    const failsafeBtn = screen.getByRole('button', { name: /🚨 Reality Failsafe/i });
+    expect(failsafeBtn).toBeInTheDocument();
+
+    await user.click(failsafeBtn);
+    expect(await screen.findByText(/Reality Failsafe Quarantine VERIFIED: armed=true/i)).toBeInTheDocument();
+    expect(screen.getByText(/SOVEREIGN_FAILSAFE_QUARANTINE/i)).toBeInTheDocument();
+    expect(screen.getByText(/a1b2c3d4e5f60718/i)).toBeInTheDocument();
+  });
+
+  it('autonomously recognizes full-stack tool intent in conversational chat composer with screen wave pulse', async () => {
+    installFetch({
+      '/api/v1/reality/tools/circuit-breaker': () =>
+        json({
+          success: true,
+          status: 'VERIFIED',
+          circuitBreaker: {
+            status: 'ARMED',
+            tripsCount: 0,
+            activeBreakers: [],
+            chainSeal: 'c1rcu1t77889900112233445566778899aabbccddeeff00112233445566778899',
+            authority: 'SOVEREIGN_CIRCUIT_BREAKER',
+          },
+          timestamp: '2026-11-23T00:00:00.000Z',
+        }),
+    });
+    const user = userEvent.setup();
+    render(<VibeOS />);
+
+    const input = screen.getByRole('textbox', { name: 'Intent' });
+    await user.type(input, 'Check circuit breaker status for reality tools');
+
+    const sendBtn = screen.getByRole('button', { name: /Send intent/i });
+    await user.click(sendBtn);
+
+    expect(await screen.findByText(/Reality Circuit Breaker VERIFIED: ARMED/i)).toBeInTheDocument();
+    expect(screen.getByText(/SOVEREIGN_CIRCUIT_BREAKER/i)).toBeInTheDocument();
+    expect(screen.getByText(/c1rcu1t778899001/i)).toBeInTheDocument();
+  });
+
+  it('probes Notion Unified Ecosystem Bridge and displays canonical roles', async () => {
+    installFetch({
+      '/api/v1/notion/unification': () =>
+        json({
+          success: true,
+          status: 'VERIFIED',
+          unification: {
+            id: 'notion.omega.unification.v1',
+            doctrine: "ATTEST, DON'T ASSERT. Expected ≡ Observed. Reality remains the final authority.",
+            axiom: 'ONE ROOT • ONE CURRENT • MANY BOUNDED FORMS • ONE TRUST BOUNDARY • REALITY FIRST',
+            rolesCount: 12,
+            roles: [],
+            authority: 'SOVEREIGN_NOTION_UNIFICATION',
+            evidenceHash: 'e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8',
+          },
+          timestamp: '2026-11-23T00:00:00.000Z',
+        }),
+    });
+    const user = userEvent.setup();
+    render(<VibeOS />);
+
+    const notionBtn = screen.getByRole('button', { name: /💧 Notion Bridge/i });
+    expect(notionBtn).toBeInTheDocument();
+
+    await user.click(notionBtn);
+    expect(await screen.findByText(/Notion Unified Ecosystem Bridge VERIFIED: 12 canonical roles bound/i)).toBeInTheDocument();
+    expect(screen.getByText(/SOVEREIGN_NOTION_UNIFICATION/i)).toBeInTheDocument();
+    expect(screen.getByText(/e7f8a9b0c1d2e3f4/i)).toBeInTheDocument();
+  });
 });
 

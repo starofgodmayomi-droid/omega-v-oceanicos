@@ -48,6 +48,25 @@ export function StudioSettingsModal({ onClose }: StudioSettingsModalProps) {
     status?: string;
     loading?: boolean;
   }>({});
+  const [realityStatusState, setRealityStatusState] = useState<{
+    totalTools?: number;
+    healthyTools?: number;
+    chainSeal?: string;
+    integrityStatus?: string;
+    loading?: boolean;
+  }>({});
+  const [circuitBreakerState, setCircuitBreakerState] = useState<{
+    status?: string;
+    tripsCount?: number;
+    chainSeal?: string;
+    loading?: boolean;
+  }>({});
+  const [failsafeState, setFailsafeState] = useState<{
+    armed?: boolean;
+    quarantineCount?: number;
+    quarantineSeal?: string;
+    loading?: boolean;
+  }>({});
   const [canvasFrames, setCanvasFrames] = useState(0);
   const [canvasSeal, setCanvasSeal] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -236,6 +255,77 @@ export function StudioSettingsModal({ onClose }: StudioSettingsModalProps) {
       source.close();
     });
     source.onerror = () => source.close();
+  };
+
+  const handleFetchRealityStatus = async () => {
+    setRealityStatusState((s) => ({ ...s, loading: true }));
+    try {
+      const response = await fetch(apiUrl('/v1/reality/tools/status'), {
+        headers: { accept: 'application/json' },
+      });
+      const data = await response.json();
+      if (data?.success && data?.dashboard) {
+        setRealityStatusState({
+          totalTools: data.dashboard.totalTools,
+          healthyTools: data.dashboard.healthyTools,
+          chainSeal: data.dashboard.chainSeal,
+          integrityStatus: data.dashboard.integrityCheck?.status ?? 'UNKNOWN',
+          loading: false,
+        });
+      } else {
+        setRealityStatusState({ loading: false });
+      }
+    } catch {
+      setRealityStatusState({ loading: false });
+    }
+  };
+
+  const handleProbeCircuitBreaker = async () => {
+    setCircuitBreakerState((s) => ({ ...s, loading: true }));
+    try {
+      const response = await fetch(apiUrl('/v1/reality/tools/circuit-breaker'), {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', accept: 'application/json' },
+        body: JSON.stringify({ action: 'probe' }),
+      });
+      const data = await response.json();
+      if (data?.success && data?.circuitBreaker) {
+        setCircuitBreakerState({
+          status: data.circuitBreaker.status,
+          tripsCount: data.circuitBreaker.tripsCount,
+          chainSeal: data.circuitBreaker.chainSeal,
+          loading: false,
+        });
+      } else {
+        setCircuitBreakerState({ loading: false });
+      }
+    } catch {
+      setCircuitBreakerState({ loading: false });
+    }
+  };
+
+  const handleProbeFailsafe = async () => {
+    setFailsafeState((s) => ({ ...s, loading: true }));
+    try {
+      const response = await fetch(apiUrl('/v1/reality/tools/failsafe'), {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', accept: 'application/json' },
+        body: JSON.stringify({ action: 'audit' }),
+      });
+      const data = await response.json();
+      if (data?.success && data?.failsafe) {
+        setFailsafeState({
+          armed: data.failsafe.armed,
+          quarantineCount: data.failsafe.quarantineCount,
+          quarantineSeal: data.failsafe.quarantineSeal,
+          loading: false,
+        });
+      } else {
+        setFailsafeState({ loading: false });
+      }
+    } catch {
+      setFailsafeState({ loading: false });
+    }
   };
 
   useEffect(() => {
@@ -616,6 +706,78 @@ export function StudioSettingsModal({ onClose }: StudioSettingsModalProps) {
                   Bounded 30fps sample · {canvasFrames}/8 frames
                   {canvasSeal ? ` · ${(canvasSeal).slice(0, 16)}…` : ''} · not a continuous camera
                 </p>
+              </div>
+              <div className="studio-card" style={{ marginTop: '1rem', width: '100%', borderColor: '#7c3aed' }}>
+                <h4>📊 Sovereign Reality Status Dashboard</h4>
+                <p style={{ margin: '0.25rem 0 0.75rem', fontSize: '0.85rem', color: '#94a3b8' }}>
+                  Live aggregate health check across all 8 sovereign reality tools with chain seal integrity verification.
+                </p>
+                <button
+                  type="button"
+                  className="freq-btn"
+                  style={{ width: '100%', borderColor: '#7c3aed', color: '#a78bfa' }}
+                  onClick={handleFetchRealityStatus}
+                  disabled={realityStatusState.loading}
+                >
+                  {realityStatusState.loading
+                    ? '⏳ Fetching Reality Status...'
+                    : '📊 Fetch Live Reality Status (All 8 Tools)'}
+                </button>
+                {realityStatusState.chainSeal && (
+                  <div className="canvas-meta" style={{ marginTop: '0.75rem' }}>
+                    <span>Healthy Tools: <strong>{realityStatusState.healthyTools}/{realityStatusState.totalTools}</strong></span>
+                    <span>Chain Seal: <strong>{(realityStatusState.chainSeal || '').slice(0, 16)}…</strong></span>
+                    <span>Integrity: <strong>{realityStatusState.integrityStatus}</strong></span>
+                  </div>
+                )}
+              </div>
+              <div className="studio-card" style={{ marginTop: '1rem', width: '100%', borderColor: '#ef4444' }}>
+                <h4>🛡️ Sovereign Reality Circuit Breaker</h4>
+                <p style={{ margin: '0.25rem 0 0.75rem', fontSize: '0.85rem', color: '#94a3b8' }}>
+                  Fail-closed circuit breaker telemetry preventing divergent downstream reality pipeline dispatch.
+                </p>
+                <button
+                  type="button"
+                  className="freq-btn"
+                  style={{ width: '100%', borderColor: '#ef4444', color: '#f87171' }}
+                  onClick={handleProbeCircuitBreaker}
+                  disabled={circuitBreakerState.loading}
+                >
+                  {circuitBreakerState.loading
+                    ? '⏳ Probing Circuit Breaker...'
+                    : '🛡️ Probe Circuit Breaker (Fail-Closed Safety)'}
+                </button>
+                {circuitBreakerState.status && (
+                  <div className="canvas-meta" style={{ marginTop: '0.75rem' }}>
+                    <span>Breaker Status: <strong>{circuitBreakerState.status}</strong></span>
+                    <span>Trips: <strong>{circuitBreakerState.tripsCount ?? 0}</strong></span>
+                    <span>Seal: <strong>{(circuitBreakerState.chainSeal || '').slice(0, 16)}…</strong></span>
+                  </div>
+                )}
+              </div>
+              <div className="studio-card" style={{ marginTop: '1rem', width: '100%', borderColor: '#f59e0b' }}>
+                <h4>🚨 Sovereign Reality Failsafe Quarantine</h4>
+                <p style={{ margin: '0.25rem 0 0.75rem', fontSize: '0.85rem', color: '#94a3b8' }}>
+                  Autonomous invariant quarantine barrier safeguarding reality pipeline execution integrity.
+                </p>
+                <button
+                  type="button"
+                  className="freq-btn"
+                  style={{ width: '100%', borderColor: '#f59e0b', color: '#fbbf24' }}
+                  onClick={handleProbeFailsafe}
+                  disabled={failsafeState.loading}
+                >
+                  {failsafeState.loading
+                    ? '⏳ Probing Failsafe Quarantine...'
+                    : '🚨 Run Failsafe Quarantine Verification'}
+                </button>
+                {failsafeState.quarantineSeal && (
+                  <div className="canvas-meta" style={{ marginTop: '0.75rem' }}>
+                    <span>Failsafe Armed: <strong>{String(failsafeState.armed)}</strong></span>
+                    <span>Quarantined: <strong>{failsafeState.quarantineCount ?? 0} tools</strong></span>
+                    <span>Seal: <strong>{(failsafeState.quarantineSeal || '').slice(0, 16)}…</strong></span>
+                  </div>
+                )}
               </div>
               {dispatchState.executionStatus && (
                 <div className="canvas-meta" style={{ marginTop: '1rem' }}>
