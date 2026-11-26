@@ -295,7 +295,10 @@ export function createApp(
     };
   });
   registerLocalActionsStatusRoutes(fastify);
-  registerHouseFlowRoutes(fastify);
+  fastify.register(async (scope) => {
+    await scope.register(rateLimit, { global: false });
+    registerHouseFlowRoutes(scope);
+  });
   registerEvalsStatusRoutes(fastify);
   registerEdgeFinopsRoutes(fastify);
   registerContinuumAuditRoutes(fastify);
