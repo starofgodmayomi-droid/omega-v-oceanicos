@@ -17,6 +17,7 @@ import { WholeEcosystemDashboard } from './WholeEcosystemDashboard';
 import { InvisibleComputer } from './InvisibleComputer';
 import { WaterFlowPanel } from './WaterFlowPanel';
 import { TensorDavVisualizer } from './components/TensorDavVisualizer';
+import { PanelGroup } from './components/PanelGroup';
 import { projectCommandWaterFlow } from './water-flow-panel-model';
 import { LifecycleFlow, deriveStageStates, type LifecycleStage } from './LifecycleFlow';
 import { GlobeViewport } from './GlobeViewport';
@@ -105,6 +106,9 @@ export function LegacyDashboard({ onClose }: { onClose: () => void }) {
   const [openStageId, setOpenStageId] = useState<string | null>(null);
   const [globeMax, setGlobeMax] = useState(false);
   const [backgroundWorkspaceOpen, setBackgroundWorkspaceOpen] = useState(false);
+  const [openPanelGroups, setOpenPanelGroups] = useState<Record<string, boolean>>({ body: true });
+  const togglePanelGroup = (id: string) =>
+    setOpenPanelGroups((open) => ({ ...open, [id]: !open[id] }));
   const [tipReachable, setTipReachable] = useState<boolean | null>(null);
   const [tipRouteStatus, setTipRouteStatus] = useState<string | null>(null);
 
@@ -828,18 +832,26 @@ export function LegacyDashboard({ onClose }: { onClose: () => void }) {
           aria-hidden={!backgroundWorkspaceOpen}
           style={{ display: backgroundWorkspaceOpen ? 'block' : 'none' }}
         >
-          <WholeEcosystemDashboard
-            streamConnected={streamConnected}
-            simulationMode={simulationMode}
-            humanGateRequired={humanGateRequired}
-            realityStatus={tip?.evidence?.status}
-            ledgerIntegrity={ledgerIntegrity}
-            history={history}
-            ecosystemBody={ecosystemBody}
-            omegaCommand={omegaCommand}
-            onFocusCommand={setOmegaIntent}
-          />
-          <WaterFlowPanel frames={projectCommandWaterFlow(omegaCommand)} />
+          <PanelGroup
+            id="body"
+            title="Whole body"
+            subtitle="One face of the whole ecosystem · evidence and current"
+            isOpen={!!openPanelGroups.body}
+            onToggle={togglePanelGroup}
+          >
+            <WholeEcosystemDashboard
+              streamConnected={streamConnected}
+              simulationMode={simulationMode}
+              humanGateRequired={humanGateRequired}
+              realityStatus={tip?.evidence?.status}
+              ledgerIntegrity={ledgerIntegrity}
+              history={history}
+              ecosystemBody={ecosystemBody}
+              omegaCommand={omegaCommand}
+              onFocusCommand={setOmegaIntent}
+            />
+            <WaterFlowPanel frames={projectCommandWaterFlow(omegaCommand)} />
+          </PanelGroup>
         </section>
 
         {/* Prompt */}
@@ -1013,26 +1025,51 @@ export function LegacyDashboard({ onClose }: { onClose: () => void }) {
           aria-hidden={!backgroundWorkspaceOpen}
           style={{ display: backgroundWorkspaceOpen ? 'block' : 'none' }}
         >
-          <OreadConsole />
-          <MoodCodexPanel />
-          <DivergenceAlertsPanel />
-          <ValueNavigatorPanel />
-          <ConnectorPanel />
+          <PanelGroup
+            id="voice"
+            title="Voice, mood & signals"
+            subtitle="ƆREADE voice · working mood · where reality diverges"
+            isOpen={!!openPanelGroups.voice}
+            onToggle={togglePanelGroup}
+          >
+            <OreadConsole />
+            <MoodCodexPanel />
+            <DivergenceAlertsPanel />
+          </PanelGroup>
 
-          <IntentFlow
-            command={omegaCommand}
-            loading={omegaLoading}
-            onApprove={approveOmegaCommand}
-            onExecute={executeOmegaCommand}
-            onObserve={observeOmegaReality}
-            observedState={omegaObservedState}
-            onObservedStateChange={setOmegaObservedState}
-            onViewEvidence={() => setOpenStageId('evidence')}
-            onViewTimeline={() => setOpenStageId('remember')}
-            onDismiss={dismissCommand}
-            simulationMode={simulationMode}
-            humanGateRequired={humanGateRequired}
-          />
+          <PanelGroup
+            id="value"
+            title="Value & connections"
+            subtitle="Value navigation · Notion and GitHub bridge surfaces"
+            isOpen={!!openPanelGroups.value}
+            onToggle={togglePanelGroup}
+          >
+            <ValueNavigatorPanel />
+            <ConnectorPanel />
+          </PanelGroup>
+
+          <PanelGroup
+            id="flow"
+            title="Execution flow"
+            subtitle="Propose · authorize · execute · observe · not executed until admitted"
+            isOpen={!!openPanelGroups.flow}
+            onToggle={togglePanelGroup}
+          >
+            <IntentFlow
+              command={omegaCommand}
+              loading={omegaLoading}
+              onApprove={approveOmegaCommand}
+              onExecute={executeOmegaCommand}
+              onObserve={observeOmegaReality}
+              observedState={omegaObservedState}
+              onObservedStateChange={setOmegaObservedState}
+              onViewEvidence={() => setOpenStageId('evidence')}
+              onViewTimeline={() => setOpenStageId('remember')}
+              onDismiss={dismissCommand}
+              simulationMode={simulationMode}
+              humanGateRequired={humanGateRequired}
+            />
+          </PanelGroup>
         </section>
       </main>
 

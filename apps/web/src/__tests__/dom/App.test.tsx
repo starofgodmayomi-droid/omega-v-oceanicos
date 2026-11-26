@@ -33,6 +33,26 @@ describe('legacy OceanicOS dashboard', () => {
     );
   });
 
+  it('folds the remaining background panels into collapsible groups', async () => {
+    const user = userEvent.setup();
+    await renderApp();
+
+    await user.click(screen.getByRole('button', { name: /open background full-stack/i }));
+
+    const wholeBody = screen.getByRole('button', { name: /whole body/i });
+    expect(wholeBody).toHaveAttribute('aria-expanded', 'true');
+    expect(document.getElementById('panel-group-body')).not.toBeNull();
+
+    const valueGroup = screen.getByRole('button', { name: /value & connections/i });
+    expect(valueGroup).toHaveAttribute('aria-expanded', 'false');
+    expect(document.getElementById('panel-group-value')).toBeNull();
+
+    await user.click(valueGroup);
+
+    expect(valueGroup).toHaveAttribute('aria-expanded', 'true');
+    expect(document.getElementById('panel-group-value')).not.toBeNull();
+  });
+
   it('shows a proposed command receipt without executing it', async () => {
     const fetchMock = installFetch({
       '/api/v1/omega/commands': () =>
