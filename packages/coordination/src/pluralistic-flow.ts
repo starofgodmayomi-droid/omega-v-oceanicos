@@ -157,8 +157,8 @@ export class PluralisticFlowExecutor {
     validateGraph(tasks, this.maxTasks);
 
     const states = new Map<string, PluralisticFlowStatus>(tasks.map((task) => [task.id, 'QUEUED']));
-    const results: Record<string, { value: unknown; digest: string }> = {};
-    const errors: Record<string, string> = {};
+    const results = new Map<string, { value: unknown; digest: string }>();
+    const errors = new Map<string, string>();
     const events: PluralisticFlowEvent[] = [];
     const active = new Map<string, Promise<void>>();
     const locks = new Set<string>();
@@ -198,19 +198,19 @@ export class PluralisticFlowExecutor {
         .then(() => task.run({
           runId: this.runId,
           taskId: task.id,
-          outputs: Object.fromEntries(Object.entries(results).map(([id, item]) => [id, item.value])),
+          outputs: Object.fromEntries([...results].map(([id, item]) => [id, item.value])),
         }))
         .then((value) => {
           const serialized = JSON.stringify(value);
           if (typeof serialized !== 'string') throw new Error('TASK_RESULT_NOT_JSON_SERIALIZABLE');
           if (Buffer.byteLength(serialized, 'utf8') > 65_536) throw new Error('TASK_RESULT_TOO_LARGE');
           const digest = createHash('sha256').update(serialized, 'utf8').digest('hex');
-          results[task.id] = { value, digest };
+          results.set(task.id, { value, digest });
           record(task, 'SUCCEEDED', slot, 'Task output serialized and SHA-256 digested', digest);
         })
         .catch((error: unknown) => {
           const message = error instanceof Error ? error.message : 'Task failed with an unknown error';
-          errors[task.id] = message.slice(0, 240);
+          errors.set(task.id, message.slice(0, 240));
           record(task, 'FAILED', slot, message);
         })
         .finally(() => {
@@ -264,13 +264,17 @@ export class PluralisticFlowExecutor {
       await Promise.race(active.values());
     }
 
-    const receipts = tasks.map((task) => ({
-      id: task.id,
-      organ: task.organ,
-      status: states.get(task.id)!,
-      ...(results[task.id] ? { outputDigest: results[task.id].digest } : {}),
-      ...(errors[task.id] ? { error: errors[task.id] } : {}),
-    }));
+    const receipts = tasks.map((task) => {
+      const result = results.get(task.id);
+      const error = errors.get(task.id);
+      return {
+        id: task.id,
+        organ: task.organ,
+        status: states.get(task.id)!,
+        ...(result ? { outputDigest: result.digest } : {}),
+        ...(error ? { error } : {}),
+      };
+    });
     const succeeded = receipts.filter((item) => item.status === 'SUCCEEDED').length;
     const failed = receipts.filter((item) => item.status === 'FAILED').length;
     const blocked = receipts.filter((item) => item.status === 'BLOCKED').length;
@@ -294,7 +298,7 @@ export class PluralisticFlowExecutor {
       blocked,
       reviewRequired,
       tasks: receipts,
-      results,
+      results: Object.fromEntries(results),
       events,
       limitations: [
         'Local in-process scheduling only; no durable or distributed queue is implied.',
