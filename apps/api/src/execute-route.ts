@@ -340,15 +340,67 @@ export function registerExecuteRoute(
   };
 
   const companionTensorHandler = async (request: any, reply: any) => {
-    const size = request.params?.n;
+    const raw = String(request.params?.n ?? '');
+    if (!['4', '6', '8'].includes(raw)) {
+      return reply.status(400).send({
+        success: false,
+        status: 'UNKNOWN',
+        error: 'UNKNOWN_TENSOR_SIZE',
+        allowedSizes: [4, 6, 8],
+      });
+    }
+    const size = Number(raw);
     try {
-      const companionUrl = process.env.OMEGA_COMPANION_URL || 'http://localhost:8088';
-      const response = await fetch(`${companionUrl}/tensor/${size}`, {
+      const companionUrl = process.env.OMEGA_COMPANION_URL || 'http://127.0.0.1:8088';
+      const response = await fetch(`${companionUrl.replace(/\/$/, '')}/tensor/${size}`, {
         headers: { accept: 'application/json' },
         signal: AbortSignal.timeout(3000),
       });
+      if (!response.ok) {
+        return reply.status(503).send({
+          success: false,
+          status: 'UNKNOWN',
+          error: 'COMPANION_REJECTED',
+          companionStatus: response.status,
+        });
+      }
       const data = await response.json();
-      return reply.status(response.status).send(data);
+      const values = data?.values;
+      const expected = 2 * size ** 4 * (size - 1);
+      let checksum = 0;
+      let divergent = !Array.isArray(values) || values.length !== size * size;
+      if (!divergent) {
+        for (let row = 0; row < values.length; row += 1) {
+          const line = values[row];
+          if (!Array.isArray(line) || line.length !== size * size) {
+            divergent = true;
+            break;
+          }
+          for (let column = 0; column < line.length; column += 1) {
+            const i = Math.floor(row / size);
+            const j = row % size;
+            const k = Math.floor(column / size);
+            const l = column % size;
+            const cell = line[column];
+            if (cell !== i + j + k + l) {
+              divergent = true;
+              break;
+            }
+            checksum += cell;
+          }
+          if (divergent) break;
+        }
+      }
+      if (divergent || checksum !== expected || data?.invariants?.checksum !== expected) {
+        return reply.status(422).send({
+          success: false,
+          status: 'DIVERGENT',
+          error: 'TENSOR_CHECKSUM',
+          expected,
+          observed: checksum,
+        });
+      }
+      return reply.status(200).send(data);
     } catch (err) {
       return reply.status(503).send({
         success: false,
