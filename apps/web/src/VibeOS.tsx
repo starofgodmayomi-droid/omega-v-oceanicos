@@ -230,7 +230,10 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
         // Mood probe gracefully fails closed to UNKNOWN
       }
       try {
-        const voiceUrl = (import.meta as any).env?.VITE_VOICE_URL || 'http://localhost:8088/voice';
+        // Probe through the same-origin API gateway by default: a browser-side
+        // http://localhost:8088 fetch is refused whenever the web surface is
+        // reached through a proxy or from another host.
+        const voiceUrl = (import.meta as any).env?.VITE_VOICE_URL || apiUrl('/v1/companion/voice');
         const voiceRes = await fetch(voiceUrl, {
           headers: { accept: 'application/json' },
           signal: current.signal,

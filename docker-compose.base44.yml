@@ -36,6 +36,9 @@ services:
       - OMEGA_AUTH_MODE=local
       - OMEGA_DB_PATH=/app/data/oceanicos.db
       - OMEGA_ALLOW_UNSIGNED_CYCLE=true
+      # The API gateways /v1/companion/* to the companion service by name; its
+      # own default (http://localhost:8088) only works when both share a host.
+      - OMEGA_COMPANION_URL=http://companion:8088
     env_file:
       - ./.env.base44-defaults
       - /run/base44/app.env
@@ -91,3 +94,29 @@ services:
       timeout: 5s
       retries: 6
       start_period: 20s
+
+  # Companion voice / DAV daemon (python stdlib, zero dependencies). The Vibe OS
+  # surface probes http://localhost:8088/voice for the 432 Hz voice bridge and
+  # http://localhost:8088/tensor/:n for DAV tensors; without this service every
+  # preview load logged ERR_CONNECTION_REFUSED for the voice probe.
+  companion:
+    image: python:3.12-slim
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: python companion/python/main.py
+    environment:
+      - PORT=8088
+    ports:
+      - "8088:8088"
+    restart: on-failure
+    labels:
+      base44.project: companion
+      base44.kind: worker
+      base44.port: "8088"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8088/health').read()"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 5s
