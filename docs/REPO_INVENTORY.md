@@ -6,7 +6,7 @@
 
 ## Audit date and evidence
 
-**2026-10-02** — inspected current `main` at `fd4417e73c4aa10cec678d1f09eb6f09a0cffec2`.
+**2026-11-26** — refreshed against the `feat/avro-house-pluralistic-flow` branch after wiring the House flow scheduler into the API manifest. The 2026-10-02 `main` snapshot remains historical evidence in Git history.
 
 Evidence sources:
 
@@ -40,7 +40,7 @@ PRESENT ON DISK
 | **SOURCE-ONLY** | Package directory exists under `packages/`, but is not listed in `pnpm-workspace.yaml`. |
 | **STUB** | A source-only directory with a thin implementation; not an active workspace capability. |
 
-## API-DECLARED — workspace + direct API dependency (9 packages)
+## API-DECLARED — workspace + direct API dependency (10 packages)
 
 | Package | Name | Declared role |
 |---|---|---|
@@ -51,12 +51,13 @@ PRESENT ON DISK
 | `mini` | `@oceanicos/mini` | MINI kernel |
 | `attestation` | `@oceanicos/attestation` | Attest |
 | `kernel` | `@omega-v/kernel` | Finite-state kernel |
+| `coordination` | `@omega-v/coordination` | Dependency-aware pluralistic House flow scheduler |
 | `oreade` | `@omega-v/oreade` | ƆREADE layer, not authority |
 | `mood` | `@omega-v/mood` | Planning context, not evidence |
 
 The API manifest declares these workspace dependencies. The list alone does not prove each is imported, executed, or exposed as an API capability.
 
-## WORKSPACE-ONLY — workspace member, no direct API dependency (9 packages)
+## WORKSPACE-ONLY — workspace member, no direct API dependency (8 packages)
 
 | Package | Name | Declared role |
 |---|---|---|
@@ -64,7 +65,6 @@ The API manifest declares these workspace dependencies. The list alone does not 
 | `ir` | `@omega-v/ir` | Intermediate-representation bytecode and execution engine |
 | `compiler` | `@omega-v/compiler` | Rule DSL to IR bytecode compiler |
 | `evolution` | `@omega-v/evolution` | Rule recompilation and drift detection |
-| `coordination` | `@omega-v/coordination` | Bounded coordination |
 | `auth` | `@omega-v/auth` | Authentication |
 | `webhook` | `@omega-v/webhook` | Webhooks |
 | `worker` | `@omega-v/worker` | Fail-closed local worker pool |
@@ -92,8 +92,8 @@ Unresolved naming edge. Do not silently rename packages.
 | Category | Count | Action |
 |---|---:|---|
 | Workspace members | 20 (18 packages + 2 apps) | Membership only; do not infer capability |
-| API-declared | 9 packages | Direct manifest dependencies; verify actual use separately |
-| Workspace-only | 9 packages | Not direct API dependencies |
+| API-declared | 10 packages | Direct manifest dependencies; verify actual use separately |
+| Workspace-only | 8 packages | Not direct API dependencies |
 | On-disk, off-workspace | Non-exhaustive | Promote only when earned |
 
 ## Test and CI evidence
