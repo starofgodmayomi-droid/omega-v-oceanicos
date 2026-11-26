@@ -279,9 +279,10 @@ export function registerHouseFlowRoutes(fastify: FastifyInstance, ledgerMemory: 
     let tasks: PluralisticFlowTask[];
     try {
       const forwardedHeaders: Record<string, string> = {};
-      for (const name of ['authorization', 'x-omega-read-token', 'x-omega-admin-token', 'x-omega-operator']) {
-        const value = request.headers[name];
-        if (typeof value === 'string') forwardedHeaders[name] = value;
+      const readCredential = request.headers['x-omega-read-token'];
+      if (typeof readCredential === 'string' && readCredential.trim()) {
+        // The outer POST is admin-authorized; internal GETs must use the separate read credential.
+        forwardedHeaders.authorization = `Bearer ${readCredential.trim()}`;
       }
       tasks = body.tasks.map((raw: unknown) => {
         const item = objectValue(raw);

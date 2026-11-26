@@ -16,10 +16,12 @@ export function HouseFlowPanel() {
   const [running, setRunning] = useState(false);
   const [flow, setFlow] = useState<any>(null);
   const [error, setError] = useState('');
+  const [readToken, setReadToken] = useState('');
+  const [adminToken, setAdminToken] = useState('');
 
   useEffect(() => {
     const controller = new AbortController();
-    fetch(`${API_BASE_URL}/v1/house/flow/status`, { signal: controller.signal })
+    fetch(`${API_BASE_URL}/v1/house/flow/status`, { signal: controller.signal, headers: readToken.trim() ? { authorization: `Bearer ${readToken.trim()}` } : undefined })
       .then(async (response) => {
         if (!response.ok) throw new Error(`HOUSE_STATUS_HTTP_${response.status}`);
         return response.json();
@@ -32,7 +34,7 @@ export function HouseFlowPanel() {
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, []);
+  }, [readToken]);
 
   const runDemo = async () => {
     setRunning(true);
@@ -41,7 +43,11 @@ export function HouseFlowPanel() {
     try {
       const response = await fetch(`${API_BASE_URL}/v1/house/flow/run`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: {
+          'content-type': 'application/json',
+          ...(adminToken.trim() ? { authorization: `Bearer ${adminToken.trim()}` } : {}),
+          ...(readToken.trim() ? { 'x-omega-read-token': readToken.trim() } : {}),
+        },
         body: JSON.stringify({
           maxConcurrency: 3,
           tasks: [
@@ -86,11 +92,28 @@ export function HouseFlowPanel() {
             One coordinated body: independent lanes move together, dependencies stay ordered, and consequential actions stop at the authority gate.
           </p>
         </div>
-        <button type="button" onClick={runDemo} disabled={running || loading || !status}
+        <button type="button" onClick={runDemo} disabled={running || loading || !status || (!adminToken.trim() && import.meta.env?.MODE === 'production')}
           style={{ border: 0, borderRadius: '999px', padding: '11px 18px', background: '#b6e5dd', color: '#09252a', fontWeight: 700, cursor: running ? 'wait' : 'pointer', opacity: running || loading || !status ? .6 : 1 }}>
           {running ? 'Running flow…' : 'Run verification flow'}
         </button>
       </div>
+      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '16px' }}>
+        <label style={{ display: 'grid', gap: '5px', flex: '1 1 220px', fontSize: '11px', opacity: .85 }}>
+          API read token (production)
+          <input type="password" autoComplete="off" value={readToken} onChange={(event) => setReadToken(event.target.value)}
+            placeholder="Read-only bearer token" aria-label="House API read token"
+            style={{ minWidth: 0, borderRadius: '8px', padding: '9px 10px', color: 'inherit', background: 'rgba(255,255,255,.07)', border: '1px solid rgba(180,220,220,.22)' }} />
+        </label>
+        <label style={{ display: 'grid', gap: '5px', flex: '1 1 220px', fontSize: '11px', opacity: .85 }}>
+          API admin token (flow run)
+          <input type="password" autoComplete="off" value={adminToken} onChange={(event) => setAdminToken(event.target.value)}
+            placeholder="Admin bearer token" aria-label="House API admin token"
+            style={{ minWidth: 0, borderRadius: '8px', padding: '9px 10px', color: 'inherit', background: 'rgba(255,255,255,.07)', border: '1px solid rgba(180,220,220,.22)' }} />
+        </label>
+      </div>
+      <p style={{ fontSize: '11px', opacity: .65, margin: '7px 0 0' }}>
+        Tokens stay in this component's memory only. Local development mode does not require them; production uses a read token for observations and an admin token to append House receipts.
+      </p>
       <div style={{ margin: '18px 0 12px', padding: '12px 14px', borderRadius: '12px', background: 'rgba(255,255,255,.045)', fontSize: '12px', lineHeight: 1.7, overflowWrap: 'anywhere' }}>
         <strong>House equation</strong><br />{status?.equation || 'Loading House equation…'}
       </div>

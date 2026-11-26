@@ -19,6 +19,7 @@ SOUL coordinates the run. KAI carries continuity and memory. MIRRIO reconciles e
 - Failed, blocked, or approval-gated dependencies block downstream work.
 - Each successful JSON result receives a SHA-256 digest and a sequenced event.
 - The Fastify API exposes `GET /v1/house/flow/status` and `POST /v1/house/flow/run`.
+- In required-auth deployments, the status and internal organ GETs use the read bearer; the flow POST and append to Remember use the admin bearer. The UI keeps both tokens in component memory only and forwards the read token separately as `x-omega-read-token`.
 - `OBSERVE_ORGAN` maps named House organs to a fixed allowlist of same-process, read-only API routes; it forwards only existing request authority headers and never accepts arbitrary URLs.
 - `VERIFY_OBSERVATIONS` hashes actual organ outputs; `RECONCILE_OBSERVATIONS` independently recomputes the digest against the verification receipt.
 - Every completed flow appends a typed House receipt to the app's existing Remember ledger, then verifies the ledger chain and confirmed tip before reporting `RECORDED_CHAIN_VERIFIED`. The receipt is explicitly unsigned; ledger integrity is not a cryptographic identity signature.
