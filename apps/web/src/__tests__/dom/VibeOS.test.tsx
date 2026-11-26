@@ -1,6 +1,6 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { readFileSync } from 'node:fs';
-import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '../../App';
 import { VibeOS } from '../../VibeOS';
@@ -8,6 +8,14 @@ import { installFetch, json, type FakeResponse } from './harness';
 
 const VERIFIED_RESPONSE = 'Observed: the ledger is intact.';
 const VERIFIED_RESPONSE_SHA256 = '7e1fb64de987a8e0f7d01b596fdfe68802338fddc3c33b4fc9c4ef72b2a1124d';
+
+// The frontier surface keeps secondary instruments in the background. Tests
+// that exercise those instruments open the background first.
+function renderVibeOS(props: Parameters<typeof VibeOS>[0] = {}) {
+  const view = render(<VibeOS {...props} />);
+  fireEvent.click(screen.getByRole('button', { name: /toggle background full-stack instruments/i }));
+  return view;
+}
 
 describe('Vibe OS surface', () => {
   it('keeps the AVRØ HOUSE master poster linked in canonical docs and byte-identical in public assets', () => {
@@ -32,12 +40,18 @@ describe('Vibe OS surface', () => {
     expect(screen.getByText('PLATFORM')).toBeInTheDocument();
     expect(screen.getByText('VERIFICATION ENGINE')).toBeInTheDocument();
     expect(screen.queryByRole('region', { name: 'Invisible Online Computer' })).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/the full 10-layer stack and instruments stay in the background/i)
+    ).toBeInTheDocument();
+    expect(screen.queryByLabelText('Fastify Spine status')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /💧 Notion Bridge/i })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /toggle background full-stack instruments/i }));
     await waitFor(() => expect(screen.getByLabelText('Fastify Spine status')).toHaveTextContent('OBSERVED'));
   });
 
   it('explains the app/model boundary without claiming a live provider connection', () => {
     installFetch();
-    render(<VibeOS active={false} />);
+    renderVibeOS({ active: false });
 
     const disclosure = screen.getByRole('note', { name: 'AI model and provider boundary' });
     expect(disclosure).toHaveTextContent(/OCEANICOS is a chat-enabled application/i);
@@ -54,7 +68,7 @@ describe('Vibe OS surface', () => {
     });
     const fetchMock = installFetch({ '/api/chat': () => pending });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     await user.type(screen.getByRole('textbox', { name: 'Intent' }), 'Review the current state.');
     await user.click(screen.getByRole('button', { name: 'Send intent' }));
@@ -88,7 +102,7 @@ describe('Vibe OS surface', () => {
       '/api/chat': () => json({ error: 'LOCAL_BRAIN_OFFLINE' }, { status: 503 }),
     });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     await user.type(screen.getByRole('textbox', { name: 'Intent' }), 'Send the report.');
     await user.click(screen.getByRole('button', { name: 'Send intent' }));
@@ -105,7 +119,7 @@ describe('Vibe OS surface', () => {
         json({ success: true, status: 'DIVERGENT', reason: 'KAI Shield blocked this intent.' }),
     });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     await user.type(screen.getByRole('textbox', { name: 'Intent' }), 'Urgent send money now.');
     await user.click(screen.getByRole('button', { name: 'Send intent' }));
@@ -122,7 +136,7 @@ describe('Vibe OS surface', () => {
         json({ success: true, status: 'UNKNOWN', response: null, evidence_hash: null }),
     });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     await user.type(screen.getByRole('textbox', { name: 'Intent' }), 'Explain everything.');
     await user.click(screen.getByRole('button', { name: 'Send intent' }));
@@ -159,7 +173,7 @@ describe('Vibe OS surface', () => {
 
   it('does not probe service health when the conversation surface is inactive', () => {
     const fetchMock = installFetch();
-    render(<VibeOS active={false} />);
+    renderVibeOS({ active: false });
 
     expect(fetchMock).not.toHaveBeenCalledWith('/api/health', expect.anything());
   });
@@ -182,7 +196,7 @@ describe('Vibe OS surface', () => {
       }),
     });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     await act(async () => {
       releaseHealth!(json({ status: 'ok' }));
@@ -213,7 +227,7 @@ describe('Vibe OS surface', () => {
       }, { status: 422 }),
     });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     await user.type(screen.getByRole('textbox', { name: 'Intent' }), 'Inspect this state.');
     await user.click(screen.getByRole('button', { name: 'Send intent' }));
@@ -251,7 +265,7 @@ describe('Vibe OS surface', () => {
   ])('does not badge a VERIFIED claim with a $name', async ({ receipt, expectedStatus, reason }) => {
     installFetch({ '/api/chat': () => json(receipt) });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     await user.type(screen.getByRole('textbox', { name: 'Intent' }), 'Check the response receipt.');
     await user.click(screen.getByRole('button', { name: 'Send intent' }));
@@ -274,7 +288,7 @@ describe('Vibe OS surface', () => {
         }),
       });
       const user = userEvent.setup();
-      render(<VibeOS />);
+      renderVibeOS();
 
       await user.type(screen.getByRole('textbox', { name: 'Intent' }), 'Check crypto availability.');
       await user.click(screen.getByRole('button', { name: 'Send intent' }));
@@ -303,7 +317,7 @@ describe('Vibe OS surface', () => {
         }),
     });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     await waitFor(() => expect(screen.getByLabelText('System Mood status')).toHaveTextContent('OBSERVED'));
     expect(screen.getByRole('button', { name: /✦ Mood Autopilot/i })).toBeInTheDocument();
@@ -315,7 +329,7 @@ describe('Vibe OS surface', () => {
   it('opens and closes the Living Entity Codex modal with 20 master schematics and selects expanded dimensions', async () => {
     installFetch();
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const codexBtn = screen.getByRole('button', { name: /🪞 Living Codex/i });
     expect(codexBtn).toBeInTheDocument();
@@ -340,7 +354,7 @@ describe('Vibe OS surface', () => {
   it('observes Voice Bridge on port 8088 and executes voice harmonic probe', async () => {
     installFetch();
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     await waitFor(() => expect(screen.getByLabelText('Voice Bridge · 8088 status')).toHaveTextContent('VERIFIED'));
     const voiceBtn = screen.getByRole('button', { name: /🎙️ Voice Bridge/i });
@@ -363,7 +377,7 @@ describe('Vibe OS surface', () => {
           detail: 'qwen2.5:0.5b · port 11434 active',
         }),
     });
-    render(<VibeOS />);
+    renderVibeOS();
 
     await waitFor(() => expect(screen.getByLabelText('Local LLM · 11434 status')).toHaveTextContent('VERIFIED'));
     expect(screen.getByRole('checkbox', { name: /Ocean Intelligence/i })).toBeInTheDocument();
@@ -372,7 +386,7 @@ describe('Vibe OS surface', () => {
   it('renders prompt starters in empty state and populates composer draft on click', async () => {
     installFetch();
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const starterBtn = screen.getByRole('button', { name: /🌊 Water Intelligence/i });
     expect(starterBtn).toBeInTheDocument();
@@ -386,7 +400,7 @@ describe('Vibe OS surface', () => {
   it('opens Water Flow Magic drawer and renders 8 canonical stages with fail-closed provenance', async () => {
     installFetch();
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const waterBtn = screen.getByRole('button', { name: /💧 Water Flow Magic \(8\)/i });
     expect(waterBtn).toBeInTheDocument();
@@ -411,7 +425,7 @@ describe('Vibe OS surface', () => {
         }),
     });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     await user.type(screen.getByRole('textbox', { name: 'Intent' }), 'What engine are you?');
     await user.click(screen.getByRole('button', { name: 'Send intent' }));
@@ -443,7 +457,7 @@ describe('Vibe OS surface', () => {
         }),
     });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const kernelBtn = screen.getByRole('button', { name: /⚙️ Kernel Capabilities/i });
     expect(kernelBtn).toBeInTheDocument();
@@ -470,7 +484,7 @@ describe('Vibe OS surface', () => {
         }),
     });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const equationBtn = screen.getByRole('button', { name: /🌌 Ecosystem Equation/i });
     expect(equationBtn).toBeInTheDocument();
@@ -509,7 +523,7 @@ describe('Vibe OS surface', () => {
         }),
     });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const therapeuticBtn = screen.getByRole('button', { name: /🕊️ Therapeutic State/i });
     expect(therapeuticBtn).toBeInTheDocument();
@@ -544,7 +558,7 @@ describe('Vibe OS surface', () => {
         }),
     });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const realityBtn = screen.getByRole('button', { name: /🌐 Reality Vector/i });
     expect(realityBtn).toBeInTheDocument();
@@ -572,7 +586,7 @@ describe('Vibe OS surface', () => {
         }),
     });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const statsBtn = screen.getByRole('button', { name: /📊 Kernel Stats/i });
     expect(statsBtn).toBeInTheDocument();
@@ -601,7 +615,7 @@ describe('Vibe OS surface', () => {
         }),
     });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const meshBtn = screen.getByRole('button', { name: /🪐 Mesh Convergence/i });
     expect(meshBtn).toBeInTheDocument();
@@ -627,7 +641,7 @@ describe('Vibe OS surface', () => {
         }),
     });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const navBtn = screen.getByRole('button', { name: /🧭 Navigator Evidence/i });
     expect(navBtn).toBeInTheDocument();
@@ -666,7 +680,7 @@ describe('Vibe OS surface', () => {
         }),
     });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const ecoBtn = screen.getByRole('button', { name: /🏛️ Ecosystem Status/i });
     expect(ecoBtn).toBeInTheDocument();
@@ -714,7 +728,7 @@ describe('Vibe OS surface', () => {
         }),
     });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const avroBtn = screen.getByRole('button', { name: /🏛️ ΔVRØ House \(10-Layer\)/i });
     expect(avroBtn).toBeInTheDocument();
@@ -735,7 +749,7 @@ describe('Vibe OS surface', () => {
         }),
     });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const sandboxBtn = screen.getByRole('button', { name: /🛠️ Sandbox Actions/i });
     expect(sandboxBtn).toBeInTheDocument();
@@ -748,7 +762,7 @@ describe('Vibe OS surface', () => {
   it('probes Real-Time Streaming Pipeline and verifies Layer 7 multimodal stream', async () => {
     installFetch();
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const streamBtn = screen.getByRole('button', { name: /🌊 Real-Time Stream/i });
     expect(streamBtn).toBeInTheDocument();
@@ -765,7 +779,7 @@ describe('Vibe OS surface', () => {
   it('observes Layer 9 Evals Flywheel and displays benchmark suite telemetry', async () => {
     installFetch();
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const evalsBtn = screen.getByRole('button', { name: /📊 Evals Flywheel/i });
     expect(evalsBtn).toBeInTheDocument();
@@ -783,7 +797,7 @@ describe('Vibe OS surface', () => {
   it('observes Layer 10 Edge & FinOps and displays infrastructure telemetry', async () => {
     installFetch();
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const edgeBtn = screen.getByRole('button', { name: /⚙️ Edge & FinOps/i });
     expect(edgeBtn).toBeInTheDocument();
@@ -800,7 +814,7 @@ describe('Vibe OS surface', () => {
   it('probes Layer 1-10 Continuum Audit and verifies unified ecosystem convergence', async () => {
     installFetch();
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const auditBtn = screen.getByRole('button', { name: /🌌 Continuum Audit/i });
     expect(auditBtn).toBeInTheDocument();
@@ -820,7 +834,7 @@ describe('Vibe OS surface', () => {
 
   it('renders the complete 10-layer living telemetry continuum status badge and grid', async () => {
     installFetch();
-    render(<VibeOS />);
+    renderVibeOS();
 
     expect(screen.getByLabelText('10-Layer Continuum Status')).toBeInTheDocument();
     expect(screen.getByText(/🏛️ 10\/10 Layers Converged · VERIFY\(ΔREALITY\)/i)).toBeInTheDocument();
@@ -836,7 +850,7 @@ describe('Vibe OS surface', () => {
   it('probes Whole Ecosystem Release Attestation and verifies full-stack platform convergence', async () => {
     installFetch();
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const releaseBtn = screen.getByRole('button', { name: /🏆 Release Attestation/i });
     expect(releaseBtn).toBeInTheDocument();
@@ -855,7 +869,7 @@ describe('Vibe OS surface', () => {
   it('probes SAOS Entity and House Flow and verifies star topology and 10 tiers', async () => {
     installFetch();
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const saosBtn = screen.getByRole('button', { name: /🌊 SAOS Entity Flow/i });
     expect(saosBtn).toBeInTheDocument();
@@ -873,7 +887,7 @@ describe('Vibe OS surface', () => {
   it('opens Studio and Settings modal with Voice, Image, Video, and Platform Settings tabs', async () => {
     installFetch();
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const studioHeaderBtn = screen.getByRole('button', { name: /Open Studio and Settings/i });
     expect(studioHeaderBtn).toBeInTheDocument();
@@ -904,7 +918,7 @@ describe('Vibe OS surface', () => {
   it('probes Multimodal Synthesis Bridge and verifies cross-modal attested asset', async () => {
     installFetch();
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const synBtn = screen.getByRole('button', { name: /✨ Synthesize Asset/i });
     expect(synBtn).toBeInTheDocument();
@@ -920,7 +934,7 @@ describe('Vibe OS surface', () => {
   it('probes Century Milestone and verifies Receipt #100 attestation', async () => {
     installFetch();
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const centuryBtn = screen.getByRole('button', { name: /💯 Century Milestone/i });
     expect(centuryBtn).toBeInTheDocument();
@@ -936,7 +950,7 @@ describe('Vibe OS surface', () => {
   it('probes Sovereign Reality Tools Gateway and verifies 8 attested reality tools', async () => {
     installFetch();
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const toolsBtn = screen.getByRole('button', { name: /🛠️ Reality Tools/i });
     expect(toolsBtn).toBeInTheDocument();
@@ -963,7 +977,7 @@ describe('Vibe OS surface', () => {
         }),
     });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const valBtn = screen.getByRole('button', { name: /💎 Value Proposals/i });
     expect(valBtn).toBeInTheDocument();
@@ -1001,7 +1015,7 @@ describe('Vibe OS surface', () => {
         }),
     });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const depBtn = screen.getByRole('button', { name: /📦 Dependency Map/i });
     expect(depBtn).toBeInTheDocument();
@@ -1028,7 +1042,7 @@ describe('Vibe OS surface', () => {
         }),
     });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const workerBtn = screen.getByRole('button', { name: /🤖 Bounded Workers/i });
     expect(workerBtn).toBeInTheDocument();
@@ -1050,7 +1064,7 @@ describe('Vibe OS surface', () => {
         }),
     });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const divBtn = screen.getByRole('button', { name: /🛡️ Divergence Ledger/i });
     expect(divBtn).toBeInTheDocument();
@@ -1089,7 +1103,7 @@ describe('Vibe OS surface', () => {
         }),
     });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const compBtn = screen.getByRole('button', { name: /🧊 Single Body \(4×4×4×4\)/i });
     expect(compBtn).toBeInTheDocument();
@@ -1114,7 +1128,7 @@ describe('Vibe OS surface', () => {
         }),
     });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const connBtn = screen.getByRole('button', { name: /🔗 Connector Journal/i });
     expect(connBtn).toBeInTheDocument();
@@ -1140,7 +1154,7 @@ describe('Vibe OS surface', () => {
         }),
     });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const cmdBtn = screen.getByRole('button', { name: /📋 Command Pipeline/i });
     expect(cmdBtn).toBeInTheDocument();
@@ -1166,7 +1180,7 @@ describe('Vibe OS surface', () => {
         }),
     });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const kaiBtn = screen.getByRole('button', { name: /🧠 KAI Memory/i });
     expect(kaiBtn).toBeInTheDocument();
@@ -1192,7 +1206,7 @@ describe('Vibe OS surface', () => {
         }),
     });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const evtBtn = screen.getByRole('button', { name: /📡 Omega Events/i });
     expect(evtBtn).toBeInTheDocument();
@@ -1224,7 +1238,7 @@ describe('Vibe OS surface', () => {
         }),
     });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const persistBtn = screen.getByRole('button', { name: /💾 Persistence Status/i });
     expect(persistBtn).toBeInTheDocument();
@@ -1254,7 +1268,7 @@ describe('Vibe OS surface', () => {
         }),
     });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const minerBtn = screen.getByRole('button', { name: /⛏️ Miner Status/i });
     expect(minerBtn).toBeInTheDocument();
@@ -1303,7 +1317,7 @@ describe('Vibe OS surface', () => {
         }),
     });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const provBtn = screen.getByRole('button', { name: /🔍 Command Provenance/i });
     expect(provBtn).toBeInTheDocument();
@@ -1331,7 +1345,7 @@ describe('Vibe OS surface', () => {
         }),
     });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const policyBtn = screen.getByRole('button', { name: /📜 Attestation Policy/i });
     expect(policyBtn).toBeInTheDocument();
@@ -1359,7 +1373,7 @@ describe('Vibe OS surface', () => {
         }),
     });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const revocationsBtn = screen.getByRole('button', { name: /🚫 Attestation Revocations/i });
     expect(revocationsBtn).toBeInTheDocument();
@@ -1384,7 +1398,7 @@ describe('Vibe OS surface', () => {
         }),
     });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const nodesBtn = screen.getByRole('button', { name: /🌐 Mesh Nodes/i });
     expect(nodesBtn).toBeInTheDocument();
@@ -1439,7 +1453,7 @@ describe('Vibe OS surface', () => {
         }),
     });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const validateBtn = screen.getByRole('button', { name: /⚡ Mesh Validation/i });
     expect(validateBtn).toBeInTheDocument();
@@ -1474,7 +1488,7 @@ describe('Vibe OS surface', () => {
         }),
     });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const bpeBtn = screen.getByRole('button', { name: /🧬 Charter BPE/i });
     expect(bpeBtn).toBeInTheDocument();
@@ -1522,7 +1536,7 @@ describe('Vibe OS surface', () => {
         }),
     });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const composioBtn = screen.getByRole('button', { name: /🔌 Composio Gateway/i });
     expect(composioBtn).toBeInTheDocument();
@@ -1573,7 +1587,7 @@ describe('Vibe OS surface', () => {
         }),
     });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const realityBtn = screen.getByRole('button', { name: /📡 Reality Vector/i });
     expect(realityBtn).toBeInTheDocument();
@@ -1609,7 +1623,7 @@ describe('Vibe OS surface', () => {
         }),
     });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const voiceBtn = screen.getByRole('button', { name: /🎙️ Voice Bridge \(432Hz\)/i });
     expect(voiceBtn).toBeInTheDocument();
@@ -1645,7 +1659,7 @@ describe('Vibe OS surface', () => {
         }),
     });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const dispatchBtn = screen.getByRole('button', { name: /⚡ Dispatch Tool/i });
     expect(dispatchBtn).toBeInTheDocument();
@@ -1681,7 +1695,7 @@ describe('Vibe OS surface', () => {
         }),
     });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const orchBtn = screen.getByRole('button', { name: /🧬 Orchestrate Reality/i });
     expect(orchBtn).toBeInTheDocument();
@@ -1721,7 +1735,7 @@ describe('Vibe OS surface', () => {
         }),
     });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const execBtn = screen.getByRole('button', { name: /⚡ Execute Pipeline/i });
     expect(execBtn).toBeInTheDocument();
@@ -1765,7 +1779,7 @@ describe('Vibe OS surface', () => {
     globalThis.EventSource = FakeEventSource as unknown as typeof EventSource;
     try {
       const user = userEvent.setup();
-      render(<VibeOS />);
+      renderVibeOS();
       await user.click(screen.getByRole('button', { name: /Subscribe pipeline canvas/i }));
       expect(await screen.findByText(/Pipeline canvas subscribed: 1\/1 frames at nominal 30fps/i)).toBeInTheDocument();
       expect(screen.getByText(/not a continuous camera/i)).toBeInTheDocument();
@@ -1795,7 +1809,7 @@ describe('Vibe OS surface', () => {
         }),
     });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const statusBtn = screen.getByRole('button', { name: /📊 Reality Tools Status/i });
     expect(statusBtn).toBeInTheDocument();
@@ -1823,7 +1837,7 @@ describe('Vibe OS surface', () => {
         }),
     });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const breakerBtn = screen.getByRole('button', { name: /🛡️ Circuit Breaker/i });
     expect(breakerBtn).toBeInTheDocument();
@@ -1852,7 +1866,7 @@ describe('Vibe OS surface', () => {
         }),
     });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const failsafeBtn = screen.getByRole('button', { name: /🚨 Reality Failsafe/i });
     expect(failsafeBtn).toBeInTheDocument();
@@ -1880,7 +1894,7 @@ describe('Vibe OS surface', () => {
         }),
     });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const input = screen.getByRole('textbox', { name: 'Intent' });
     await user.type(input, 'Check circuit breaker status for reality tools');
@@ -1912,7 +1926,7 @@ describe('Vibe OS surface', () => {
         }),
     });
     const user = userEvent.setup();
-    render(<VibeOS />);
+    renderVibeOS();
 
     const notionBtn = screen.getByRole('button', { name: /💧 Notion Bridge/i });
     expect(notionBtn).toBeInTheDocument();

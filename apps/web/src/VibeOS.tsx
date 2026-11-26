@@ -152,6 +152,7 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
   });
   const [spineCheckedAt, setSpineCheckedAt] = useState<string | null>(null);
   const [kaiStatus, setKaiStatus] = useState<Verdict>('UNKNOWN');
+  const [backgroundOpen, setBackgroundOpen] = useState(false);
   const [davOpen, setDavOpen] = useState(false);
   const [moodOpen, setMoodOpen] = useState(false);
   const [codexOpen, setCodexOpen] = useState(false);
@@ -214,6 +215,9 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
         setSpine(observation);
         setSpineCheckedAt(new Date().toLocaleTimeString());
       }
+      // Secondary instruments stay in the background: observe them only when
+      // the background surface is open, never on a clean frontier load.
+      if (!backgroundOpen) return;
       try {
         const moodRes = await fetch(apiUrl('/v1/mood'), {
           headers: { accept: 'application/json' },
@@ -268,7 +272,7 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
       controller?.abort();
       window.clearInterval(interval);
     };
-  }, [active]);
+  }, [active, backgroundOpen]);
 
   useEffect(() => {
     const log = logRef.current;
@@ -2884,6 +2888,15 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
             <button type="button" className="vibe-header-button" onClick={newChat} disabled={verifying}>
               New chat
             </button>
+            <button
+              type="button"
+              className="vibe-header-button"
+              onClick={() => setBackgroundOpen((open) => !open)}
+              aria-expanded={backgroundOpen}
+              aria-label="Toggle background full-stack instruments"
+            >
+              {backgroundOpen ? '⚙ Close background' : '⚙ Background'}
+            </button>
             {onOpenDashboard && (
               <ExperienceSwitcher
                 active="vibe"
@@ -2895,9 +2908,9 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
           </div>
         </header>
 
-        <section className="vibe-current" aria-label="Top Current live service status">
+        <section className="vibe-current" aria-label="Frontier surface status">
           <div className="vibe-current-heading">
-            <span className="vibe-current-kicker">ΔVRØ HOUSE 10-LAYER CONTINUUM</span>
+            <span className="vibe-current-kicker">ΔVRØ HOUSE · FRONTIER SURFACE</span>
             <div className="vibe-continuum-badge" aria-label="10-Layer Continuum Status">
               <span className="vibe-status-dot vibe-status-dot--verified" aria-hidden="true" />
               <span>🏛️ 10/10 Layers Converged · VERIFY(ΔREALITY) · 💯 100th Milestone</span>
@@ -2906,6 +2919,13 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
               {spineCheckedAt ? `Health observed ${spineCheckedAt}` : 'Waiting for first health observation'}
             </span>
           </div>
+          {!backgroundOpen && (
+            <p className="vibe-frontier-note">
+              One intent, one receipt. The full 10-layer stack and instruments stay in the background.
+            </p>
+          )}
+          {backgroundOpen && (
+          <div className="vibe-background-instruments">
           <div className="vibe-status-grid">
             <StatusPill label="Fastify Spine" status={spine.status} detail={spine.detail} />
             <StatusPill
@@ -2971,6 +2991,8 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
             opt-in for a server-configured OpenAI-compatible model; provider availability is not live-verified here.
           </p>
           <p className="vibe-current-disclaimer">HTTP reachability and API receipts are scoped observations, not production-health claims.</p>
+          </div>
+          )}
         </section>
 
         <main className="vibe-main">
@@ -3058,6 +3080,8 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
             </div>
           </div>
 
+          {backgroundOpen && (
+          <>
           <section className="vibe-proof" aria-label="DAV proof drawer">
             <div className="vibe-proof-trigger-row">
               <div>
@@ -3134,11 +3158,14 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
               </div>
             )}
           </section>
+          </>
+          )}
 
           {codexOpen && <EntityCodexModal onClose={() => setCodexOpen(false)} />}
           {studioOpen && <StudioSettingsModal onClose={() => setStudioOpen(false)} />}
 
           <div className="vibe-composer-wrap">
+            {backgroundOpen && (
             <div className="vibe-actions" role="group" aria-label="Quick actions">
               <button
                 type="button"
@@ -3342,6 +3369,7 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
                 💧 Notion Bridge
               </button>
             </div>
+            )}
             <label className="vibe-model-toggle">
               <input
                 type="checkbox"

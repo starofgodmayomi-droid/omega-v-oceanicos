@@ -171,6 +171,19 @@
   font: 9px 'DM Mono', ui-monospace, monospace;
 }
 
+.vibe-frontier-note {
+  margin: 0;
+  color: var(--vibe-ink-dim);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.vibe-background-instruments {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--vibe-line);
+}
+
 .vibe-continuum-badge {
   display: inline-flex;
   align-items: center;
