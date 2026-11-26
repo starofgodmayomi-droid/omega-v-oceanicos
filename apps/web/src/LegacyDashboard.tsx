@@ -33,6 +33,22 @@ import {
   KernelCapabilitySnapshot,
 } from './oceanicosTheme';
 
+// The background workspace's folds, in reading order. The "open all groups"
+// control opens or closes every one of them together.
+const PANEL_GROUP_IDS = ['body', 'voice', 'value', 'flow'] as const;
+
+const workspaceControlStyle: React.CSSProperties = {
+  border: `1px solid ${theme.borderBright}`,
+  borderRadius: theme.radiusPill,
+  background: 'transparent',
+  color: theme.accent,
+  padding: '8px 12px',
+  fontSize: '10px',
+  letterSpacing: '0.08em',
+  textTransform: 'uppercase',
+  cursor: 'pointer',
+};
+
 // Use the browser-facing Vite/API proxy by default. A blank default sends
 // /v1/* to Vite itself, which returns the app HTML instead of API JSON.
 // VITE_API_URL remains available for a separately hosted API origin.
@@ -109,6 +125,9 @@ export function LegacyDashboard({ onClose }: { onClose: () => void }) {
   const [openPanelGroups, setOpenPanelGroups] = useState<Record<string, boolean>>({ body: true });
   const togglePanelGroup = (id: string) =>
     setOpenPanelGroups((open) => ({ ...open, [id]: !open[id] }));
+  const allPanelGroupsOpen = PANEL_GROUP_IDS.every((id) => !!openPanelGroups[id]);
+  const setAllPanelGroups = (isOpen: boolean) =>
+    setOpenPanelGroups(Object.fromEntries(PANEL_GROUP_IDS.map((id) => [id, isOpen])));
   const [tipReachable, setTipReachable] = useState<boolean | null>(null);
   const [tipRouteStatus, setTipRouteStatus] = useState<string | null>(null);
 
@@ -804,25 +823,31 @@ export function LegacyDashboard({ onClose }: { onClose: () => void }) {
                 Mood {moodData?.evaluation?.state ?? moodData?.status ?? 'UNKNOWN'} · {streamConnected ? 'live stream connected' : 'awaiting observation'} · {humanGateRequired ? 'human gate required' : 'authority state unknown'}
               </div>
             </div>
-            <button
-              type="button"
-              aria-expanded={backgroundWorkspaceOpen}
-              aria-controls="background-full-stack-workspace"
-              onClick={() => setBackgroundWorkspaceOpen((open) => !open)}
-              style={{
-                border: `1px solid ${theme.borderBright}`,
-                borderRadius: theme.radiusPill,
-                background: 'transparent',
-                color: theme.accent,
-                padding: '8px 12px',
-                fontSize: '10px',
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-                cursor: 'pointer',
-              }}
-            >
-              {backgroundWorkspaceOpen ? 'Close background workspace' : 'Open background full-stack'}
-            </button>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  if (allPanelGroupsOpen && backgroundWorkspaceOpen) {
+                    setAllPanelGroups(false);
+                  } else {
+                    setBackgroundWorkspaceOpen(true);
+                    setAllPanelGroups(true);
+                  }
+                }}
+                style={workspaceControlStyle}
+              >
+                {allPanelGroupsOpen && backgroundWorkspaceOpen ? 'Collapse all groups' : 'Open all groups'}
+              </button>
+              <button
+                type="button"
+                aria-expanded={backgroundWorkspaceOpen}
+                aria-controls="background-full-stack-workspace"
+                onClick={() => setBackgroundWorkspaceOpen((open) => !open)}
+                style={workspaceControlStyle}
+              >
+                {backgroundWorkspaceOpen ? 'Close background workspace' : 'Open background full-stack'}
+              </button>
+            </div>
           </div>
         </section>
 

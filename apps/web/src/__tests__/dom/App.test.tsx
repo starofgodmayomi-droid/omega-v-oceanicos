@@ -53,6 +53,25 @@ describe('legacy OceanicOS dashboard', () => {
     expect(document.getElementById('panel-group-value')).not.toBeNull();
   });
 
+  it('opens and collapses every background group from one control', async () => {
+    const user = userEvent.setup();
+    await renderApp();
+
+    await user.click(screen.getByRole('button', { name: /open all groups/i }));
+
+    expect(document.getElementById('background-full-stack-workspace')).toHaveAttribute('aria-hidden', 'false');
+    for (const id of ['body', 'voice', 'value', 'flow']) {
+      expect(document.getElementById(`panel-group-${id}`)).not.toBeNull();
+    }
+
+    await user.click(screen.getByRole('button', { name: /collapse all groups/i }));
+
+    for (const id of ['body', 'voice', 'value', 'flow']) {
+      expect(document.getElementById(`panel-group-${id}`)).toBeNull();
+    }
+    expect(screen.getByRole('button', { name: /open all groups/i })).toBeInTheDocument();
+  });
+
   it('shows a proposed command receipt without executing it', async () => {
     const fetchMock = installFetch({
       '/api/v1/omega/commands': () =>
