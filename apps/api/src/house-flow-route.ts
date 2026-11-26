@@ -164,10 +164,12 @@ function actionRunner(action: HouseAction, input: Record<string, unknown>, organ
       requiresApproval: false,
       run: async ({ outputs }) => {
         const verification = objectValue(outputs[verificationTaskId]);
-        if (!verification || verification.status !== 'VERIFIED' ||
-            !Array.isArray(verification.taskIds) ||
-            verification.taskIds.length !== expectedTaskIds.length ||
-            !expectedTaskIds.every((taskId) => verification.taskIds.includes(taskId))) {
+        const verificationTaskIds = verification && Array.isArray(verification.taskIds)
+          ? verification.taskIds.filter((taskId): taskId is string => typeof taskId === 'string')
+          : null;
+        if (!verification || verification.status !== 'VERIFIED' || !verificationTaskIds ||
+            verificationTaskIds.length !== expectedTaskIds.length ||
+            !expectedTaskIds.every((taskId) => verificationTaskIds.includes(taskId))) {
           throw new Error('OBSERVATION_VERIFICATION_RECEIPT_MISSING_OR_DIVERGENT');
         }
         const observations = expectedTaskIds.slice().sort().map((taskId) => {
