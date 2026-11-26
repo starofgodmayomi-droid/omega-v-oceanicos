@@ -96,3 +96,12 @@ test('inventory contract is part of both explicit root test suites', () => {
     assert.ok(rootPackage.scripts[script]?.includes(testPath), `${script} must run ${testPath}`);
   }
 });
+
+test('inventory keeps the two root ledgers distinct', () => {
+  const ledgers = section('Root ledgers — two files, not one memory');
+  assert.match(ledgers, /kai_ledger\.json/);
+  assert.match(ledgers, /kai-ledger\.jsonl/);
+  assert.match(ledgers, /packages\/remember/);
+  assert.match(ledgers, /not permission to merge or rewrite either file/);
+  assert.equal(ledgers.includes('`kai_ledger.json`') && ledgers.includes('`kai-ledger.jsonl`'), true);
+});
