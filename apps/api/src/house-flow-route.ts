@@ -8,8 +8,21 @@ const ORGANS = new Set([
   'SOUL', 'KAI', 'MIRRIO', 'LUCID', 'TRUTH_WEAVER', 'TRUTHOS',
   'ECHOFRAME', 'OCEANICOS', 'OMEGA_V', 'DAV', 'HOUSE',
 ]);
+const ORGAN_OBSERVATION_PATHS: Record<string, string> = {
+  SOUL: '/v1/ecosystem/status',
+  KAI: '/v1/omega/events',
+  MIRRIO: '/v1/reality/status',
+  LUCID: '/v1/kernel/capabilities',
+  TRUTH_WEAVER: '/v1/omega/divergences',
+  TRUTHOS: '/v1/omega/divergences',
+  ECHOFRAME: '/v1/ecosystem/body',
+  OCEANICOS: '/v1/ecosystem/status',
+  OMEGA_V: '/v1/omega/workers',
+  DAV: '/v1/value-navigator/proposals',
+  HOUSE: '/v1/house/flow/status',
+};
 
-type HouseAction = 'OBSERVE_RUNTIME' | 'VERIFY_SHA256' | 'RECONCILE' | 'VALUE_SCORE' | 'EXTERNAL_MUTATION';
+type HouseAction = 'OBSERVE_ORGAN' | 'OBSERVE_RUNTIME' | 'VERIFY_SHA256' | 'RECONCILE' | 'VALUE_SCORE' | 'EXTERNAL_MUTATION';
 
 function objectValue(value: unknown): Record<string, unknown> | null {
   return value && typeof value === 'object' && !Array.isArray(value)
@@ -33,10 +46,41 @@ function requiredNumber(input: Record<string, unknown>, key: string): number {
   return value;
 }
 
-function actionRunner(action: HouseAction, input: Record<string, unknown>): {
+function actionRunner(action: HouseAction, input: Record<string, unknown>, organ: string, fastify: FastifyInstance, forwardedHeaders: Record<string, string>): {
   requiresApproval: boolean;
   run: PluralisticFlowTask['run'];
 } {
+  if (action === 'OBSERVE_ORGAN') {
+    const path = ORGAN_OBSERVATION_PATHS[organ];
+    if (!path) throw new Error(`NO_OBSERVATION_ROUTE_FOR_${organ}`);
+    return {
+      requiresApproval: false,
+      run: async () => {
+        const response = await fastify.inject({ method: 'GET', url: path, headers: forwardedHeaders });
+        if (response.statusCode < 200 || response.statusCode >= 300) {
+          throw new Error(`ORGAN_OBSERVATION_HTTP_${organ}_${response.statusCode}`);
+        }
+        let body: unknown;
+        try {
+          body = response.json();
+        } catch {
+          body = response.body.slice(0, 8192);
+        }
+        if (response.body.length > 32_768) {
+          body = { truncated: true, bytes: response.body.length, preview: response.body.slice(0, 4096) };
+        }
+        return {
+          status: 'OBSERVED',
+          organ,
+          route: path,
+          statusCode: response.statusCode,
+          body,
+          evidence: 'same-process-read-only-api-observation',
+        };
+      },
+    };
+  }
+
   if (action === 'OBSERVE_RUNTIME') {
     return {
       requiresApproval: false,
@@ -121,6 +165,7 @@ export function registerHouseFlowRoutes(fastify: FastifyInstance): void {
     },
     organs: [...ORGANS].map((organ) => ({ organ, role: 'pluralistic specialist lane', status: 'REGISTERED_AS_CONTRACT' })),
     capabilities: [
+      { id: 'internal-organ-observation', status: 'SUPPORTED', action: 'OBSERVE_ORGAN', evidence: 'fixed allowlist of same-process read-only API routes' },
       { id: 'runtime-observation', status: 'SUPPORTED', action: 'OBSERVE_RUNTIME' },
       { id: 'sha256-verification', status: 'SUPPORTED', action: 'VERIFY_SHA256' },
       { id: 'state-reconciliation', status: 'SUPPORTED', action: 'RECONCILE' },
@@ -150,6 +195,11 @@ export function registerHouseFlowRoutes(fastify: FastifyInstance): void {
 
     let tasks: PluralisticFlowTask[];
     try {
+      const forwardedHeaders: Record<string, string> = {};
+      for (const name of ['authorization', 'x-omega-read-token', 'x-omega-admin-token', 'x-omega-operator']) {
+        const value = request.headers[name];
+        if (typeof value === 'string') forwardedHeaders[name] = value;
+      }
       tasks = body.tasks.map((raw: unknown) => {
         const item = objectValue(raw);
         if (!item) throw new Error('TASK_OBJECT_REQUIRED');
@@ -157,7 +207,7 @@ export function registerHouseFlowRoutes(fastify: FastifyInstance): void {
         const organ = requiredString(item, 'organ', 48);
         if (!ORGANS.has(organ)) throw new Error(`UNKNOWN_HOUSE_ORGAN_${organ}`);
         const action = requiredString(item, 'action', 40) as HouseAction;
-        if (!['OBSERVE_RUNTIME', 'VERIFY_SHA256', 'RECONCILE', 'VALUE_SCORE', 'EXTERNAL_MUTATION'].includes(action)) {
+        if (!['OBSERVE_ORGAN', 'OBSERVE_RUNTIME', 'VERIFY_SHA256', 'RECONCILE', 'VALUE_SCORE', 'EXTERNAL_MUTATION'].includes(action)) {
           throw new Error(`ACTION_NOT_ALLOWLISTED_${action}`);
         }
         const input = objectValue(item.input) ?? {};
@@ -168,7 +218,7 @@ export function registerHouseFlowRoutes(fastify: FastifyInstance): void {
         }
         const conflictKey = item.conflictKey;
         if (conflictKey !== undefined && typeof conflictKey !== 'string') throw new Error(`INVALID_CONFLICT_KEY_${id}`);
-        const runner = actionRunner(action, input);
+        const runner = actionRunner(action, input, organ, fastify, forwardedHeaders);
         return {
           id,
           organ,

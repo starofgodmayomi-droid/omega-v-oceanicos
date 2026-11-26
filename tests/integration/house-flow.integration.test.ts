@@ -81,6 +81,32 @@ test('House flow blocks dependent work and never executes external mutation with
   }
 });
 
+test('House flow observes existing repo organs through fixed read-only API adapters', async () => {
+  const app = createApp(':memory:', false);
+  try {
+    await app.ready();
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/house/flow/run',
+      payload: {
+        tasks: [
+          { id: 'soul-observation', organ: 'SOUL', action: 'OBSERVE_ORGAN' },
+          { id: 'mirrio-observation', organ: 'MIRRIO', action: 'OBSERVE_ORGAN' },
+        ],
+      },
+    });
+    assert.equal(response.statusCode, 200);
+    const flow = response.json().flow;
+    assert.equal(flow.state, 'SUCCEEDED');
+    assert.equal(flow.results['soul-observation'].value.status, 'OBSERVED');
+    assert.equal(flow.results['soul-observation'].value.route, '/v1/ecosystem/status');
+    assert.equal(flow.results['mirrio-observation'].value.status, 'OBSERVED');
+    assert.equal(flow.results['mirrio-observation'].value.route, '/v1/reality/status');
+  } finally {
+    await app.close();
+  }
+});
+
 test('House flow serializes lanes that share a conflict key', async () => {
   const app = createApp(':memory:', false);
   try {
