@@ -247,6 +247,32 @@ test('House flow serializes lanes that share a conflict key', async () => {
   }
 });
 
+test('House flow safely handles prototype-named task identifiers', async () => {
+  const app = createApp(':memory:', false);
+  const identifiers = ['constructor', 'toString', 'valueOf', 'hasOwnProperty'];
+  try {
+    await app.ready();
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/house/flow/run',
+      payload: {
+        maxConcurrency: 4,
+        tasks: identifiers.map((id) => ({ id, organ: 'SOUL', action: 'OBSERVE_RUNTIME' })),
+      },
+    });
+    assert.equal(response.statusCode, 200);
+    const flow = response.json().flow;
+    assert.equal(flow.state, 'SUCCEEDED');
+    assert.equal(flow.succeeded, identifiers.length);
+    for (const id of identifiers) {
+      assert.equal(flow.results[id].value.status, 'OBSERVED', id);
+      assert.equal(flow.tasks.find((task: { id: string }) => task.id === id).status, 'SUCCEEDED');
+    }
+  } finally {
+    await app.close();
+  }
+});
+
 test('House flow rejects dependency cycles and unregistered organs', async () => {
   const app = createApp(':memory:', false);
   try {
