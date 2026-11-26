@@ -230,8 +230,10 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
         // Mood probe gracefully fails closed to UNKNOWN
       }
       try {
-        const voiceUrl = (import.meta as any).env?.VITE_VOICE_URL || 'http://localhost:8088/voice';
-        const voiceRes = await fetch(voiceUrl, {
+        // Probe the spine's companion gateway, not a hardcoded localhost:8088:
+        // the optional voice daemon is often absent, and a direct cross-origin
+        // fetch logged a connection-refused error on every 15 s tick.
+        const voiceRes = await fetch(apiUrl('/v1/companion/voice'), {
           headers: { accept: 'application/json' },
           signal: current.signal,
         });
