@@ -19,11 +19,12 @@ describe('legacy OceanicOS dashboard', () => {
     });
   };
 
-  it('keeps the front surface visible and the detailed workspace collapsed by default', async () => {
+  it('keeps one intent on the front surface and the detailed workspace collapsed by default', async () => {
     await renderApp();
 
     expect(screen.getByRole('heading', { level: 1, name: /what shall we make real/i })).toBeInTheDocument();
-    expect(screen.getByRole('region', { name: 'Invisible Online Computer' })).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Tell me what you're trying to do…")).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Invisible Online Computer' })).not.toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: /open background full-stack/i })
     ).toHaveAttribute('aria-expanded', 'false');
@@ -31,6 +32,11 @@ describe('legacy OceanicOS dashboard', () => {
       'aria-hidden',
       'true'
     );
+
+    await userEvent.click(screen.getByRole('button', { name: /open background full-stack/i }));
+    expect(
+      await screen.findByRole('region', { name: 'Invisible Online Computer' })
+    ).toBeInTheDocument();
   });
 
   it('shows a proposed command receipt without executing it', async () => {

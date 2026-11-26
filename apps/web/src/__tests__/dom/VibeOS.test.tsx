@@ -159,7 +159,11 @@ describe('Vibe OS surface', () => {
     await waitFor(() =>
       expect(screen.getByRole('heading', { level: 1, name: /what shall we make real/i })).toBeInTheDocument()
     );
-    expect(screen.getByRole('region', { name: 'Invisible Online Computer' })).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Tell me what you're trying to do…")).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /open background full-stack/i })
+    ).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('region', { name: 'Invisible Online Computer' })).not.toBeInTheDocument();
     expect(screen.queryByRole('textbox', { name: 'Intent' })).not.toBeInTheDocument();
     const dashboardNavigation = screen.getByRole('navigation', { name: 'OCEANICOS views' });
     expect(within(dashboardNavigation).getByRole('button', { name: 'Full system dashboard' })).toHaveAttribute('aria-current', 'page');

@@ -745,61 +745,54 @@ export function LegacyDashboard({ onClose }: { onClose: () => void }) {
           zIndex: 1,
         }}
       >
-        {/* Logo */}
-        <div
+        {/* One frontier header: identity, one line of observed state, and the only
+            two view controls. Every instrument sits behind the workspace toggle. */}
+        <header
           style={{
-            fontSize: '13px',
-            fontWeight: 800,
-            letterSpacing: '0.2em',
-            color: theme.accent,
-            textAlign: 'center',
-            marginBottom: '8px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: '12px',
+            flexWrap: 'wrap',
+            margin: '0 0 26px',
           }}
         >
-          💧 OCEANICOS
-        </div>
-        <div style={{ textAlign: 'center', marginBottom: '16px' }}>
-          <button
-            type="button"
-            aria-pressed={globeMax}
-            onClick={() => setGlobeMax((v) => !v)}
-            style={{
-              background: 'transparent',
-              border: `1px solid ${theme.borderBright}`,
-              color: theme.accent,
-              borderRadius: theme.radiusPill,
-              padding: '6px 14px',
-              fontSize: '11px',
-              letterSpacing: '0.12em',
-              textTransform: 'uppercase',
-              cursor: 'pointer',
-            }}
-          >
-            {globeMax ? 'Exit globe view' : 'Globe view'}
-          </button>
-        </div>
-
-        <InvisibleComputer />
-        <TensorDavVisualizer />
-
-        {/* Compressed front view: the whole body is summarized here; detailed organs stay in the background workspace. */}
-        <section
-          aria-label="Compressed whole ecosystem front view"
-          style={{
-            margin: '18px 0 24px',
-            padding: '14px 16px',
-            border: `1px solid ${theme.borderBright}`,
-            borderRadius: theme.radiusSmall,
-            background: `${theme.surfaceDeep}cc`,
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-            <div>
-              <div style={{ color: theme.accent, fontSize: '11px', letterSpacing: '0.14em', fontWeight: 700 }}>WHOLE ECOSYSTEM · COMPRESSED BODY</div>
-              <div style={{ color: theme.textMuted, fontSize: '11px', marginTop: '5px' }}>
-                Mood {moodData?.evaluation?.state ?? moodData?.status ?? 'UNKNOWN'} · {streamConnected ? 'live stream connected' : 'awaiting observation'} · {humanGateRequired ? 'human gate required' : 'authority state unknown'}
-              </div>
+          <div style={{ minWidth: 0 }}>
+            <div
+              style={{
+                fontSize: '13px',
+                fontWeight: 800,
+                letterSpacing: '0.2em',
+                color: theme.accent,
+              }}
+            >
+              💧 OCEANICOS
             </div>
+            <div style={{ color: theme.textMuted, fontSize: '11px', marginTop: '6px', lineHeight: 1.5 }}>
+              Mood {moodData?.evaluation?.state ?? moodData?.status ?? 'UNKNOWN'} ·{' '}
+              {streamConnected ? 'live stream connected' : 'awaiting observation'} ·{' '}
+              {humanGateRequired ? 'human gate required' : 'authority state unknown'}
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              aria-pressed={globeMax}
+              onClick={() => setGlobeMax((v) => !v)}
+              style={{
+                background: 'transparent',
+                border: `1px solid ${theme.borderBright}`,
+                color: theme.accent,
+                borderRadius: theme.radiusPill,
+                padding: '8px 12px',
+                fontSize: '10px',
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+              }}
+            >
+              {globeMax ? 'Exit globe view' : 'Globe view'}
+            </button>
             <button
               type="button"
               aria-expanded={backgroundWorkspaceOpen}
@@ -820,29 +813,9 @@ export function LegacyDashboard({ onClose }: { onClose: () => void }) {
               {backgroundWorkspaceOpen ? 'Close background workspace' : 'Open background full-stack'}
             </button>
           </div>
-        </section>
+        </header>
 
-        <section
-          id="background-full-stack-workspace"
-          aria-label="Background full-stack workspace"
-          aria-hidden={!backgroundWorkspaceOpen}
-          style={{ display: backgroundWorkspaceOpen ? 'block' : 'none' }}
-        >
-          <WholeEcosystemDashboard
-            streamConnected={streamConnected}
-            simulationMode={simulationMode}
-            humanGateRequired={humanGateRequired}
-            realityStatus={tip?.evidence?.status}
-            ledgerIntegrity={ledgerIntegrity}
-            history={history}
-            ecosystemBody={ecosystemBody}
-            omegaCommand={omegaCommand}
-            onFocusCommand={setOmegaIntent}
-          />
-          <WaterFlowPanel frames={projectCommandWaterFlow(omegaCommand)} />
-        </section>
-
-        {/* Prompt */}
+        {/* Frontier surface: one intent, one receipt. The depths unfold below. */}
         <h1
           style={{
             fontSize: '28px',
@@ -1008,17 +981,28 @@ export function LegacyDashboard({ onClose }: { onClose: () => void }) {
           ))}
         </div>
 
+        {/* Background workspace: every instrument in one place, behind one toggle. */}
         <section
-          aria-label="Background working mood and backend full-stack organs"
+          id="background-full-stack-workspace"
+          aria-label="Background full-stack workspace"
           aria-hidden={!backgroundWorkspaceOpen}
-          style={{ display: backgroundWorkspaceOpen ? 'block' : 'none' }}
+          style={{
+            display: backgroundWorkspaceOpen ? 'block' : 'none',
+            marginTop: '26px',
+          }}
         >
-          <OreadConsole />
-          <MoodCodexPanel />
-          <DivergenceAlertsPanel />
-          <ValueNavigatorPanel />
-          <ConnectorPanel />
-
+          <WholeEcosystemDashboard
+            streamConnected={streamConnected}
+            simulationMode={simulationMode}
+            humanGateRequired={humanGateRequired}
+            realityStatus={tip?.evidence?.status}
+            ledgerIntegrity={ledgerIntegrity}
+            history={history}
+            ecosystemBody={ecosystemBody}
+            omegaCommand={omegaCommand}
+            onFocusCommand={setOmegaIntent}
+          />
+          <WaterFlowPanel frames={projectCommandWaterFlow(omegaCommand)} />
           <IntentFlow
             command={omegaCommand}
             loading={omegaLoading}
@@ -1033,26 +1017,20 @@ export function LegacyDashboard({ onClose }: { onClose: () => void }) {
             simulationMode={simulationMode}
             humanGateRequired={humanGateRequired}
           />
+          <LifecycleFlow
+            stages={lifecycleStages}
+            openStageId={openStageId}
+            onStageToggle={(id) => setOpenStageId(id || null)}
+          />
+          <InvisibleComputer />
+          <TensorDavVisualizer />
+          <OreadConsole />
+          <MoodCodexPanel />
+          <DivergenceAlertsPanel />
+          <ValueNavigatorPanel />
+          <ConnectorPanel />
         </section>
       </main>
-
-      {/* Mirror-water lifecycle flow */}
-      <div
-        aria-hidden={!backgroundWorkspaceOpen}
-        style={{
-          maxWidth: '720px',
-          width: '100%',
-          margin: '0 auto',
-          padding: '8px 24px 60px',
-          display: backgroundWorkspaceOpen ? 'block' : 'none',
-        }}
-      >
-        <LifecycleFlow
-          stages={lifecycleStages}
-          openStageId={openStageId}
-          onStageToggle={(id) => setOpenStageId(id || null)}
-        />
-      </div>
     </div>
   );
 }
