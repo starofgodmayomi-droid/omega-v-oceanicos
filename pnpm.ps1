@@ -1,3 +1,10 @@
-$bin = "C:\Users\pc\AppData\Local\OpenAI\Codex\runtimes\cua_node\fb8898c05a62885e\bin"
-$env:PATH = "$bin;" + $env:PATH
-& "$bin\node.exe" "$bin\node_modules\corepack\dist\pnpm.js" @args
+$ErrorActionPreference = "Stop"
+if (Test-Path "$env:APPDATA\npm\pnpm.cmd") {
+  & "$env:APPDATA\npm\pnpm.cmd" @args
+} elseif (Test-Path "$env:LOCALAPPDATA\pnpm\pnpm.cmd") {
+  & "$env:LOCALAPPDATA\pnpm\pnpm.cmd" @args
+} elseif (Test-Path "$env:ProgramFiles\nodejs\pnpm.cmd") {
+  & "$env:ProgramFiles\nodejs\pnpm.cmd" @args
+} else {
+  & pnpm @args
+}

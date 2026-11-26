@@ -11,6 +11,10 @@ import { theme } from './oceanicosTheme';
  * Controlled by the parent's openSections state so the IntentFlow card can
  * open a specific section programmatically (e.g. "View Evidence" opens
  * the Reality Verification section).
+ *
+ * keepMounted keeps a panel's own state and polling alive while it is
+ * collapsed (hidden from layout and the accessibility tree) instead of
+ * unmounting it, so compressing a background panel never discards a draft.
  */
 
 interface DeepSectionProps {
@@ -19,6 +23,7 @@ interface DeepSectionProps {
   subtitle?: string;
   isOpen: boolean;
   onToggle: (id: string) => void;
+  keepMounted?: boolean;
   children: React.ReactNode;
 }
 
@@ -28,8 +33,26 @@ export function DeepSection({
   subtitle,
   isOpen,
   onToggle,
+  keepMounted = false,
   children,
 }: DeepSectionProps) {
+  const panel = (
+    <div
+      id={`${id}-section`}
+      className={isOpen ? 'omega-fade-in' : undefined}
+      aria-hidden={!isOpen}
+      style={{
+        display: isOpen ? 'block' : 'none',
+        border: `1px solid ${theme.borderBright}`,
+        borderTop: 'none',
+        borderRadius: `0 0 ${theme.radius} ${theme.radius}`,
+        overflow: 'hidden',
+      }}
+    >
+      {children}
+    </div>
+  );
+
   return (
     <div
       style={{
@@ -38,6 +61,9 @@ export function DeepSection({
       }}
     >
       <button
+        type="button"
+        aria-expanded={isOpen}
+        aria-controls={`${id}-section`}
         onClick={() => onToggle(id)}
         style={{
           display: 'flex',
@@ -79,19 +105,7 @@ export function DeepSection({
           {isOpen ? '−' : '+'}
         </span>
       </button>
-      {isOpen && (
-        <div
-          className="omega-fade-in"
-          style={{
-            border: `1px solid ${theme.borderBright}`,
-            borderTop: 'none',
-            borderRadius: `0 0 ${theme.radius} ${theme.radius}`,
-            overflow: 'hidden',
-          }}
-        >
-          {children}
-        </div>
-      )}
+      {keepMounted || isOpen ? panel : null}
     </div>
   );
 }

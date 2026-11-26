@@ -192,6 +192,13 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
     }
   };
   const logRef = useRef<HTMLDivElement | null>(null);
+  const [waveActive, setWaveActive] = useState<boolean>(false);
+
+  const triggerWavePulse = (freq = 432) => {
+    playHarmonicTone(freq, 0.6);
+    setWaveActive(true);
+    setTimeout(() => setWaveActive(false), 2400);
+  };
 
   useEffect(() => {
     if (!active) return;
@@ -223,8 +230,10 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
         // Mood probe gracefully fails closed to UNKNOWN
       }
       try {
-        const voiceUrl = (import.meta as any).env?.VITE_VOICE_URL || 'http://localhost:8088/voice';
-        const voiceRes = await fetch(voiceUrl, {
+        // Probe the spine's companion gateway, not a hardcoded localhost:8088:
+        // the optional voice daemon is often absent, and a direct cross-origin
+        // fetch logged a connection-refused error on every 15 s tick.
+        const voiceRes = await fetch(apiUrl('/v1/companion/voice'), {
           headers: { accept: 'application/json' },
           signal: current.signal,
         });
@@ -275,13 +284,71 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
     setDraft('');
     setMessages((previous) => [...previous, { role: 'user', content: intent, verified: false }]);
     setVerifying(true);
+    triggerWavePulse(432);
+
+    const lower = intent.toLowerCase();
+
+    // Autonomous Full-Stack Tool Agent Recognition
+    if (lower.includes('circuit breaker') || lower.includes('breaker status')) {
+      await runRealityCircuitBreakerCheck();
+      return;
+    }
+    if (lower.includes('failsafe') || lower.includes('quarantine')) {
+      await runRealityFailsafeCheck();
+      return;
+    }
+    if (lower.includes('notion') || lower.includes('notion unification') || lower.includes('notion bridge')) {
+      await runNotionUnificationCheck();
+      return;
+    }
+    if (lower.includes('reality tools status') || lower.includes('tools status') || lower.includes('tools health')) {
+      await runRealityToolsStatusCheck();
+      return;
+    }
+    if (lower.includes('dispatch tool') || lower.includes('tool dispatch') || lower.includes('reality dispatch')) {
+      await runRealityToolDispatchCheck();
+      return;
+    }
+    if (lower.includes('reality tools') || lower.includes('tools gateway')) {
+      await runRealityToolsGatewayCheck();
+      return;
+    }
+    if (lower.includes('orchestrate') || lower.includes('reality orchestration')) {
+      await runRealityOrchestrationCheck();
+      return;
+    }
+    if (lower.includes('execute pipeline') || lower.includes('pipeline execute')) {
+      await runRealityPipelineExecuteCheck();
+      return;
+    }
+    if (lower.includes('pipeline stream') || lower.includes('subscribe pipeline')) {
+      await runPipelineCanvasStream();
+      return;
+    }
+    if (lower.includes('voice bridge') || lower.includes('432hz') || lower.includes('harmonic resonance')) {
+      await runVoiceBridgeCheck();
+      return;
+    }
+    if (lower.includes('tensor') || lower.includes('dav proof') || lower.includes('dav visualizer')) {
+      setDavOpen(true);
+      await runKernelCheck();
+      return;
+    }
+    if (lower.includes('synthesize') || lower.includes('multimodal asset')) {
+      await runStudioSynthesisCheck();
+      return;
+    }
+    if (lower.includes('water flow') || lower.includes('water magic') || lower.includes('biomimetic water')) {
+      setWaterFrames(generateWaterFlowFrames('VERIFIED', intent));
+      setWaterOpen(true);
+    }
 
     const receipt = await submitIntent(intent, undefined, useExternalModel);
     setKaiStatus(receipt.status);
     setMessages((previous) => [...previous, receiptMessage(receipt)]);
     setWaterFrames(generateWaterFlowFrames(receipt.status, intent));
     if (receipt.verified) {
-      playHarmonicTone(432, 0.5);
+      triggerWavePulse(432);
     }
     setVerifying(false);
   };
@@ -2449,6 +2516,178 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
     });
   };
 
+  const runRealityToolsStatusCheck = async () => {
+    if (verifying) return;
+    beginQuickAction('Probe Reality Tools Status');
+    let result: ChatMessage;
+    try {
+      const response = await fetch(apiUrl('/v1/reality/tools/status'), {
+        headers: { accept: 'application/json' },
+      });
+      let payload: any = null;
+      try { payload = await response.json(); } catch { payload = null; }
+      if (response.ok && payload?.success && payload?.dashboard?.chainSeal) {
+        const d = payload.dashboard;
+        result = {
+          role: 'ai',
+          content: `Reality Status Dashboard VERIFIED: ${d.healthyTools}/${d.totalTools} tools healthy. Chain Seal: ${(d.chainSeal || '').slice(0, 16)}… Integrity: ${d.integrityCheck?.status ?? 'UNKNOWN'} Authority: ${d.authority ?? 'SOVEREIGN_REALITY_STATUS'}`,
+          verified: true,
+          status: 'VERIFIED',
+          engine: 'reality-tools-status',
+          detail: 'GET /v1/reality/tools/status · sovereign tool health aggregate with chain seal',
+        };
+      } else {
+        result = {
+          role: 'ai',
+          content: '[UNKNOWN]',
+          verified: false,
+          status: 'UNKNOWN',
+          detail: `GET /v1/reality/tools/status · HTTP ${response.status}`,
+        };
+      }
+    } catch (error) {
+      result = {
+        role: 'ai',
+        content: '[UNKNOWN]',
+        verified: false,
+        status: 'UNKNOWN',
+        detail: `GET /v1/reality/tools/status · ${error instanceof Error ? error.message : 'fetch error'}`,
+      };
+    }
+    setMessages((previous) => [...previous, result]);
+    setVerifying(false);
+  };
+
+  const runRealityCircuitBreakerCheck = async () => {
+    if (verifying) return;
+    beginQuickAction('Probe Reality Circuit Breaker');
+    let result: ChatMessage;
+    try {
+      const response = await fetch(apiUrl('/v1/reality/tools/circuit-breaker'), {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', accept: 'application/json' },
+        body: JSON.stringify({ action: 'probe' }),
+      });
+      let payload: any = null;
+      try { payload = await response.json(); } catch { payload = null; }
+      if (response.ok && payload?.success && payload?.circuitBreaker?.status) {
+        const b = payload.circuitBreaker;
+        result = {
+          role: 'ai',
+          content: `Reality Circuit Breaker VERIFIED: ${b.status} (${b.tripsCount ?? 0} trips). Chain Seal: ${(b.chainSeal || '').slice(0, 16)}… Authority: ${b.authority ?? 'SOVEREIGN_CIRCUIT_BREAKER'}`,
+          verified: true,
+          status: 'VERIFIED',
+          engine: 'reality-circuit-breaker',
+          detail: 'POST /v1/reality/tools/circuit-breaker · fail-closed circuit breaker telemetry',
+        };
+      } else {
+        result = {
+          role: 'ai',
+          content: '[UNKNOWN]',
+          verified: false,
+          status: 'UNKNOWN',
+          detail: `POST /v1/reality/tools/circuit-breaker · HTTP ${response.status}`,
+        };
+      }
+    } catch (error) {
+      result = {
+        role: 'ai',
+        content: '[UNKNOWN]',
+        verified: false,
+        status: 'UNKNOWN',
+        detail: `POST /v1/reality/tools/circuit-breaker · ${error instanceof Error ? error.message : 'fetch error'}`,
+      };
+    }
+    setMessages((previous) => [...previous, result]);
+    setVerifying(false);
+  };
+
+  const runRealityFailsafeCheck = async () => {
+    if (verifying) return;
+    beginQuickAction('Probe Reality Failsafe Quarantine');
+    let result: ChatMessage;
+    try {
+      const response = await fetch(apiUrl('/v1/reality/tools/failsafe'), {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', accept: 'application/json' },
+        body: JSON.stringify({ action: 'audit' }),
+      });
+      let payload: any = null;
+      try { payload = await response.json(); } catch { payload = null; }
+      if (response.ok && payload?.success && payload?.failsafe) {
+        const f = payload.failsafe;
+        result = {
+          role: 'ai',
+          content: `Reality Failsafe Quarantine VERIFIED: armed=${f.armed}. Quarantined: ${f.quarantineCount ?? 0} tools. Quarantine Seal: ${(f.quarantineSeal || '').slice(0, 16)}… Authority: ${f.authority ?? 'SOVEREIGN_FAILSAFE_QUARANTINE'}`,
+          verified: true,
+          status: 'VERIFIED',
+          engine: 'reality-failsafe',
+          detail: 'POST /v1/reality/tools/failsafe · sovereign failsafe quarantine boundary',
+        };
+      } else {
+        result = {
+          role: 'ai',
+          content: '[UNKNOWN]',
+          verified: false,
+          status: 'UNKNOWN',
+          detail: `POST /v1/reality/tools/failsafe · HTTP ${response.status}`,
+        };
+      }
+    } catch (error) {
+      result = {
+        role: 'ai',
+        content: '[UNKNOWN]',
+        verified: false,
+        status: 'UNKNOWN',
+        detail: `POST /v1/reality/tools/failsafe · ${error instanceof Error ? error.message : 'fetch error'}`,
+      };
+    }
+    setMessages((previous) => [...previous, result]);
+    setVerifying(false);
+  };
+
+  const runNotionUnificationCheck = async () => {
+    if (verifying) return;
+    beginQuickAction('Probe Notion Unified Ecosystem Bridge');
+    let result: ChatMessage;
+    try {
+      const response = await fetch(apiUrl('/v1/notion/unification'), {
+        headers: { accept: 'application/json' },
+      });
+      let payload: any = null;
+      try { payload = await response.json(); } catch { payload = null; }
+      if (response.ok && payload?.success && payload?.unification) {
+        const u = payload.unification;
+        result = {
+          role: 'ai',
+          content: `Notion Unified Ecosystem Bridge VERIFIED: ${u.rolesCount} canonical roles bound. Axiom: "${u.axiom}". Evidence Hash: ${(u.evidenceHash || '').slice(0, 16)}… Authority: ${u.authority ?? 'SOVEREIGN_NOTION_UNIFICATION'}`,
+          verified: true,
+          status: 'VERIFIED',
+          engine: 'notion-unification',
+          detail: 'GET /v1/notion/unification · human command context & runtime evidence unified',
+        };
+      } else {
+        result = {
+          role: 'ai',
+          content: '[UNKNOWN]',
+          verified: false,
+          status: 'UNKNOWN',
+          detail: `GET /v1/notion/unification · HTTP ${response.status}`,
+        };
+      }
+    } catch (error) {
+      result = {
+        role: 'ai',
+        content: '[UNKNOWN]',
+        verified: false,
+        status: 'UNKNOWN',
+        detail: `GET /v1/notion/unification · ${error instanceof Error ? error.message : 'fetch error'}`,
+      };
+    }
+    setMessages((previous) => [...previous, result]);
+    setVerifying(false);
+  };
+
   const runSaosFlowCheck = async () => {
     if (verifying) return;
     beginQuickAction('Probe SAOS Entity & House Flow');
@@ -2598,7 +2837,28 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
   const empty = messages.length === 0 && !verifying;
 
   return (
-    <div className="vibe-os">
+    <div className={`vibe-os ${waveActive ? 'vibe-wave-active' : ''}`}>
+      {waveActive && (
+        <svg
+          className="vibe-screen-wave-canvas"
+          viewBox="0 0 1200 90"
+          preserveAspectRatio="none"
+          aria-hidden="true"
+        >
+          <path
+            d="M 0,45 C 150,10 350,80 600,45 C 850,10 1050,80 1200,45 L 1200,0 L 0,0 Z"
+            fill="url(#wave-gradient)"
+            opacity="0.65"
+          />
+          <defs>
+            <linearGradient id="wave-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#8ce8c8" />
+              <stop offset="50%" stopColor="#38bdf8" />
+              <stop offset="100%" stopColor="#90e2b1" />
+            </linearGradient>
+          </defs>
+        </svg>
+      )}
       <div className="vibe-shell">
         <header className="vibe-topbar">
           <div className="vibe-brand">
@@ -3070,6 +3330,18 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
               </button>
               <button type="button" className="vibe-action" onClick={() => void runPipelineCanvasStream()} disabled={verifying}>
                 Subscribe pipeline canvas
+              </button>
+              <button type="button" className="vibe-action" onClick={() => void runRealityToolsStatusCheck()} disabled={verifying}>
+                📊 Reality Tools Status
+              </button>
+              <button type="button" className="vibe-action" onClick={() => void runRealityCircuitBreakerCheck()} disabled={verifying}>
+                🛡️ Circuit Breaker
+              </button>
+              <button type="button" className="vibe-action" onClick={() => void runRealityFailsafeCheck()} disabled={verifying}>
+                🚨 Reality Failsafe
+              </button>
+              <button type="button" className="vibe-action" onClick={() => void runNotionUnificationCheck()} disabled={verifying}>
+                💧 Notion Bridge
               </button>
             </div>
             <label className="vibe-model-toggle">
