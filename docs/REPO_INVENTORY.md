@@ -102,6 +102,19 @@ The root `package.json` maintains explicit file lists for `pnpm test` and `pnpm 
 
 At audited main commit `fd4417e73c4aa10cec678d1f09eb6f09a0cffec2`, Verification Pipeline run [37074868414](https://github.com/starofgodmayomi-droid/omega-v-oceanicos/actions/runs/37074868414) completed successfully. Its Node 22.x and 24.x verification jobs, Compose configuration, Windows compatibility, and package/smoke jobs succeeded; artifact publication was skipped. This records CI for that commit only, not deployment or runtime health.
 
+## Root ledgers — two files, not one memory
+
+Observed 2026-11-23 by reading both root files on `main` at `dca47fcc2f3b66d6231ea7183fcb5a5514ffa237`. This records file shape only. It is not a hash-chain verification, not a runtime proof, and not permission to merge or rewrite either file.
+
+| File | What was observed | Do not |
+|---|---|---|
+| `kai_ledger.json` | Swarm receipt array named by `AGENTS.md`. Entry fields include `agent_id`, `branch`, `status`, `files_touched`, and `evidence_hash`. | Treat it as the JSONL hash chain. |
+| `kai-ledger.jsonl` | Separate records with `id`, `index`, `distinction`, `hash`, and `previousHash`. | Merge it into `kai_ledger.json` or delete either history. |
+
+`packages/remember` keeps an in-memory `PluralisticHashChain`. It does not read `kai_ledger.json` or `kai-ledger.jsonl`.
+
+On that checkout the JSONL file had duplicate `index` values and `previousHash` values that did not match the previous line's `hash`. Those counts belong to that reading. Do not "repair" them by rewriting history.
+
 ## Migration path
 
 ```text
