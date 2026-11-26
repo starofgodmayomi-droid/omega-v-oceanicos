@@ -81,6 +81,31 @@ test('House flow blocks dependent work and never executes external mutation with
   }
 });
 
+test('House flow serializes lanes that share a conflict key', async () => {
+  const app = createApp(':memory:', false);
+  try {
+    await app.ready();
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/house/flow/run',
+      payload: {
+        maxConcurrency: 4,
+        tasks: [
+          { id: 'shared-one', organ: 'SOUL', action: 'OBSERVE_RUNTIME', conflictKey: 'shared-resource' },
+          { id: 'shared-two', organ: 'KAI', action: 'OBSERVE_RUNTIME', conflictKey: 'shared-resource' },
+        ],
+      },
+    });
+    assert.equal(response.statusCode, 200);
+    const events = response.json().flow.events;
+    const firstSucceeded = events.findIndex((event: { taskId: string; status: string }) => event.taskId === 'shared-one' && event.status === 'SUCCEEDED');
+    const secondStarted = events.findIndex((event: { taskId: string; status: string }) => event.taskId === 'shared-two' && event.status === 'RUNNING');
+    assert.ok(firstSucceeded >= 0 && secondStarted > firstSucceeded);
+  } finally {
+    await app.close();
+  }
+});
+
 test('House flow rejects dependency cycles and unregistered organs', async () => {
   const app = createApp(':memory:', false);
   try {

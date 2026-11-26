@@ -246,6 +246,7 @@ export class PluralisticFlowExecutor {
       );
       for (const task of ready) {
         if (active.size >= this.maxConcurrency) break;
+        if (task.conflictKey && locks.has(task.conflictKey)) continue;
         start(task);
       }
 
