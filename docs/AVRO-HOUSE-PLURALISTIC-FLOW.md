@@ -20,6 +20,8 @@ SOUL coordinates the run. KAI carries continuity and memory. MIRRIO reconciles e
 - Each successful JSON result receives a SHA-256 digest and a sequenced event.
 - The Fastify API exposes `GET /v1/house/flow/status` and `POST /v1/house/flow/run`.
 - `OBSERVE_ORGAN` maps named House organs to a fixed allowlist of same-process, read-only API routes; it forwards only existing request authority headers and never accepts arbitrary URLs.
+- `VERIFY_OBSERVATIONS` hashes actual organ outputs; `RECONCILE_OBSERVATIONS` independently recomputes the digest against the verification receipt.
+- Every completed flow appends a typed House receipt to the app's existing Remember ledger, then verifies the ledger chain and confirmed tip before reporting `REMEMBERED_VERIFIED`. The receipt is explicitly unsigned; ledger integrity is not a cryptographic identity signature.
 - The VibeOS entry surface includes a House Flow panel with a safe verification demo.
 
 ## Safe built-in actions
@@ -27,6 +29,8 @@ SOUL coordinates the run. KAI carries continuity and memory. MIRRIO reconciles e
 | Action | Behavior |
 | --- | --- |
 | `OBSERVE_ORGAN` | Reads an existing organ's fixed, same-process API endpoint |
+| `VERIFY_OBSERVATIONS` | Hashes actual outputs from the expected organ observation tasks |
+| `RECONCILE_OBSERVATIONS` | Independently recomputes and compares the organ observation digest |
 | `OBSERVE_RUNTIME` | Reads bounded API-process runtime metadata |
 | `VERIFY_SHA256` | Recomputes a digest over a supplied value |
 | `RECONCILE` | Compares supplied expected and observed values |

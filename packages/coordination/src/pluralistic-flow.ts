@@ -203,6 +203,7 @@ export class PluralisticFlowExecutor {
         .then((value) => {
           const serialized = JSON.stringify(value);
           if (typeof serialized !== 'string') throw new Error('TASK_RESULT_NOT_JSON_SERIALIZABLE');
+          if (Buffer.byteLength(serialized, 'utf8') > 65_536) throw new Error('TASK_RESULT_TOO_LARGE');
           const digest = createHash('sha256').update(serialized, 'utf8').digest('hex');
           results[task.id] = { value, digest };
           record(task, 'SUCCEEDED', slot, 'Task output serialized and SHA-256 digested', digest);

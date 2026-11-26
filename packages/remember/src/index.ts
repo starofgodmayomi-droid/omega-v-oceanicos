@@ -65,12 +65,12 @@ export class RememberEngine {
     return rows;
   }
 
-  private toBlock(row: any): IMiniBlock {
+  private toBlock<TObservation = IObservation, TEvidence = IEvidence>(row: any): IMiniBlock<TObservation, TEvidence> {
     return {
       index: row.id_index,
       timestamp: row.timestamp,
-      observation: JSON.parse(row.observation_json),
-      evidence: JSON.parse(row.evidence_json),
+      observation: JSON.parse(row.observation_json) as TObservation,
+      evidence: JSON.parse(row.evidence_json) as TEvidence,
       previousHash: row.previous_hash,
       hash: row.hash,
       nonce: row.nonce,
@@ -81,14 +81,14 @@ export class RememberEngine {
    * Observation of the last stored row. Does not verify the chain.
    * Use `verifyChain()` / `getVerifiedTip()` to lock the tip.
    */
-  public getTip(): IMiniBlock | null {
+  public getTip<TObservation = IObservation, TEvidence = IEvidence>(): IMiniBlock<TObservation, TEvidence> | null {
     const row: any = this.db.prepare('SELECT * FROM ledger ORDER BY id_index DESC LIMIT 1').get();
     if (!row) return null;
-    return this.toBlock(row);
+    return this.toBlock<TObservation, TEvidence>(row);
   }
 
-  public all(): IMiniBlock[] {
-    return this.loadAllRows().map((row) => this.toBlock(row));
+  public all<TObservation = IObservation, TEvidence = IEvidence>(): IMiniBlock<TObservation, TEvidence>[] {
+    return this.loadAllRows().map((row) => this.toBlock<TObservation, TEvidence>(row));
   }
 
   /**
@@ -222,21 +222,21 @@ export class RememberEngine {
   /**
    * Verification-gated tip. Observation of a row is not enough.
    */
-  public getVerifiedTip(): IMiniBlock | null {
+  public getVerifiedTip<TObservation = IObservation, TEvidence = IEvidence>(): IMiniBlock<TObservation, TEvidence> | null {
     const integrity = this.verifyChain();
     if (!integrity.valid) {
       throw new Error(`ledger integrity degraded: ${integrity.reason ?? 'UNKNOWN'}`);
     }
-    return this.getTip();
+    return this.getTip<TObservation, TEvidence>();
   }
 
-  public append(observation: IObservation, evidence: IEvidence, options: { signal?: AbortSignal } = {}): IMiniBlock {
+  public append<TObservation = IObservation, TEvidence = IEvidence>(observation: TObservation, evidence: TEvidence, options: { signal?: AbortSignal } = {}): IMiniBlock<TObservation, TEvidence> {
     const integrity = this.verifyChain();
     if (!integrity.valid) {
       throw new Error(`ledger integrity degraded: ${integrity.reason ?? 'UNKNOWN'}`);
     }
 
-    const tip = this.getTip();
+    const tip = this.getTip<TObservation, TEvidence>();
     const nextIndex = tip ? tip.index + 1 : REMEMBER_GENESIS_INDEX;
     const previousHash = tip ? tip.hash : this.rootHash;
     const timestamp = new Date().toISOString();

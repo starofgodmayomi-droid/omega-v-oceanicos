@@ -56,6 +56,50 @@ test('House flow executes independent lanes in parallel and respects dependencie
   }
 });
 
+test('House flow verifies actual organ outputs, reconciles them, and remembers a verified receipt', async () => {
+  const app = createApp(':memory:', false);
+  const organTaskIds = ['soul-observation', 'mirrio-observation'];
+  try {
+    await app.ready();
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/house/flow/run',
+      payload: {
+        maxConcurrency: 2,
+        tasks: [
+          { id: organTaskIds[0], organ: 'SOUL', action: 'OBSERVE_ORGAN' },
+          { id: organTaskIds[1], organ: 'MIRRIO', action: 'OBSERVE_ORGAN' },
+          {
+            id: 'verify-observations',
+            organ: 'OMEGA_V',
+            action: 'VERIFY_OBSERVATIONS',
+            dependsOn: organTaskIds,
+            input: { expectedTaskIds: organTaskIds },
+          },
+          {
+            id: 'reconcile-observations',
+            organ: 'MIRRIO',
+            action: 'RECONCILE_OBSERVATIONS',
+            dependsOn: [...organTaskIds, 'verify-observations'],
+            input: { expectedTaskIds: organTaskIds, verificationTaskId: 'verify-observations' },
+          },
+        ],
+      },
+    });
+    assert.equal(response.statusCode, 200);
+    const body = response.json();
+    assert.equal(body.flow.state, 'SUCCEEDED');
+    assert.equal(body.flow.results['verify-observations'].value.status, 'VERIFIED');
+    assert.equal(body.flow.results['reconcile-observations'].value.status, 'VERIFIED');
+    assert.equal(body.memory.status, 'REMEMBERED_VERIFIED');
+    assert.match(body.memory.blockHash, /^[a-f0-9]{64}$/);
+    assert.equal(body.memory.integrity.valid, true);
+    assert.equal(body.memory.integrity.height, 1);
+  } finally {
+    await app.close();
+  }
+});
+
 test('House flow blocks dependent work and never executes external mutation without approval', async () => {
   const app = createApp(':memory:', false);
   try {
@@ -76,6 +120,7 @@ test('House flow blocks dependent work and never executes external mutation with
     assert.equal(flow.tasks[0].status, 'REVIEW_REQUIRED');
     assert.equal(flow.tasks[1].status, 'BLOCKED');
     assert.equal(flow.started, 0);
+    assert.equal(response.json().memory.status, 'REMEMBERED_VERIFIED');
   } finally {
     await app.close();
   }

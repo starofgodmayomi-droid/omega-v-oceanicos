@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
 
 const API_BASE_URL = (import.meta.env?.VITE_API_URL || '/api').replace(/\/$/, '');
-const HOUSE_VALUE = 'ΔVRØ HOUSE';
-const HOUSE_DIGEST = 'eddcd34a48a3d4966c874c6cb4b57dea0718a4a82a09acb0ce079c3d1056f718';
 
 type HouseStatus = {
   house: string;
@@ -58,9 +56,8 @@ export function HouseFlowPanel() {
             { id: 'observe-omega-v', organ: 'OMEGA_V', action: 'OBSERVE_ORGAN' },
             { id: 'observe-dav', organ: 'DAV', action: 'OBSERVE_ORGAN' },
             { id: 'observe-house', organ: 'HOUSE', action: 'OBSERVE_ORGAN' },
-            { id: 'verify-house', organ: 'OMEGA_V', action: 'VERIFY_SHA256', dependsOn: ['observe-soul', 'observe-kai', 'observe-mirrio', 'observe-lucid', 'observe-truth-weaver', 'observe-truthos', 'observe-echoframe', 'observe-oceanicos', 'observe-omega-v', 'observe-dav', 'observe-house'], input: { value: HOUSE_VALUE, expectedSha256: HOUSE_DIGEST } },
-            { id: 'reconcile', organ: 'MIRRIO', action: 'RECONCILE', dependsOn: ['verify-house'], input: { expected: 'VERIFY(ΔREALITY)', observed: 'VERIFY(ΔREALITY)' } },
-            { id: 'value', organ: 'DAV', action: 'VALUE_SCORE', input: { benefit: 0.8, risk: 0.1, cost: 0.1 } },
+            { id: 'verify-observations', organ: 'OMEGA_V', action: 'VERIFY_OBSERVATIONS', dependsOn: ['observe-soul', 'observe-kai', 'observe-mirrio', 'observe-lucid', 'observe-truth-weaver', 'observe-truthos', 'observe-echoframe', 'observe-oceanicos', 'observe-omega-v', 'observe-dav', 'observe-house'], input: { expectedTaskIds: ['observe-soul', 'observe-kai', 'observe-mirrio', 'observe-lucid', 'observe-truth-weaver', 'observe-truthos', 'observe-echoframe', 'observe-oceanicos', 'observe-omega-v', 'observe-dav', 'observe-house'] } },
+            { id: 'reconcile-observations', organ: 'MIRRIO', action: 'RECONCILE_OBSERVATIONS', dependsOn: ['observe-soul', 'observe-kai', 'observe-mirrio', 'observe-lucid', 'observe-truth-weaver', 'observe-truthos', 'observe-echoframe', 'observe-oceanicos', 'observe-omega-v', 'observe-dav', 'observe-house', 'verify-observations'], input: { expectedTaskIds: ['observe-soul', 'observe-kai', 'observe-mirrio', 'observe-lucid', 'observe-truth-weaver', 'observe-truthos', 'observe-echoframe', 'observe-oceanicos', 'observe-omega-v', 'observe-dav', 'observe-house'], verificationTaskId: 'verify-observations' } },
           ],
         }),
       });
@@ -115,13 +112,14 @@ export function HouseFlowPanel() {
             <span>{flow.state}</span>
             <span>{flow.succeeded}/{flow.total} succeeded</span>
             <span>{flow.maxConcurrency} max parallel lanes</span>
+            <span>Memory: {flow.memory?.status || 'UNKNOWN'}</span>
           </div>
           <ol style={{ paddingLeft: '22px', lineHeight: 1.8 }}>
             {flow.tasks.map((task: any) => (
               <li key={task.id}>{task.organ} / {task.id}: <strong>{task.status}</strong>{task.outputDigest ? ` · ${task.outputDigest.slice(0, 12)}…` : ''}</li>
             ))}
           </ol>
-          <p style={{ fontSize: '12px', opacity: .72 }}>Output digests preserve integrity; they do not independently prove external truth. External mutations remain approval-gated.</p>
+          <p style={{ fontSize: '12px', opacity: .72 }}>The organ set is hashed from live same-process read-only API observations, independently reconciled, then appended to the existing Remember ledger and re-verified. Hashes do not independently prove external truth; external mutations remain approval-gated.</p>
         </div>
       )}
     </section>

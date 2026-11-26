@@ -297,7 +297,7 @@ export function createApp(
   registerLocalActionsStatusRoutes(fastify);
   fastify.register(async (scope) => {
     await scope.register(rateLimit, { global: false });
-    registerHouseFlowRoutes(scope);
+    registerHouseFlowRoutes(scope, ledgerMemory);
   });
   registerEvalsStatusRoutes(fastify);
   registerEdgeFinopsRoutes(fastify);
