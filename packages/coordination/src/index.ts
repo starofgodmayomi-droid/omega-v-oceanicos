@@ -272,3 +272,5 @@ export type {
   WorkerBuilderActivationRequest,
   WorkerBuilderActivationResult,
 } from './activation.js';
+export { PluralisticFlowExecutor } from './pluralistic-flow.js';
+export type { PluralisticFlowTask, PluralisticFlowOptions, PluralisticFlowResult, PluralisticFlowReceipt, PluralisticFlowEvent, PluralisticFlowStatus } from './pluralistic-flow.js';

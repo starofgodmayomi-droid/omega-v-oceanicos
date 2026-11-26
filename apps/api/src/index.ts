@@ -44,6 +44,7 @@ import { registerStudioRoutes } from './studio-route.js';
 import { registerRealityToolsRoutes } from './reality-tools-route.js';
 import { registerNotionUnificationRoutes } from './notion-route.js';
 import { scanIntent } from './invisible-computer.js';
+import { registerHouseFlowRoutes } from './house-flow-route.js';
 import {
   ENCRYPTION_ALGORITHM,
   appendEvent,
@@ -294,6 +295,7 @@ export function createApp(
     };
   });
   registerLocalActionsStatusRoutes(fastify);
+  registerHouseFlowRoutes(fastify);
   registerEvalsStatusRoutes(fastify);
   registerEdgeFinopsRoutes(fastify);
   registerContinuumAuditRoutes(fastify);
