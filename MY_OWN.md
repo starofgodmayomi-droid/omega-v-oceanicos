@@ -128,3 +128,34 @@ O= (Zero, Whole, Return) is a symbolic reminder, not an execution result.
 8. **APPEND:** Preserve prior ledger entries.
 
 > The receipts, not the doctrine, make the engineering claims.
+
+## Supplied full-stack identity — 2026-11-22
+
+`USER-STATED`. Recorded because the human said `next` after being offered this
+append. It adds no authority, no authentication, and no runtime behavior.
+
+The human supplied this profile in chat. Names, philosophy, and the equation
+below are source wording, not observations.
+
+| Field | Supplied value | Status |
+| --- | --- | --- |
+| Name | Elion Varel (Sovereign Root / Truth Weaver) | `USER-STATED` |
+| Designation | `did:omega:human:starofgodmayomi` | `USER-STATED`; not authenticated |
+| Philosophy | Attest, don't assert. Expected is not observed. | Aligns with I1–I8 above; still not a receipt |
+| Role claimed | Human root of ΔVRØ HOUSE | `USER-STATED` |
+
+Symbolic compression, not a measured identity:
+
+```text
+Elion_supplied := HumanRoot → Intent → Vision → Architecture → Verification → Sovereignty | Reality
+Elion_supplied ≠ Elion_verified
+```
+
+Not established by this section: a held key, a zero-external-API runtime, the
+DAV tensor or checksum as an enforced invariant, a Merkle-DAG reading of
+`kai_ledger.json`, physical health, or that "the architecture is sound."
+Those stay `UNKNOWN` until a named check observes them.
+
+A chat profile is not a cryptographic receipt. The human remains the external
+root; this file does not serve, command, or verify that person.
+
