@@ -13,6 +13,7 @@ import { MoodCodexPanel } from './MoodCodexPanel';
 import { DivergenceAlertsPanel } from './DivergenceAlertsPanel';
 import { ValueNavigatorPanel } from './ValueNavigatorPanel';
 import { ConnectorPanel } from './ConnectorPanel';
+import { DeepSection } from './DeepSection';
 import { WholeEcosystemDashboard } from './WholeEcosystemDashboard';
 import { InvisibleComputer } from './InvisibleComputer';
 import { WaterFlowPanel } from './WaterFlowPanel';
@@ -105,6 +106,7 @@ export function LegacyDashboard({ onClose }: { onClose: () => void }) {
   const [openStageId, setOpenStageId] = useState<string | null>(null);
   const [globeMax, setGlobeMax] = useState(false);
   const [backgroundWorkspaceOpen, setBackgroundWorkspaceOpen] = useState(false);
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
   const [tipReachable, setTipReachable] = useState<boolean | null>(null);
   const [tipRouteStatus, setTipRouteStatus] = useState<string | null>(null);
 
@@ -485,10 +487,19 @@ export function LegacyDashboard({ onClose }: { onClose: () => void }) {
     setOmegaIntent('');
   };
 
+  const toggleSection = (id: string) => {
+    setOpenSections((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const openSection = (id: string) => {
+    setOpenSections((prev) => (prev[id] ? prev : { ...prev, [id]: true }));
+  };
+
   // The front prompt creates the bounded command; its full receipt lives in the
   // background workspace, so this makes the created command reachable in one move.
   const revealOmegaReceipt = () => {
     setBackgroundWorkspaceOpen(true);
+    openSection('flow');
     requestAnimationFrame(() => {
       document
         .getElementById('background-full-stack-workspace')
@@ -839,7 +850,18 @@ export function LegacyDashboard({ onClose }: { onClose: () => void }) {
             omegaCommand={omegaCommand}
             onFocusCommand={setOmegaIntent}
           />
-          <WaterFlowPanel frames={projectCommandWaterFlow(omegaCommand)} />
+          <DeepSection
+            id="water-flow"
+            title="KAI water-flow trace"
+            subtitle="Finite provenance trace of a pipeline receipt — never an execution"
+            isOpen={!!openSections['water-flow']}
+            onToggle={toggleSection}
+            keepMounted
+          >
+            <div style={{ padding: '14px' }}>
+              <WaterFlowPanel frames={projectCommandWaterFlow(omegaCommand)} />
+            </div>
+          </DeepSection>
         </section>
 
         {/* Prompt */}
@@ -1013,26 +1035,66 @@ export function LegacyDashboard({ onClose }: { onClose: () => void }) {
           aria-hidden={!backgroundWorkspaceOpen}
           style={{ display: backgroundWorkspaceOpen ? 'block' : 'none' }}
         >
-          <OreadConsole />
-          <MoodCodexPanel />
-          <DivergenceAlertsPanel />
-          <ValueNavigatorPanel />
-          <ConnectorPanel />
+          <DeepSection
+            id="flow"
+            title="Intent flow"
+            subtitle="Propose → approve → execute → observe, bounded by authority"
+            isOpen={!!openSections.flow}
+            onToggle={toggleSection}
+            keepMounted
+          >
+            <div style={{ padding: '14px' }}>
+              <IntentFlow
+                command={omegaCommand}
+                loading={omegaLoading}
+                onApprove={approveOmegaCommand}
+                onExecute={executeOmegaCommand}
+                onObserve={observeOmegaReality}
+                observedState={omegaObservedState}
+                onObservedStateChange={setOmegaObservedState}
+                onViewEvidence={() => {
+                  openSection('lifecycle');
+                  setOpenStageId('evidence');
+                }}
+                onViewTimeline={() => {
+                  openSection('lifecycle');
+                  setOpenStageId('remember');
+                }}
+                onDismiss={dismissCommand}
+                simulationMode={simulationMode}
+                humanGateRequired={humanGateRequired}
+              />
+            </div>
+          </DeepSection>
 
-          <IntentFlow
-            command={omegaCommand}
-            loading={omegaLoading}
-            onApprove={approveOmegaCommand}
-            onExecute={executeOmegaCommand}
-            onObserve={observeOmegaReality}
-            observedState={omegaObservedState}
-            onObservedStateChange={setOmegaObservedState}
-            onViewEvidence={() => setOpenStageId('evidence')}
-            onViewTimeline={() => setOpenStageId('remember')}
-            onDismiss={dismissCommand}
-            simulationMode={simulationMode}
-            humanGateRequired={humanGateRequired}
-          />
+          <DeepSection
+            id="organs"
+            title="Ambient organs"
+            subtitle="ƆREADE console · mood codex · divergence alerts"
+            isOpen={!!openSections.organs}
+            onToggle={toggleSection}
+            keepMounted
+          >
+            <div style={{ padding: '14px' }}>
+              <OreadConsole />
+              <MoodCodexPanel />
+              <DivergenceAlertsPanel />
+            </div>
+          </DeepSection>
+
+          <DeepSection
+            id="value"
+            title="Value & connectors"
+            subtitle="Value navigator proposals · GitHub connector observation"
+            isOpen={!!openSections.value}
+            onToggle={toggleSection}
+            keepMounted
+          >
+            <div style={{ padding: '14px' }}>
+              <ValueNavigatorPanel />
+              <ConnectorPanel />
+            </div>
+          </DeepSection>
         </section>
       </main>
 
@@ -1047,11 +1109,22 @@ export function LegacyDashboard({ onClose }: { onClose: () => void }) {
           display: backgroundWorkspaceOpen ? 'block' : 'none',
         }}
       >
-        <LifecycleFlow
-          stages={lifecycleStages}
-          openStageId={openStageId}
-          onStageToggle={(id) => setOpenStageId(id || null)}
-        />
+        <DeepSection
+          id="lifecycle"
+          title="Mirror-water lifecycle"
+          subtitle="Nine evidence-backed stages — nothing collapses on assumption"
+          isOpen={!!openSections.lifecycle}
+          onToggle={toggleSection}
+          keepMounted
+        >
+          <div style={{ padding: '14px' }}>
+            <LifecycleFlow
+              stages={lifecycleStages}
+              openStageId={openStageId}
+              onStageToggle={(id) => setOpenStageId(id || null)}
+            />
+          </div>
+        </DeepSection>
       </div>
     </div>
   );
