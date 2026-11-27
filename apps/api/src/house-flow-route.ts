@@ -319,7 +319,8 @@ export function registerHouseFlowRoutes(fastify: FastifyInstance, ledgerMemory: 
         if (!['OBSERVE_ORGAN', 'OBSERVE_RUNTIME', 'VERIFY_SHA256', 'RECONCILE', 'VERIFY_OBSERVATIONS', 'RECONCILE_OBSERVATIONS', 'VALUE_SCORE', 'EXTERNAL_MUTATION'].includes(action)) {
           throw new Error(`ACTION_NOT_ALLOWLISTED_${action}`);
         }
-        const input = objectValue(item.input) ?? {};
+        const input = item.input === undefined ? {} : objectValue(item.input);
+        if (!input) throw new Error(`TASK_INPUT_OBJECT_REQUIRED_${id}`);
         if (Buffer.byteLength(JSON.stringify(input), 'utf8') > 16_384) throw new Error('TASK_INPUT_TOO_LARGE');
         const dependsOn = item.dependsOn === undefined ? [] : item.dependsOn;
         if (!Array.isArray(dependsOn) || dependsOn.some((entry) => typeof entry !== 'string')) {
