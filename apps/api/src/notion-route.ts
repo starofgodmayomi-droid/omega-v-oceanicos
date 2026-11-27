@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
+import type { ConnectorObservationStore } from '@oceanicos/mini';
 
 export const NOTION_OMEGA_UNIFICATION_ID = 'notion.omega.unification.v1';
 export const NOTION_OMEGA_DOCTRINE = 'ATTEST, DON\'T ASSERT. Expected ≡ Observed. Reality remains the final authority.';
@@ -42,7 +43,10 @@ export const DEFAULT_NOTION_SCHEMA_PROPERTIES = [
   'Timestamp',
 ];
 
-export function registerNotionUnificationRoutes(fastify: FastifyInstance): void {
+export function registerNotionUnificationRoutes(
+  fastify: FastifyInstance,
+  observationStore?: ConnectorObservationStore,
+): void {
   fastify.get('/v1/notion/unification', async () => {
     const raw = JSON.stringify(NOTION_CANONICAL_ROLES);
     const evidenceHash = createHash('sha256').update(raw).digest('hex');
@@ -82,6 +86,20 @@ export function registerNotionUnificationRoutes(fastify: FastifyInstance): void 
       .update(JSON.stringify({ schemaName, properties, roles: NOTION_CANONICAL_ROLES }))
       .digest('hex');
 
+    const notionObservations = observationStore
+      ? observationStore
+          .all()
+          .filter((entry) => entry.system === 'notion' || entry.connectorId.toLowerCase().includes('notion'))
+      : [];
+    const latestObservation = notionObservations.at(-1) ?? null;
+    const observationSummary = {
+      count: notionObservations.length,
+      integrity: observationStore ? observationStore.verifyIntegrity() : null,
+      latestHash: latestObservation?.hash ?? null,
+      latestStatus: latestObservation?.observation.status ?? 'UNKNOWN',
+      liveNotionObserved: notionObservations.length > 0,
+    };
+
     const timestamp = new Date().toISOString();
     if (expectedChecksum && expectedChecksum !== schemaHash) {
       return {
@@ -96,6 +114,7 @@ export function registerNotionUnificationRoutes(fastify: FastifyInstance): void 
           expectedChecksum,
           observedChecksum: schemaHash,
           eventLogVerified: false,
+          observationSummary,
           doctrine: NOTION_OMEGA_DOCTRINE,
           authority: 'BOUNDED_SCHEMA_SYNC',
           timestamp,
@@ -114,6 +133,7 @@ export function registerNotionUnificationRoutes(fastify: FastifyInstance): void 
         rolesCount: NOTION_CANONICAL_ROLES.length,
         schemaHash,
         eventLogVerified: true,
+        observationSummary,
         doctrine: NOTION_OMEGA_DOCTRINE,
         authority: 'BOUNDED_SCHEMA_SYNC',
         timestamp,

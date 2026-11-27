@@ -2706,14 +2706,16 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
       try { payload = await response.json(); } catch { payload = null; }
       if (response.ok && payload?.success && payload?.sync) {
         const s = payload.sync;
+        const obs = s.observationSummary;
+        const obsLabel = obs ? ` · Observations: ${obs.count} (${obs.latestStatus})` : '';
         triggerWavePulse(432);
         result = {
           role: 'ai',
-          content: `Notion Schema Sync VERIFIED: ${s.schemaName} (${s.properties?.length ?? 0} properties, ${s.rolesCount} roles). Event Log Verified: ${s.eventLogVerified}. Schema Hash: ${(s.schemaHash || '').slice(0, 16)}… Authority: ${s.authority ?? 'BOUNDED_SCHEMA_SYNC'}`,
+          content: `Notion Schema Sync VERIFIED: ${s.schemaName} (${s.properties?.length ?? 0} properties, ${s.rolesCount} roles). Event Log Verified: ${s.eventLogVerified}${obsLabel}. Schema Hash: ${(s.schemaHash || '').slice(0, 16)}… Authority: ${s.authority ?? 'BOUNDED_SCHEMA_SYNC'}`,
           verified: true,
           status: 'VERIFIED',
           engine: 'notion-schema-sync',
-          detail: 'POST /v1/notion/schema-sync · schema & event log verified',
+          detail: 'POST /v1/notion/schema-sync · schema, observation journal & event log verified',
         };
       } else {
         result = {

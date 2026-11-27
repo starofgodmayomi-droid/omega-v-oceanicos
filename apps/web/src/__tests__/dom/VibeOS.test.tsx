@@ -1759,7 +1759,7 @@ describe('Vibe OS surface', () => {
         list.push(listener);
         listeners.set(type, list);
       }
-      close() {}
+      close() { }
     }
     const previous = globalThis.EventSource;
     globalThis.EventSource = FakeEventSource as unknown as typeof EventSource;
@@ -1936,6 +1936,13 @@ describe('Vibe OS surface', () => {
             rolesCount: 12,
             schemaHash: 'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2',
             eventLogVerified: true,
+            observationSummary: {
+              count: 2,
+              integrity: true,
+              latestHash: 'f0e1d2c3b4a59687',
+              latestStatus: 'VERIFIED',
+              liveNotionObserved: true,
+            },
             authority: 'BOUNDED_SCHEMA_SYNC',
           },
           timestamp: '2026-11-26T00:00:00.000Z',
@@ -1949,6 +1956,7 @@ describe('Vibe OS surface', () => {
 
     await user.click(syncBtn);
     expect(await screen.findByText(/Notion Schema Sync VERIFIED: omega.notion.ledger.v1/i)).toBeInTheDocument();
+    expect(screen.getByText(/Observations: 2 \(VERIFIED\)/i)).toBeInTheDocument();
     expect(screen.getByText(/BOUNDED_SCHEMA_SYNC/i)).toBeInTheDocument();
     expect(screen.getByText(/a1b2c3d4e5f6a7b8/i)).toBeInTheDocument();
   });
