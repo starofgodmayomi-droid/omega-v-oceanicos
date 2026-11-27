@@ -35,6 +35,7 @@ export const API_ROUTE_INVENTORY = [
   'POST /v1/reality/tools/circuit-breaker',
   'POST /v1/reality/tools/failsafe',
   'GET /v1/notion/unification',
+  'POST /v1/notion/schema-sync',
   'POST /v1/companion/synthesize',
   'GET /v1/kernel/capabilities',
   'GET /v1/kernel/stats',

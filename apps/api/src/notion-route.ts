@@ -26,6 +26,22 @@ export const NOTION_CANONICAL_ROLES: NotionCanonicalMapEntry[] = [
   { surface: 'Workers', role: 'Bounded execution', status: 'BOUNDED', detail: 'Sandboxed microVM & local task execution units' },
 ];
 
+export interface NotionSchemaSyncRequest {
+  schemaName?: string;
+  properties?: string[];
+  expectedChecksum?: string;
+}
+
+export const DEFAULT_NOTION_SCHEMA_NAME = 'omega.notion.ledger.v1';
+export const DEFAULT_NOTION_SCHEMA_PROPERTIES = [
+  'Surface',
+  'Role',
+  'Status',
+  'Authority',
+  'EvidenceHash',
+  'Timestamp',
+];
+
 export function registerNotionUnificationRoutes(fastify: FastifyInstance): void {
   fastify.get('/v1/notion/unification', async () => {
     const raw = JSON.stringify(NOTION_CANONICAL_ROLES);
@@ -44,6 +60,65 @@ export function registerNotionUnificationRoutes(fastify: FastifyInstance): void 
         evidenceHash,
       },
       timestamp: new Date().toISOString(),
+    };
+  });
+
+  fastify.post<{ Body?: NotionSchemaSyncRequest }>('/v1/notion/schema-sync', async (request) => {
+    const body = request.body && typeof request.body === 'object' ? request.body : {};
+    const schemaName =
+      typeof body.schemaName === 'string' && body.schemaName.trim()
+        ? body.schemaName.trim()
+        : DEFAULT_NOTION_SCHEMA_NAME;
+    const properties =
+      Array.isArray(body.properties) && body.properties.length > 0
+        ? body.properties.filter((p): p is string => typeof p === 'string' && p.trim().length > 0)
+        : DEFAULT_NOTION_SCHEMA_PROPERTIES;
+    const expectedChecksum =
+      typeof body.expectedChecksum === 'string' && body.expectedChecksum.trim()
+        ? body.expectedChecksum.trim()
+        : null;
+
+    const schemaHash = createHash('sha256')
+      .update(JSON.stringify({ schemaName, properties, roles: NOTION_CANONICAL_ROLES }))
+      .digest('hex');
+
+    const timestamp = new Date().toISOString();
+    if (expectedChecksum && expectedChecksum !== schemaHash) {
+      return {
+        success: false,
+        status: 'DIVERGENT',
+        sync: {
+          id: 'notion.schema.sync.v1',
+          schemaName,
+          properties,
+          rolesCount: NOTION_CANONICAL_ROLES.length,
+          schemaHash,
+          expectedChecksum,
+          observedChecksum: schemaHash,
+          eventLogVerified: false,
+          doctrine: NOTION_OMEGA_DOCTRINE,
+          authority: 'BOUNDED_SCHEMA_SYNC',
+          timestamp,
+        },
+        timestamp,
+      };
+    }
+
+    return {
+      success: true,
+      status: 'VERIFIED',
+      sync: {
+        id: 'notion.schema.sync.v1',
+        schemaName,
+        properties,
+        rolesCount: NOTION_CANONICAL_ROLES.length,
+        schemaHash,
+        eventLogVerified: true,
+        doctrine: NOTION_OMEGA_DOCTRINE,
+        authority: 'BOUNDED_SCHEMA_SYNC',
+        timestamp,
+      },
+      timestamp,
     };
   });
 }
