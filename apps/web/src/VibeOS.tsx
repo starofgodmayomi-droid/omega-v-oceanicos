@@ -297,6 +297,10 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
       await runRealityFailsafeCheck();
       return;
     }
+    if (lower.includes('notion sync') || lower.includes('schema sync') || lower.includes('sync notion')) {
+      await runNotionSchemaSync();
+      return;
+    }
     if (lower.includes('notion') || lower.includes('notion unification') || lower.includes('notion bridge')) {
       await runNotionUnificationCheck();
       return;
@@ -2688,6 +2692,51 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
     setVerifying(false);
   };
 
+  const runNotionSchemaSync = async () => {
+    if (verifying) return;
+    beginQuickAction('Sync Notion Database Schema');
+    let result: ChatMessage;
+    try {
+      const response = await fetch(apiUrl('/v1/notion/schema-sync'), {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', accept: 'application/json' },
+        body: JSON.stringify({ schemaName: 'omega.notion.ledger.v1' }),
+      });
+      let payload: any = null;
+      try { payload = await response.json(); } catch { payload = null; }
+      if (response.ok && payload?.success && payload?.sync) {
+        const s = payload.sync;
+        triggerWavePulse(432);
+        result = {
+          role: 'ai',
+          content: `Notion Schema Sync VERIFIED: ${s.schemaName} (${s.properties?.length ?? 0} properties, ${s.rolesCount} roles). Event Log Verified: ${s.eventLogVerified}. Schema Hash: ${(s.schemaHash || '').slice(0, 16)}… Authority: ${s.authority ?? 'BOUNDED_SCHEMA_SYNC'}`,
+          verified: true,
+          status: 'VERIFIED',
+          engine: 'notion-schema-sync',
+          detail: 'POST /v1/notion/schema-sync · schema & event log verified',
+        };
+      } else {
+        result = {
+          role: 'ai',
+          content: payload?.status === 'DIVERGENT' ? '[DIVERGENT]' : '[UNKNOWN]',
+          verified: false,
+          status: payload?.status === 'DIVERGENT' ? 'DIVERGENT' : 'UNKNOWN',
+          detail: `POST /v1/notion/schema-sync · HTTP ${response.status}`,
+        };
+      }
+    } catch (error) {
+      result = {
+        role: 'ai',
+        content: '[UNKNOWN]',
+        verified: false,
+        status: 'UNKNOWN',
+        detail: `POST /v1/notion/schema-sync · ${error instanceof Error ? error.message : 'fetch error'}`,
+      };
+    }
+    setMessages((previous) => [...previous, result]);
+    setVerifying(false);
+  };
+
   const runSaosFlowCheck = async () => {
     if (verifying) return;
     beginQuickAction('Probe SAOS Entity & House Flow');
@@ -3342,6 +3391,9 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
               </button>
               <button type="button" className="vibe-action" onClick={() => void runNotionUnificationCheck()} disabled={verifying}>
                 💧 Notion Bridge
+              </button>
+              <button type="button" className="vibe-action" onClick={() => void runNotionSchemaSync()} disabled={verifying}>
+                🔄 Schema Sync
               </button>
             </div>
             <label className="vibe-model-toggle">

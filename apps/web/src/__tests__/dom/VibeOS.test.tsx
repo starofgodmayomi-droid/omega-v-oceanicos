@@ -1922,5 +1922,35 @@ describe('Vibe OS surface', () => {
     expect(screen.getByText(/SOVEREIGN_NOTION_UNIFICATION/i)).toBeInTheDocument();
     expect(screen.getByText(/e7f8a9b0c1d2e3f4/i)).toBeInTheDocument();
   });
+
+  it('syncs Notion database schema and displays verified schema hash', async () => {
+    installFetch({
+      '/api/v1/notion/schema-sync': () =>
+        json({
+          success: true,
+          status: 'VERIFIED',
+          sync: {
+            id: 'notion.schema.sync.v1',
+            schemaName: 'omega.notion.ledger.v1',
+            properties: ['Surface', 'Role', 'Status', 'Authority', 'EvidenceHash', 'Timestamp'],
+            rolesCount: 12,
+            schemaHash: 'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2',
+            eventLogVerified: true,
+            authority: 'BOUNDED_SCHEMA_SYNC',
+          },
+          timestamp: '2026-11-26T00:00:00.000Z',
+        }),
+    });
+    const user = userEvent.setup();
+    render(<VibeOS />);
+
+    const syncBtn = screen.getByRole('button', { name: /🔄 Schema Sync/i });
+    expect(syncBtn).toBeInTheDocument();
+
+    await user.click(syncBtn);
+    expect(await screen.findByText(/Notion Schema Sync VERIFIED: omega.notion.ledger.v1/i)).toBeInTheDocument();
+    expect(screen.getByText(/BOUNDED_SCHEMA_SYNC/i)).toBeInTheDocument();
+    expect(screen.getByText(/a1b2c3d4e5f6a7b8/i)).toBeInTheDocument();
+  });
 });
 
