@@ -24,6 +24,24 @@ test('ΔVRØ House exposes the pluralistic flow contract and explicit capability
   }
 });
 
+test('House flow rejects non-object task inputs', async () => {
+  const app = createApp(':memory:', false);
+  try {
+    await app.ready();
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/house/flow/run',
+      payload: {
+        tasks: [{ id: 'bad-input', organ: 'SOUL', action: 'OBSERVE_RUNTIME', input: 'not-an-object' }],
+      },
+    });
+    assert.equal(response.statusCode, 400);
+    assert.equal(response.json().error, 'TASK_INPUT_OBJECT_REQUIRED_bad-input');
+  } finally {
+    await app.close();
+  }
+});
+
 test('House flow executes independent lanes in parallel and respects dependencies', async () => {
   const app = createApp(':memory:', false);
   const value = 'ΔVRØ HOUSE';
