@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { VibeOS } from './VibeOS';
+import { HouseFlowPanel } from './HouseFlowPanel';
 import { LegacyDashboard } from './LegacyDashboard';
 
 /*
@@ -32,6 +33,7 @@ export function App() {
     <>
       <div hidden={dashboardOpen} aria-hidden={dashboardOpen}>
         <VibeOS active={!dashboardOpen} onOpenDashboard={() => setDashboardOpen(true)} />
+        <HouseFlowPanel />
       </div>
       {dashboardOpen && <LegacyDashboard onClose={() => setDashboardOpen(false)} />}
     </>

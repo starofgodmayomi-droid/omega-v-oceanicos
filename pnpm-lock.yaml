@@ -55,6 +55,9 @@ importers:
       '@omega-v/kernel':
         specifier: workspace:*
         version: link:../../packages/kernel
+      '@omega-v/coordination':
+        specifier: workspace:*
+        version: link:../../packages/coordination
       '@omega-v/mood':
         specifier: workspace:*
         version: link:../../packages/mood

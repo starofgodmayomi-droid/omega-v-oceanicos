@@ -14,11 +14,11 @@ export interface IEvidence {
   readonly signatureProof: string;
 }
 
-export interface IMiniBlock {
+export interface IMiniBlock<TObservation = IObservation, TEvidence = IEvidence> {
   readonly index: number;
   readonly timestamp: string;
-  readonly observation: IObservation;
-  readonly evidence: IEvidence;
+  readonly observation: TObservation;
+  readonly evidence: TEvidence;
   readonly previousHash: string;
   readonly hash: string;
   readonly nonce: number;
