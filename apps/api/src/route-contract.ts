@@ -16,6 +16,7 @@ export const API_ROUTE_INVENTORY = [
   'GET /health',
   'GET /tensor/:size',
   'GET /api/tensor/:size',
+  'POST /v1/entity/sync',
   'GET /v1/local-actions',
   'GET /v1/local-actions/runs',
   'GET /v1/evals/status',

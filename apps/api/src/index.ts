@@ -34,6 +34,7 @@ import { registerMeshValidationRoute } from './mesh-route.js';
 import { KaiMemoryStore } from './kai-memory.js';
 import { registerExecuteRoute } from './execute-route.js';
 import { registerTensorDavRoutes } from './tensor-dav-route.js';
+import { registerEntitySyncRoutes } from './entity-sync-route.js';
 import { registerLocalActionsStatusRoutes } from './local-actions-status-route.js';
 import { registerEvalsStatusRoutes } from './evals-status-route.js';
 import { registerEdgeFinopsRoutes } from './edge-finops-route.js';
@@ -81,6 +82,9 @@ export type CreateAppOptions = {
   omegaCommandAdmissionEvidence?: OmegaCommandAdmissionEvidenceResolver;
   composioGatewayConfig?: ComposioGatewayConfig | null;
   composioFetch?: typeof fetch;
+  ollamaFetch?: typeof fetch;
+  ollamaBaseUrl?: string;
+  ollamaModel?: string;
 };
 
 type AuthMode = 'local' | 'required';
@@ -271,6 +275,11 @@ export function createApp(
 
   fastify.register(cors, { origin: corsOrigin });
   registerTensorDavRoutes(fastify);
+  registerEntitySyncRoutes(fastify, ledgerMemory, {
+    ollamaFetch: options.ollamaFetch,
+    ollamaBaseUrl: options.ollamaBaseUrl,
+    ollamaModel: options.ollamaModel,
+  });
   fastify.register(async (scope) => {
     await scope.register(rateLimit, { global: false });
     registerOmegaRoutes(scope, omegaCommands, enforceAdminOperatorIdentity, options.omegaCommandAdmissionEvidence);

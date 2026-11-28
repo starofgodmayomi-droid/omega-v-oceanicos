@@ -15,6 +15,21 @@ interface ISqliteDatabase {
   };
 }
 
+export interface EntityReceiptBlock {
+  readonly index: number;
+  readonly timestamp: string;
+  readonly payload: unknown;
+  readonly previousHash: string;
+  readonly hash: string;
+}
+
+export interface EntityReceiptIntegrity {
+  readonly valid: boolean;
+  readonly count: number;
+  readonly tipHash?: string | null;
+  readonly reason?: 'CHAIN_LINK_MISMATCH' | 'HASH_MISMATCH' | 'PARSE_FAILURE';
+}
+
 const hashRememberPayload = (
   index: number,
   timestamp: string,
@@ -27,6 +42,9 @@ const hashRememberPayload = (
     .createHash('sha256')
     .update(`${index}-${timestamp}-${observationJson}-${evidenceJson}-${previousHash}-${nonce}`)
     .digest('hex');
+
+const hashEntityReceipt = (index: number, timestamp: string, payloadJson: string, previousHash: string): string =>
+  crypto.createHash('sha256').update(`${index}-${timestamp}-${payloadJson}-${previousHash}`).digest('hex');
 
 export class RememberEngine {
   private db: ISqliteDatabase;
@@ -45,8 +63,58 @@ export class RememberEngine {
 
   private initSchema() {
     this.db.exec(
-      `CREATE TABLE IF NOT EXISTS ledger (id_index INTEGER PRIMARY KEY, timestamp TEXT NOT NULL, observation_json TEXT NOT NULL, evidence_json TEXT NOT NULL, previous_hash TEXT NOT NULL, hash TEXT NOT NULL, nonce INTEGER NOT NULL);`
+      `CREATE TABLE IF NOT EXISTS ledger (id_index INTEGER PRIMARY KEY, timestamp TEXT NOT NULL, observation_json TEXT NOT NULL, evidence_json TEXT NOT NULL, previous_hash TEXT NOT NULL, hash TEXT NOT NULL, nonce INTEGER NOT NULL); CREATE TABLE IF NOT EXISTS entity_receipts (id_index INTEGER PRIMARY KEY, timestamp TEXT NOT NULL, payload_json TEXT NOT NULL, previous_hash TEXT NOT NULL, hash TEXT NOT NULL);`
     );
+  }
+
+  public appendEntityReceipt(payload: unknown): EntityReceiptBlock {
+    const integrity = this.verifyEntityReceiptChain();
+    if (!integrity.valid) throw new Error(`entity receipt integrity degraded: ${integrity.reason ?? 'UNKNOWN'}`);
+    const tip = this.db.prepare('SELECT * FROM entity_receipts ORDER BY id_index DESC LIMIT 1').get();
+    const index = tip ? tip.id_index + 1 : 1;
+    const previousHash = tip ? tip.hash : this.rootHash;
+    const timestamp = new Date().toISOString();
+    const payloadJson = JSON.stringify(payload);
+    const hash = hashEntityReceipt(index, timestamp, payloadJson, previousHash);
+    this.db
+      .prepare('INSERT INTO entity_receipts (id_index, timestamp, payload_json, previous_hash, hash) VALUES (?, ?, ?, ?, ?)')
+      .run(index, timestamp, payloadJson, previousHash, hash);
+    return { index, timestamp, payload, previousHash, hash };
+  }
+
+  public getEntityReceipts(): EntityReceiptBlock[] {
+    return this.db
+      .prepare('SELECT * FROM entity_receipts ORDER BY id_index ASC')
+      .all()
+      .map((row: any) => ({
+        index: row.id_index,
+        timestamp: row.timestamp,
+        payload: JSON.parse(row.payload_json),
+        previousHash: row.previous_hash,
+        hash: row.hash,
+      }));
+  }
+
+  public verifyEntityReceiptChain(): EntityReceiptIntegrity {
+    try {
+      const rows = this.db.prepare('SELECT * FROM entity_receipts ORDER BY id_index ASC').all();
+      let previousHash = this.rootHash;
+      let expectedIndex = 1;
+      for (const row of rows as any[]) {
+        if (row.id_index !== expectedIndex || row.previous_hash !== previousHash) {
+          return { valid: false, count: rows.length, reason: 'CHAIN_LINK_MISMATCH' };
+        }
+        if (hashEntityReceipt(row.id_index, row.timestamp, row.payload_json, row.previous_hash) !== row.hash) {
+          return { valid: false, count: rows.length, reason: 'HASH_MISMATCH' };
+        }
+        JSON.parse(row.payload_json);
+        previousHash = row.hash;
+        expectedIndex += 1;
+      }
+      return { valid: true, count: rows.length, tipHash: rows.length ? previousHash : null };
+    } catch {
+      return { valid: false, count: 0, reason: 'PARSE_FAILURE' };
+    }
   }
 
   private loadAllRows(): any[] {
