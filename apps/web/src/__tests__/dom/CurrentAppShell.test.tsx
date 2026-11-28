@@ -66,4 +66,36 @@ describe('legacy OceanicOS dashboard', () => {
       })
     ).toBe(false);
   });
+
+  it('syncs Notion schema reconciliation summary inside WholeEcosystemDashboard', async () => {
+    installFetch({
+      '/api/v1/notion/schema-sync': () =>
+        json({
+          success: true,
+          status: 'VERIFIED',
+          sync: {
+            id: 'notion.schema.sync.v1',
+            schemaName: 'omega.notion.ledger.v1',
+            schemaHash: 'd2f0e74c688dd56c10a46adebf7548df',
+            observationSummary: {
+              count: 1,
+              integrity: true,
+              latestHash: 'abc123',
+              latestStatus: 'VERIFIED',
+              liveNotionObserved: true,
+            },
+          },
+        }),
+    });
+    const user = userEvent.setup();
+    render(<LegacyDashboard onClose={() => {}} />);
+
+    await user.click(await screen.findByRole('button', { name: /open background full-stack/i }));
+    const syncPanel = screen.getByLabelText('Notion schema sync reconciliation');
+    expect(within(syncPanel).getByText(/UNKNOWN · no schema sync observation supplied/i)).toBeInTheDocument();
+
+    await user.click(within(syncPanel).getByRole('button', { name: /SYNC NOTION SCHEMA/i }));
+    expect(await within(syncPanel).findByText(/omega\.notion\.ledger\.v1 · d2f0e74c688d/i)).toBeInTheDocument();
+    expect(within(syncPanel).getByText(/Observations: 1 \(VERIFIED\)/i)).toBeInTheDocument();
+  });
 });

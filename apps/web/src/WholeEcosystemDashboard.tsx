@@ -5,6 +5,19 @@ import { AgentSafetyBoundaryPanel } from './AgentSafetyBoundaryPanel';
 import { WorkerCoordinationPanel } from './WorkerCoordinationPanel';
 import { SingleBodyPanel } from './SingleBodyPanel';
 
+export type NotionSchemaSyncSummary = {
+  status: string;
+  schemaName?: string;
+  schemaHash?: string;
+  observationSummary?: {
+    count: number;
+    integrity: boolean | null;
+    latestHash: string | null;
+    latestStatus: string;
+    liveNotionObserved: boolean;
+  };
+};
+
 type Props = {
   streamConnected: boolean;
   simulationMode: boolean;
@@ -14,6 +27,8 @@ type Props = {
   history: Array<{ evidence?: { status?: string } }>;
   ecosystemBody: any;
   omegaCommand: any;
+  notionSchemaSync?: NotionSchemaSyncSummary | null;
+  onSyncNotionSchema?: () => void;
   onFocusCommand: (prompt: string) => void;
 };
 
@@ -221,6 +236,35 @@ export function WholeEcosystemDashboard(props: Props) {
         <div><span className="whole-ecosystem-label">VALUE CURRENT</span><strong>Need → Problem → Solution → Delivery → Observed outcome → Earned value</strong></div>
         <div className="whole-value-unknown"><b>OBSERVED VALUE</b><span>UNKNOWN · no value observation supplied</span></div>
         <button onClick={() => props.onFocusCommand('Show me what actually produced value.')}>SEE VALUE PATH</button>
+      </div>
+
+      <div className="whole-value-current" aria-label="Notion schema sync reconciliation">
+        <div>
+          <span className="whole-ecosystem-label">NOTION SCHEMA SYNC · OBSERVATION JOURNAL</span>
+          <strong>
+            {props.notionSchemaSync
+              ? `${props.notionSchemaSync.schemaName ?? 'omega.notion.ledger.v1'} · ${props.notionSchemaSync.schemaHash?.slice(0, 12) ?? 'no-hash'}`
+              : 'No Notion schema sync observed in this session'}
+          </strong>
+        </div>
+        <div className="whole-value-unknown">
+          <b>{props.notionSchemaSync ? boundedStatus(props.notionSchemaSync.status) : 'UNKNOWN'}</b>
+          <span>
+            {props.notionSchemaSync?.observationSummary
+              ? `Observations: ${props.notionSchemaSync.observationSummary.count} (${props.notionSchemaSync.observationSummary.latestStatus})`
+              : 'UNKNOWN · no schema sync observation supplied'}
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={() =>
+            props.onSyncNotionSchema
+              ? props.onSyncNotionSchema()
+              : props.onFocusCommand('Sync Notion database schema and verify observations.')
+          }
+        >
+          SYNC NOTION SCHEMA
+        </button>
       </div>
 
       <footer className="whole-bottom-current" aria-label="Whole ecosystem views">

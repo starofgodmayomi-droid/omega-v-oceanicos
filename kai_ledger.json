@@ -1833,6 +1833,22 @@
       "status": "VERIFIED",
       "tests_passed": true,
       "timestamp": "2026-11-27T02:18:30.000Z"
+    },
+    {
+      "agent_id": "agent/gemini/whole-ecosystem-notion-sync-panel",
+      "branch": "agent/gemini/whole-ecosystem-notion-sync-panel",
+      "evidence_hash": "fcaf05968b5b6f6d49bce8e021f944dd23b5a708f3776171f8d3267139b47553",
+      "files_touched": [
+        "apps/web/src/WholeEcosystemDashboard.tsx",
+        "apps/web/src/LegacyDashboard.tsx",
+        "apps/web/src/__tests__/dom/CurrentAppShell.test.tsx",
+        "ΩVØØS/ASSIGNMENTS/064-beta-whole-ecosystem-notion-sync.md",
+        "kai_ledger.json"
+      ],
+      "next_delta": "Wire live DAV tensor checksum and Notion schema-sync status into a unified health summary banner.",
+      "status": "VERIFIED",
+      "tests_passed": true,
+      "timestamp": "2026-11-28T15:40:00.000Z"
     }
   ]
 }

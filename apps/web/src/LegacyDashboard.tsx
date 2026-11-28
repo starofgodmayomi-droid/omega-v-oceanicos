@@ -102,6 +102,7 @@ export function LegacyDashboard({ onClose }: { onClose: () => void }) {
   const [omegaObservedState, setOmegaObservedState] = useState('');
   const [omegaCommand, setOmegaCommand] = useState<any>(null);
   const [omegaLoading, setOmegaLoading] = useState(false);
+  const [notionSchemaSync, setNotionSchemaSync] = useState<any>(null);
 
   const [openStageId, setOpenStageId] = useState<string | null>(null);
   const [globeMax, setGlobeMax] = useState(false);
@@ -111,6 +112,30 @@ export function LegacyDashboard({ onClose }: { onClose: () => void }) {
   const [tipRouteStatus, setTipRouteStatus] = useState<string | null>(null);
 
   const eventSourceRef = useRef<EventSource | null>(null);
+
+  const syncNotionSchema = async () => {
+    try {
+      const data = await apiRequest<any>('/v1/notion/schema-sync', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', accept: 'application/json' },
+        body: JSON.stringify({ schemaName: 'omega.notion.ledger.v1' }),
+      });
+      if (data?.sync) {
+        setNotionSchemaSync({ status: data.status, ...data.sync });
+      }
+    } catch {
+      setNotionSchemaSync({
+        status: 'UNKNOWN',
+        observationSummary: {
+          count: 0,
+          integrity: null,
+          latestHash: null,
+          latestStatus: 'UNKNOWN',
+          liveNotionObserved: false,
+        },
+      });
+    }
+  };
 
   const fetchMinerStatus = async () => {
     try {
@@ -848,6 +873,8 @@ export function LegacyDashboard({ onClose }: { onClose: () => void }) {
             history={history}
             ecosystemBody={ecosystemBody}
             omegaCommand={omegaCommand}
+            notionSchemaSync={notionSchemaSync}
+            onSyncNotionSchema={() => void syncNotionSchema()}
             onFocusCommand={setOmegaIntent}
           />
           <DeepSection
