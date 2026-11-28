@@ -1960,5 +1960,34 @@ describe('Vibe OS surface', () => {
     expect(screen.getByText(/BOUNDED_SCHEMA_SYNC/i)).toBeInTheDocument();
     expect(screen.getByText(/a1b2c3d4e5f6a7b8/i)).toBeInTheDocument();
   });
+
+  it('displays live DAV Tensor N=4 checksum and Notion Schema Sync status in unified health banner', async () => {
+    installFetch({
+      '/api/tensor/4': () =>
+        json({
+          success: true,
+          status: 'VERIFIED',
+          size: 4,
+          invariants: { min: 0, max: 12, mean: 6, checksum: 1536 },
+          sha256: 'deadbeef12345678',
+        }),
+      '/api/v1/notion/schema-sync': () =>
+        json({
+          success: true,
+          status: 'VERIFIED',
+          sync: {
+            schemaName: 'omega.notion.ledger.v1',
+            schemaHash: 'cafe1234abcd5678',
+            observationSummary: { count: 1, latestStatus: 'VERIFIED' },
+          },
+        }),
+    });
+    const user = userEvent.setup();
+    render(<VibeOS />);
+
+    expect(await screen.findByText(/N=4 · checksum 1,536 · SHA: deadbeef/i)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /🔄 Schema Sync/i }));
+    expect(await screen.findByText(/omega\.notion\.ledger\.v1 · Obs: 1 \(VERIFIED\) · cafe1234/i)).toBeInTheDocument();
+  });
 });
 

@@ -170,6 +170,14 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
     status: 'UNKNOWN',
     detail: 'No LLM observation yet.',
   });
+  const [davSummary, setDavSummary] = useState<HealthObservation>({
+    status: 'UNKNOWN',
+    detail: 'DAV N=4 checksum unprobed.',
+  });
+  const [notionSyncSummary, setNotionSyncSummary] = useState<HealthObservation>({
+    status: 'UNKNOWN',
+    detail: 'Notion schema sync unprobed.',
+  });
   const [useExternalModel, setUseExternalModel] = useState<boolean>(() => {
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
@@ -261,6 +269,28 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
         }
       } catch {
         // LLM probe gracefully fails closed to UNKNOWN
+      }
+      try {
+        const davRes = await fetch(apiUrl('/tensor/4'), {
+          headers: { accept: 'application/json' },
+          signal: current.signal,
+        });
+        const davData = await davRes.json();
+        if (active && !current.signal.aborted && davRes.ok) {
+          if (davData?.status === 'VERIFIED' && davData?.invariants?.checksum === 1536) {
+            setDavSummary({
+              status: 'VERIFIED',
+              detail: `N=4 · checksum 1,536 · SHA: ${davData.sha256?.slice(0, 8) ?? 'verified'}`,
+            });
+          } else {
+            setDavSummary({
+              status: 'UNKNOWN',
+              detail: `DAV checksum ${davData?.invariants?.checksum ?? 'missing'} ≠ 1536`,
+            });
+          }
+        }
+      } catch {
+        // DAV probe gracefully fails closed to UNKNOWN
       }
     };
     void probe();
@@ -2709,6 +2739,10 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
         const obs = s.observationSummary;
         const obsLabel = obs ? ` · Observations: ${obs.count} (${obs.latestStatus})` : '';
         triggerWavePulse(432);
+        setNotionSyncSummary({
+          status: 'VERIFIED',
+          detail: `${s.schemaName} · Obs: ${obs?.count ?? 0} (${obs?.latestStatus ?? 'UNKNOWN'}) · ${(s.schemaHash || '').slice(0, 8)}`,
+        });
         result = {
           role: 'ai',
           content: `Notion Schema Sync VERIFIED: ${s.schemaName} (${s.properties?.length ?? 0} properties, ${s.rolesCount} roles). Event Log Verified: ${s.eventLogVerified}${obsLabel}. Schema Hash: ${(s.schemaHash || '').slice(0, 16)}… Authority: ${s.authority ?? 'BOUNDED_SCHEMA_SYNC'}`,
@@ -2718,6 +2752,10 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
           detail: 'POST /v1/notion/schema-sync · schema, observation journal & event log verified',
         };
       } else {
+        setNotionSyncSummary({
+          status: 'UNKNOWN',
+          detail: `Schema sync ${payload?.status ?? 'UNKNOWN'} (HTTP ${response.status})`,
+        });
         result = {
           role: 'ai',
           content: payload?.status === 'DIVERGENT' ? '[DIVERGENT]' : '[UNKNOWN]',
@@ -2980,6 +3018,16 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
               label="KAI Shield"
               status={kaiStatus}
               detail={kaiStatus === 'UNKNOWN' ? 'No current chat receipt observed.' : `Latest execute receipt: ${kaiStatus}.`}
+            />
+            <StatusPill
+              label="DAV Tensor · N=4"
+              status={davSummary.status}
+              detail={davSummary.detail}
+            />
+            <StatusPill
+              label="Notion Schema Sync"
+              status={notionSyncSummary.status}
+              detail={notionSyncSummary.detail}
             />
             <StatusPill
               label="Frontend Surface · 3000"
