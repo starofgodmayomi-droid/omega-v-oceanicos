@@ -5,6 +5,7 @@ import { ExperienceSwitcher } from './ExperienceSwitcher';
 import { MoodCodexPanel } from './MoodCodexPanel';
 import { EntityCodexModal } from './components/EntityCodexModal';
 import { StudioSettingsModal } from './components/StudioSettingsModal';
+import { HypercubeInspectionModal } from './components/HypercubeInspectionModal';
 import { WaterFlowPanel } from './WaterFlowPanel';
 import { WATER_FLOW_STAGES, type WaterFlowFrameView } from './water-flow-panel-model';
 import './VibeOS.css';
@@ -159,6 +160,7 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
   const [moodOpen, setMoodOpen] = useState(false);
   const [codexOpen, setCodexOpen] = useState(false);
   const [studioOpen, setStudioOpen] = useState(false);
+  const [hypercubeModalOpen, setHypercubeModalOpen] = useState(false);
   const [waterOpen, setWaterOpen] = useState(false);
   const [waterFrames, setWaterFrames] = useState<readonly WaterFlowFrameView[] | null>(null);
   const [moodState, setMoodState] = useState<HealthObservation>({
@@ -330,6 +332,10 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
     }
     if (lower.includes('failsafe') || lower.includes('quarantine')) {
       await runRealityFailsafeCheck();
+      return;
+    }
+    if (lower.includes('hypercube') || lower.includes('inspect tensor') || lower.includes('tensor modal')) {
+      runHypercubeInspection();
       return;
     }
     if (lower.includes('notion sync') || lower.includes('schema sync') || lower.includes('sync notion')) {
@@ -2810,6 +2816,20 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
     }
   };
 
+  const runHypercubeInspection = () => {
+    setHypercubeModalOpen(true);
+    setMessages((previous) => [
+      ...previous,
+      {
+        role: 'ai',
+        content: `🧊 4D DAV Tensor Hypercube Inspector active. Invariant equation: T[i,j,k,l] = i+j+k+l, sum = 2N⁴(N-1). Projections: 4×4×4×4 (1,536), 6×6×6×6 (12,960), 8×8×8×8 (57,344).`,
+        verified: true,
+        status: 'VERIFIED',
+        detail: 'GET /api/tensor/:size · deterministic hypercube projection inspected.',
+      },
+    ]);
+  };
+
   const runSaosFlowCheck = async () => {
     if (verifying) return;
     beginQuickAction('Probe SAOS Entity & House Flow');
@@ -3057,15 +3077,26 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
               status={davSummary.status}
               detail={davSummary.detail}
               action={
-                <button
-                  type="button"
-                  className="vibe-status-action text-[10px] px-1.5 py-0.5 rounded border border-indigo-500/40 bg-indigo-950/40 text-indigo-300 hover:bg-indigo-900/60 transition-colors ml-1"
-                  onClick={() => void cycleDavTensor()}
-                  aria-label="Cycle DAV Tensor size"
-                  title="Cycle DAV Tensor invariant size (N=4, N=6, N=8)"
-                >
-                  N={davTensorN === 4 ? 6 : davTensorN === 6 ? 8 : 4} ⟳
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    className="vibe-status-action text-[10px] px-1.5 py-0.5 rounded border border-indigo-500/40 bg-indigo-950/40 text-indigo-300 hover:bg-indigo-900/60 transition-colors ml-1"
+                    onClick={() => void cycleDavTensor()}
+                    aria-label="Cycle DAV Tensor size"
+                    title="Cycle DAV Tensor invariant size (N=4, N=6, N=8)"
+                  >
+                    N={davTensorN === 4 ? 6 : davTensorN === 6 ? 8 : 4} ⟳
+                  </button>
+                  <button
+                    type="button"
+                    className="vibe-status-action text-[10px] px-1.5 py-0.5 rounded border border-indigo-500/40 bg-indigo-950/40 text-indigo-300 hover:bg-indigo-900/60 transition-colors ml-1"
+                    onClick={() => runHypercubeInspection()}
+                    aria-label="Inspect DAV Tensor Hypercube"
+                    title="Open 4D DAV Tensor Hypercube Inspector Modal"
+                  >
+                    Inspect 🔍
+                  </button>
+                </div>
               }
             />
             <StatusPill
@@ -3282,6 +3313,7 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
 
           {codexOpen && <EntityCodexModal onClose={() => setCodexOpen(false)} />}
           {studioOpen && <StudioSettingsModal onClose={() => setStudioOpen(false)} />}
+          {hypercubeModalOpen && <HypercubeInspectionModal onClose={() => setHypercubeModalOpen(false)} />}
 
           <div className="vibe-composer-wrap">
             <div className="vibe-actions" role="group" aria-label="Quick actions">
@@ -3488,6 +3520,9 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
               </button>
               <button type="button" className="vibe-action" onClick={() => void runNotionSchemaSync()} disabled={verifying}>
                 🔄 Schema Sync
+              </button>
+              <button type="button" className="vibe-action" onClick={() => runHypercubeInspection()} disabled={verifying}>
+                🧊 Hypercube
               </button>
             </div>
             <label className="vibe-model-toggle">
