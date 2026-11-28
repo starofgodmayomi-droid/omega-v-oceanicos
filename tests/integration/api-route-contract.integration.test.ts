@@ -155,3 +155,24 @@ test('DAV tensor export endpoint returns verified JSON/CSV slices and fails clos
     rmSync(directory, { recursive: true, force: true });
   }
 });
+
+test('continuum activation endpoint reports live 5-layer SAOS telemetry and DAV invariants', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'omega-api-continuum-activation-'));
+  const app = createApp(join(directory, 'ledger.db'), false, { allowUnsignedCycle: true });
+  try {
+    await app.ready();
+    const res = await app.inject({ method: 'GET', url: '/api/v1/continuum/activation' });
+    assert.equal(res.statusCode, 200);
+    const body = res.json();
+    assert.equal(body.success, true);
+    assert.equal(body.status, 'VERIFIED');
+    assert.equal(body.davInvariants.n4, 1536);
+    assert.equal(body.davInvariants.n6, 12960);
+    assert.equal(body.davInvariants.n8, 57344);
+    assert.equal(body.layers.length, 5);
+    assert.match(body.activationDigest, /^[0-9a-f]{64}$/);
+  } finally {
+    await app.close();
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
