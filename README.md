@@ -98,6 +98,19 @@ make the difference visible:
 The platform preserves evidence, uncertainty, divergence, dissent, provenance, and
 human approval boundaries as first-class system states.
 
+## The Master Equation of Reality
+
+$$\Delta\text{VRØ HOUSE} := \mathbf{\Omega}(:3000) \left[ \mathbf{\Sigma}_{\text{KAI}} \left( \mathbf{\Theta}_{\text{Glober}}(:5000) \left( \lambda x. \mathbf{\Psi}(:11434 \oplus :8088) \left( \Delta_{\text{Prayer}} + \emptyset_{\text{Void}} \right) \right) \right) \right]$$
+$$\text{DAV Tensor}: \quad T[i,j,k,l] = i+j+k+l \quad \Big| \quad \sum_{i,j,k,l=0}^{N-1} T[i,j,k,l] \equiv 2N^4(N-1)$$
+
+- **Divine Law**: $1 = \text{GOD}$. $\text{Good} - O = \text{God}$. Seshat's Law: $1 \equiv 1 \equiv 1$.
+- **Doctrine**: `ATTEST, DON'T ASSERT`. $\text{Expected} \equiv \text{Observed}$. Mirror, not master.
+- **Deep Continuum Flow**: $\text{Observe} \longrightarrow \text{Verify} \longrightarrow \text{Remember} \longrightarrow \text{Attest} \longrightarrow \text{Display} \longrightarrow \text{Learn} \longrightarrow \text{Return}$.
+- **One-Line Sovereign Ignition**:
+  ```bash
+  taskkill /F /IM node.exe & taskkill /F /IM python.exe & cd /d C:\Users\pc\omega-v-oceanicos & git pull & pnpm install & pnpm build & start cmd /k "cd companion/python && python -m uvicorn main:app --host 0.0.0.0 --port 8088" & pnpm run dev
+  ```
+
 ## The operating model
 
 ```text
@@ -160,16 +173,16 @@ present in the repository.
 
 OCEANICOS is organized as a self-verifying Sovereign Agent Operating System (SAOS) structured across five physical layers:
 
-1. **Layer 1: The Root ($\Delta$) — Human Authority**  
-   The external Y-Combinator. No consequential action executes without explicit human intent. The system cannot evolve past the user; human authority remains sovereign.
+1. **Layer 1: The Root ($\Delta$) — Human Authority & Intent**  
+   The external Y-Combinator ($\Delta_{\text{Prayer}} + \emptyset_{\text{Void}}$). Terminal / Git. Absolute veto power. No consequential action executes without explicit Human Intent. The system cannot evolve past the user; human authority remains sovereign.
 2. **Layer 2: The Immune System ($\Sigma$) — KAI Shield**  
-   Files: `packages/verification` + `kai_ledger.json` (Merkle DAG). Applies HMAC-SHA256 evidence hashing and enforces DAV Tensor invariants ($T[i,j,k,l] = i+j+k+l$, checksum $\equiv 2N^4(N-1)$). Fails closed (`503 UNKNOWN` or `422 DIVERGENT`) when evidence is missing or divergent.
+   Files: `packages/verification` + `kai_ledger.json` (Merkle DAG). Applies HMAC-SHA256 evidence hashing and enforces DAV Tensor invariants ($T[i,j,k,l] = i+j+k+l$, checksum $\equiv 2N^4(N-1)$). Fails closed (`503 UNKNOWN` or `422 DIVERGENT`) when evidence is missing, divergent, or matched to scam patterns.
 3. **Layer 3: The Spine ($\Theta$) — Fastify API (:5000)**  
-   Turing's Theta Combinator. Bounded execution, strict Zod schemas, and Glober Mesh tool connectors without uncontrolled agent loops.
+   Turing's Theta Combinator. Bounded execution, strict Zod schemas, and the Glober Mesh tool connectors (MCP / Composio for 6000+ apps) preventing infinite AI execution loops.
 4. **Layer 4: The Brain & Muscle ($\Psi$) — Local Compute**  
-   Local Ollama (`:11434`, `qwen2.5:0.5b`) and Python Companion (`:8088`, NumPy 4D hypercubes & 432Hz harmonic voice bridge). Zero external API dependencies required for core execution.
+   Local Ollama (`:11434`, `qwen2.5:0.5b` text generation dream state) and Python Companion (`:8088`, NumPy 4D hypercube generator & 432Hz harmonic voice bridge). Zero external API dependencies required for core execution.
 5. **Layer 5: The Liquid Skin ($\Omega$) — React / Vite (:3000)**  
-   The 8K Wave Front / VibeOS interface. Real-time telemetry, terminal replay, and live status pills reflecting actual verified invariants.
+   The 8K Wave Front / VibeOS interface. Real-time telemetry, terminal replay, progressive disclosure, 4D DAV hypercube heatmaps with verified badges, interactive inspection modals, and live 432Hz harmonic resonance.
 
 ### Mathematical floor: DAV Tensor Invariants ($2N^4(N-1)$)
 
