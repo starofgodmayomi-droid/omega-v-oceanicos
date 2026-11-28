@@ -1,0 +1,69 @@
+{
+  "version": "omega-ir.v1",
+  "intent": "Represent the user-supplied Ω∞v ≡ 𝒱(Δℛ) notation and viewport as a declarative proposal; create a local JSON fixture for schema validation only, without executing or claiming live state.",
+  "evidenceRefs": [
+    {
+      "id": "omega-ir-v1-type-contract",
+      "kind": "repository-source",
+      "source": "starofgodmayomi-droid/omega-v-oceanicos@166a5561:packages/types/src/omega-ir.ts"
+    },
+    {
+      "id": "omega-ir-v1-validator",
+      "kind": "repository-source",
+      "source": "starofgodmayomi-droid/omega-v-oceanicos@166a5561:packages/mini/src/ir-validator.ts"
+    }
+  ],
+  "sourceRefs": [
+    {
+      "id": "total-maximum-matrix-2026-10-07",
+      "kind": "user-provided-design-text",
+      "locator": "docs/raw/omega-v-full-stack/2026-10-07-TOTAL-MAXIMUM-COMPRESSED-MATRIX.txt",
+      "state": "RETRIEVED",
+      "provenance": "User-uploaded source. SHA-256 identifies the preserved bytes; its implementation and runtime claims are not thereby verified.",
+      "digest": "sha256:43fcbd6de335862673b6a92fef0155398a5ccec6610a03b1f5a87dd5d2b46f0a"
+    },
+    {
+      "id": "viewport-interface-prompt-2026-10-07",
+      "kind": "user-provided-interface-prompt",
+      "locator": "conversation-message:2026-10-07T17:49:03-07:00",
+      "state": "RETRIEVED",
+      "provenance": "User-supplied viewport text. Its VERIFIED label, 0x9b2c token, active-core claim, and LEAVE_GUARD phrase are not independently observed runtime evidence."
+    },
+    {
+      "id": "omega-infinity-v-symbolic-equation-2026-10-07",
+      "kind": "user-provided-symbolic-definition",
+      "locator": "conversation-message:2026-10-07T17:58:58-07:00",
+      "state": "RETRIEVED",
+      "provenance": "User defines Ω∞v ≡ 𝒱(Δℛ). Retained as symbolic design notation; no executable value function or measured Δℛ is asserted."
+    }
+  ],
+  "policyRefs": [
+    {
+      "id": "oceanicos-operational-protocol",
+      "version": "0.1",
+      "requirement": "A proposal does not grant authority; execution, observation, reconciliation, and verification remain separate, and source claims stay unverified until supported by appropriate evidence."
+    }
+  ],
+  "workerPlan": [],
+  "transitionSpec": {
+    "subject": "viewport-design-to-omega-ir-v1-fixture",
+    "intent": "Retain Ω∞v ≡ 𝒱(Δℛ) as source-defined symbolic notation and create a local declarative omega-ir.v1 JSON fixture for schema validation only.",
+    "stateBefore": "No fixture exists; the viewport status, equation semantics, and evidence labels have not been independently observed or implemented.",
+    "requestedStateAfter": "A schema-valid declarative fixture exists; any represented runtime action remains NOT_EXECUTED.",
+    "consequence": "Local source artifact only; no API call, signature, worker execution, process termination, financial mutation, hardware action, or external state change.",
+    "dryRun": true
+  },
+  "observationSpec": {
+    "observerId": "local-omega-ir-validator",
+    "targets": [
+      "packages/types/src/omega-ir.ts",
+      "packages/mini/src/ir-validator.ts",
+      "docs/raw/omega-v-full-stack/omega-ir-v1-viewport-proposal.json"
+    ],
+    "evidenceRequired": [
+      "validateOmegaIR returns valid=true",
+      "workerPlan remains empty and transitionSpec.dryRun remains true",
+      "all source references remain RETRIEVED"
+    ]
+  }
+}
