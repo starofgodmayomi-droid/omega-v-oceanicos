@@ -75,10 +75,12 @@ function StatusPill({
   label,
   status,
   detail,
+  action,
 }: {
   label: string;
   status: LiveState | Verdict;
   detail: string;
+  action?: React.ReactNode;
 }) {
   return (
     <div className="vibe-status" aria-label={`${label} status`} title={detail}>
@@ -86,6 +88,7 @@ function StatusPill({
       <span className="vibe-status-label">{label}</span>
       <strong className={`vibe-status-value vibe-status-value--${status.toLowerCase()}`}>{status}</strong>
       <small>{detail}</small>
+      {action}
     </div>
   );
 }
@@ -170,6 +173,7 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
     status: 'UNKNOWN',
     detail: 'No LLM observation yet.',
   });
+  const [davTensorN, setDavTensorN] = useState<4 | 6 | 8>(4);
   const [davSummary, setDavSummary] = useState<HealthObservation>({
     status: 'UNKNOWN',
     detail: 'DAV N=4 checksum unprobed.',
@@ -271,21 +275,22 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
         // LLM probe gracefully fails closed to UNKNOWN
       }
       try {
-        const davRes = await fetch(apiUrl('/tensor/4'), {
+        const davRes = await fetch(apiUrl(`/tensor/${davTensorN}`), {
           headers: { accept: 'application/json' },
           signal: current.signal,
         });
         const davData = await davRes.json();
+        const expected = davTensorN === 4 ? 1536 : davTensorN === 6 ? 12960 : 57344;
         if (active && !current.signal.aborted && davRes.ok) {
-          if (davData?.status === 'VERIFIED' && davData?.invariants?.checksum === 1536) {
+          if (davData?.status === 'VERIFIED' && davData?.invariants?.checksum === expected) {
             setDavSummary({
               status: 'VERIFIED',
-              detail: `N=4 · checksum 1,536 · SHA: ${davData.sha256?.slice(0, 8) ?? 'verified'}`,
+              detail: `N=${davTensorN} · checksum ${expected.toLocaleString()} · SHA: ${davData.sha256?.slice(0, 8) ?? 'verified'}`,
             });
           } else {
             setDavSummary({
               status: 'UNKNOWN',
-              detail: `DAV checksum ${davData?.invariants?.checksum ?? 'missing'} ≠ 1536`,
+              detail: `DAV checksum ${davData?.invariants?.checksum ?? 'missing'} ≠ ${expected}`,
             });
           }
         }
@@ -300,7 +305,7 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
       controller?.abort();
       window.clearInterval(interval);
     };
-  }, [active]);
+  }, [active, davTensorN]);
 
   useEffect(() => {
     const log = logRef.current;
@@ -2777,6 +2782,34 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
     setVerifying(false);
   };
 
+  const cycleDavTensor = async () => {
+    const nextN: 4 | 6 | 8 = davTensorN === 4 ? 6 : davTensorN === 6 ? 8 : 4;
+    setDavTensorN(nextN);
+    const expected = nextN === 4 ? 1536 : nextN === 6 ? 12960 : 57344;
+    try {
+      const res = await fetch(apiUrl(`/tensor/${nextN}`), {
+        headers: { accept: 'application/json' },
+      });
+      const data = await res.json();
+      if (res.ok && data?.status === 'VERIFIED' && data?.invariants?.checksum === expected) {
+        setDavSummary({
+          status: 'VERIFIED',
+          detail: `N=${nextN} · checksum ${expected.toLocaleString()} · SHA: ${data.sha256?.slice(0, 8) ?? 'verified'}`,
+        });
+      } else {
+        setDavSummary({
+          status: 'UNKNOWN',
+          detail: `DAV checksum ${data?.invariants?.checksum ?? 'missing'} ≠ ${expected}`,
+        });
+      }
+    } catch {
+      setDavSummary({
+        status: 'UNKNOWN',
+        detail: `DAV N=${nextN} probe failed closed to UNKNOWN.`,
+      });
+    }
+  };
+
   const runSaosFlowCheck = async () => {
     if (verifying) return;
     beginQuickAction('Probe SAOS Entity & House Flow');
@@ -3020,9 +3053,20 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
               detail={kaiStatus === 'UNKNOWN' ? 'No current chat receipt observed.' : `Latest execute receipt: ${kaiStatus}.`}
             />
             <StatusPill
-              label="DAV Tensor · N=4"
+              label={`DAV Tensor · N=${davTensorN}`}
               status={davSummary.status}
               detail={davSummary.detail}
+              action={
+                <button
+                  type="button"
+                  className="vibe-status-action text-[10px] px-1.5 py-0.5 rounded border border-indigo-500/40 bg-indigo-950/40 text-indigo-300 hover:bg-indigo-900/60 transition-colors ml-1"
+                  onClick={() => void cycleDavTensor()}
+                  aria-label="Cycle DAV Tensor size"
+                  title="Cycle DAV Tensor invariant size (N=4, N=6, N=8)"
+                >
+                  N={davTensorN === 4 ? 6 : davTensorN === 6 ? 8 : 4} ⟳
+                </button>
+              }
             />
             <StatusPill
               label="Notion Schema Sync"
