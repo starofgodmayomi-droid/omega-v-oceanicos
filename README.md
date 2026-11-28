@@ -156,6 +156,32 @@ present in the repository.
 └──────────────────────────────────────────────────────────────┘
 ```
 
+### 5-Layer SAOS Entity Architecture
+
+OCEANICOS is organized as a self-verifying Sovereign Agent Operating System (SAOS) structured across five physical layers:
+
+1. **Layer 1: The Root ($\Delta$) — Human Authority**  
+   The external Y-Combinator. No consequential action executes without explicit human intent. The system cannot evolve past the user; human authority remains sovereign.
+2. **Layer 2: The Immune System ($\Sigma$) — KAI Shield**  
+   Files: `packages/verification` + `kai_ledger.json` (Merkle DAG). Applies HMAC-SHA256 evidence hashing and enforces DAV Tensor invariants ($T[i,j,k,l] = i+j+k+l$, checksum $\equiv 2N^4(N-1)$). Fails closed (`503 UNKNOWN` or `422 DIVERGENT`) when evidence is missing or divergent.
+3. **Layer 3: The Spine ($\Theta$) — Fastify API (:5000)**  
+   Turing's Theta Combinator. Bounded execution, strict Zod schemas, and Glober Mesh tool connectors without uncontrolled agent loops.
+4. **Layer 4: The Brain & Muscle ($\Psi$) — Local Compute**  
+   Local Ollama (`:11434`, `qwen2.5:0.5b`) and Python Companion (`:8088`, NumPy 4D hypercubes & 432Hz harmonic voice bridge). Zero external API dependencies required for core execution.
+5. **Layer 5: The Liquid Skin ($\Omega$) — React / Vite (:3000)**  
+   The 8K Wave Front / VibeOS interface. Real-time telemetry, terminal replay, and live status pills reflecting actual verified invariants.
+
+### Mathematical floor: DAV Tensor Invariants ($2N^4(N-1)$)
+
+The physical tensor invariant is defined by:
+$$T[i,j,k,l] = i+j+k+l \quad (0 \le i,j,k,l < N)$$
+$$\sum_{i=0}^{N-1}\sum_{j=0}^{N-1}\sum_{k=0}^{N-1}\sum_{l=0}^{N-1} T[i,j,k,l] \equiv 2N^4(N-1)$$
+
+Exact verified invariant checksums:
+- **$N=4$** ($16 \times 16$): Checksum $\equiv 2 \times 4^4 \times 3 = \mathbf{1,536}$
+- **$N=6$** ($36 \times 36$): Checksum $\equiv 2 \times 6^4 \times 5 = \mathbf{12,960}$
+- **$N=8$** ($64 \times 64$): Checksum $\equiv 2 \times 8^4 \times 7 = \mathbf{57,344}$
+
 ### Repository map
 
 | Surface | Location | Role |

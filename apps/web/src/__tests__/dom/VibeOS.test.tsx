@@ -1759,7 +1759,7 @@ describe('Vibe OS surface', () => {
         list.push(listener);
         listeners.set(type, list);
       }
-      close() {}
+      close() { }
     }
     const previous = globalThis.EventSource;
     globalThis.EventSource = FakeEventSource as unknown as typeof EventSource;
@@ -1936,6 +1936,13 @@ describe('Vibe OS surface', () => {
             rolesCount: 12,
             schemaHash: 'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2',
             eventLogVerified: true,
+            observationSummary: {
+              count: 2,
+              integrity: true,
+              latestHash: 'f0e1d2c3b4a59687',
+              latestStatus: 'VERIFIED',
+              liveNotionObserved: true,
+            },
             authority: 'BOUNDED_SCHEMA_SYNC',
           },
           timestamp: '2026-11-26T00:00:00.000Z',
@@ -1949,8 +1956,52 @@ describe('Vibe OS surface', () => {
 
     await user.click(syncBtn);
     expect(await screen.findByText(/Notion Schema Sync VERIFIED: omega.notion.ledger.v1/i)).toBeInTheDocument();
+    expect(screen.getByText(/Observations: 2 \(VERIFIED\)/i)).toBeInTheDocument();
     expect(screen.getByText(/BOUNDED_SCHEMA_SYNC/i)).toBeInTheDocument();
     expect(screen.getByText(/a1b2c3d4e5f6a7b8/i)).toBeInTheDocument();
+  });
+
+  it('displays live DAV Tensor N=4 checksum, supports cycling to N=6, and displays Notion Schema Sync status in unified health banner', async () => {
+    installFetch({
+      '/api/tensor/4': () =>
+        json({
+          success: true,
+          status: 'VERIFIED',
+          size: 4,
+          invariants: { min: 0, max: 12, mean: 6, checksum: 1536 },
+          sha256: 'deadbeef12345678',
+        }),
+      '/api/tensor/6': () =>
+        json({
+          success: true,
+          status: 'VERIFIED',
+          size: 6,
+          invariants: { min: 0, max: 18, mean: 9, checksum: 12960 },
+          sha256: 'feedface12345678',
+        }),
+      '/api/v1/notion/schema-sync': () =>
+        json({
+          success: true,
+          status: 'VERIFIED',
+          sync: {
+            schemaName: 'omega.notion.ledger.v1',
+            schemaHash: 'cafe1234abcd5678',
+            observationSummary: { count: 1, latestStatus: 'VERIFIED' },
+          },
+        }),
+    });
+    const user = userEvent.setup();
+    render(<VibeOS />);
+
+    expect(await screen.findByText(/N=4 · checksum 1,536 · SHA: deadbeef/i)).toBeInTheDocument();
+
+    const cycleButton = screen.getByRole('button', { name: /Cycle DAV Tensor size/i });
+    expect(cycleButton).toBeInTheDocument();
+    await user.click(cycleButton);
+    expect(await screen.findByText(/N=6 · checksum 12,960 · SHA: feedface/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /🔄 Schema Sync/i }));
+    expect(await screen.findByText(/omega\.notion\.ledger\.v1 · Obs: 1 \(VERIFIED\) · cafe1234/i)).toBeInTheDocument();
   });
 });
 

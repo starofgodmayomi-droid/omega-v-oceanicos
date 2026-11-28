@@ -301,7 +301,7 @@ export function createApp(
   registerSaosFlowRoutes(fastify);
   registerStudioRoutes(fastify);
   registerRealityToolsRoutes(fastify);
-  registerNotionUnificationRoutes(fastify);
+  registerNotionUnificationRoutes(fastify, connectorObservationStore);
   fastify.register(async (scope) => {
     await scope.register(rateLimit, { global: false });
     registerPipelineRoute(scope, jsonError, options.pipelineAdmissionEvidence);

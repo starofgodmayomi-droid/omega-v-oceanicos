@@ -94,3 +94,36 @@ test('compiled API serves JavaScript and CSS assets with browser-compatible MIME
     rmSync(directory, { recursive: true, force: true });
   }
 });
+
+test('notion schema-sync binds observation store and fails closed on checksum mismatch', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'omega-api-notion-sync-'));
+  const app = createApp(join(directory, 'ledger.db'), false, { allowUnsignedCycle: true });
+
+  try {
+    await app.ready();
+    const okRes = await app.inject({
+      method: 'POST',
+      url: '/v1/notion/schema-sync',
+      payload: { schemaName: 'omega.notion.ledger.v1' },
+    });
+    assert.equal(okRes.statusCode, 200);
+    const okBody = okRes.json();
+    assert.equal(okBody.status, 'VERIFIED');
+    assert.equal(okBody.sync.observationSummary.count, 0);
+    assert.equal(okBody.sync.observationSummary.latestStatus, 'UNKNOWN');
+    assert.equal(okBody.sync.observationSummary.liveNotionObserved, false);
+
+    const divRes = await app.inject({
+      method: 'POST',
+      url: '/v1/notion/schema-sync',
+      payload: { expectedChecksum: '0'.repeat(64) },
+    });
+    assert.equal(divRes.statusCode, 200);
+    const divBody = divRes.json();
+    assert.equal(divBody.success, false);
+    assert.equal(divBody.status, 'DIVERGENT');
+  } finally {
+    await app.close();
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
