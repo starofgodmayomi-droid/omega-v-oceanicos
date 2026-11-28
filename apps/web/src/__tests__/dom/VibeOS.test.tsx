@@ -2003,5 +2003,37 @@ describe('Vibe OS surface', () => {
     await user.click(screen.getByRole('button', { name: /🔄 Schema Sync/i }));
     expect(await screen.findByText(/omega\.notion\.ledger\.v1 · Obs: 1 \(VERIFIED\) · cafe1234/i)).toBeInTheDocument();
   });
+
+  it('opens and closes the 4D DAV Tensor Hypercube Inspector modal from status pill action and quick action', async () => {
+    installFetch({
+      '/api/tensor/4': () =>
+        json({
+          success: true,
+          status: 'VERIFIED',
+          size: 4,
+          projection: { rows: 16, columns: 16 },
+          values: Array.from({ length: 16 }, () => Array.from({ length: 16 }, () => 0)),
+          invariants: { min: 0, max: 12, mean: 6, checksum: 1536 },
+          sha256: 'deadbeef12345678',
+        }),
+    });
+    const user = userEvent.setup();
+    render(<VibeOS />);
+
+    const inspectBtn = screen.getByRole('button', { name: /Inspect DAV Tensor Hypercube/i });
+    expect(inspectBtn).toBeInTheDocument();
+    await user.click(inspectBtn);
+
+    expect(await screen.findByRole('dialog', { name: /4D DAV Tensor Hypercube Inspector/i })).toBeInTheDocument();
+    expect(screen.getByText(/T\[i,j,k,l\] = i\+j\+k\+l · 2N⁴\(N-1\)/i)).toBeInTheDocument();
+
+    const closeBtn = screen.getByRole('button', { name: /Close Hypercube Inspector/i });
+    await user.click(closeBtn);
+    expect(screen.queryByRole('dialog', { name: /4D DAV Tensor Hypercube Inspector/i })).not.toBeInTheDocument();
+
+    const quickActionBtn = screen.getByRole('button', { name: /🧊 Hypercube/i });
+    await user.click(quickActionBtn);
+    expect(await screen.findByRole('dialog', { name: /4D DAV Tensor Hypercube Inspector/i })).toBeInTheDocument();
+  });
 });
 
