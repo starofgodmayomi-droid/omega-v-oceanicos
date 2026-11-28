@@ -21,4 +21,23 @@ describe('AgentSafetyBoundaryPanel', () => {
     expect(screen.getAllByText('Unknown')).toHaveLength(5);
     expect(screen.getAllByText('NOT_EXECUTED')).toHaveLength(3);
   });
+
+  it('does not paint a recorded capability as verified', () => {
+    render(
+      <AgentSafetyBoundaryPanel
+        capabilityObserved
+        policySatisfied={false}
+        humanGateRequired={false}
+        leaseObserved={false}
+        executed={false}
+        observedStatus={undefined}
+        revocationObserved={false}
+        reconciliationStatus={undefined}
+      />
+    );
+
+    expect(screen.getByText('Recorded')).toBeInTheDocument();
+    expect(screen.queryByText('Verified')).not.toBeInTheDocument();
+    expect(screen.getByText('0/8 verified')).toBeInTheDocument();
+  });
 });
