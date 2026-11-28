@@ -334,6 +334,10 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
       await runRealityFailsafeCheck();
       return;
     }
+    if (lower.includes('activate continuum') || lower.includes('continuum activation')) {
+      await runContinuumActivationCheck();
+      return;
+    }
     if (lower.includes('hypercube') || lower.includes('inspect tensor') || lower.includes('tensor modal')) {
       runHypercubeInspection();
       return;
@@ -2201,6 +2205,57 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
     setVerifying(false);
   };
 
+  const runContinuumActivationCheck = async () => {
+    if (verifying) return;
+    beginQuickAction('Activate 5-Layer Continuum');
+    let result: ChatMessage;
+    try {
+      const response = await fetch(apiUrl('/v1/continuum/activation'), {
+        headers: { accept: 'application/json' },
+      });
+      let payload: any = null;
+      try {
+        payload = await response.json();
+      } catch {
+        payload = null;
+      }
+      if (!response.ok || !payload?.success || !Array.isArray(payload?.layers)) {
+        const status = payload?.status === 'DIVERGENT' ? 'DIVERGENT' : 'UNKNOWN';
+        result = {
+          role: 'ai',
+          content: `[${status}]`,
+          verified: false,
+          status,
+          detail: `GET /v1/continuum/activation · HTTP ${response.status}`,
+        };
+      } else {
+        const layerSummary = payload.layers
+          .map((l: { symbol?: string; layer?: number; status?: string }) => `L${l.layer}(${l.symbol}):${l.status}`)
+          .join(' · ');
+        const isVerified = payload.status === 'VERIFIED';
+        if (isVerified) triggerWavePulse(432);
+        result = {
+          role: 'ai',
+          content: `Continuum Activation [${payload.status}]: ${layerSummary}. Ledger: ${payload.ledger?.count ?? 0} receipts. DAV N=4/6/8: ${payload.davInvariants?.n4}/${payload.davInvariants?.n6}/${payload.davInvariants?.n8}. Digest: ${(payload.activationDigest || '').slice(0, 16)}…`,
+          verified: isVerified,
+          status: payload.status,
+          hash: payload.activationDigest,
+          detail: `GET /v1/continuum/activation · 5-layer SAOS live telemetry digest`,
+        };
+      }
+    } catch (error) {
+      result = {
+        role: 'ai',
+        content: '[UNKNOWN]',
+        verified: false,
+        status: 'UNKNOWN',
+        detail: `GET /v1/continuum/activation unavailable${error instanceof Error ? ` · ${error.message}` : ''}`,
+      };
+    }
+    setMessages((previous) => [...previous, result]);
+    setVerifying(false);
+  };
+
   const runEcosystemReleaseAttestationCheck = async () => {
     if (verifying) return;
     beginQuickAction('Probe Whole Ecosystem Release Attestation');
@@ -3475,6 +3530,9 @@ export function VibeOS({ onOpenDashboard, active = true }: { onOpenDashboard?: (
               </button>
               <button type="button" className="vibe-action" onClick={() => void runContinuumAuditCheck()} disabled={verifying}>
                 🌌 Continuum Audit
+              </button>
+              <button type="button" className="vibe-action" onClick={() => void runContinuumActivationCheck()} disabled={verifying}>
+                ⚡ Continuum Activation
               </button>
               <button type="button" className="vibe-action" onClick={() => void runEcosystemReleaseAttestationCheck()} disabled={verifying}>
                 🏆 Release Attestation

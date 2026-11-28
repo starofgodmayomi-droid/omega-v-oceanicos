@@ -38,6 +38,7 @@ import { registerLocalActionsStatusRoutes } from './local-actions-status-route.j
 import { registerEvalsStatusRoutes } from './evals-status-route.js';
 import { registerEdgeFinopsRoutes } from './edge-finops-route.js';
 import { registerContinuumAuditRoutes } from './continuum-audit-route.js';
+import { registerContinuumActivationRoutes } from './continuum-activation-route.js';
 import { registerEcosystemReleaseRoutes } from './ecosystem-release-route.js';
 import { registerSaosFlowRoutes } from './saos-flow-route.js';
 import { registerStudioRoutes } from './studio-route.js';
@@ -297,6 +298,7 @@ export function createApp(
   registerEvalsStatusRoutes(fastify);
   registerEdgeFinopsRoutes(fastify);
   registerContinuumAuditRoutes(fastify);
+  registerContinuumActivationRoutes(fastify);
   registerEcosystemReleaseRoutes(fastify);
   registerSaosFlowRoutes(fastify);
   registerStudioRoutes(fastify);

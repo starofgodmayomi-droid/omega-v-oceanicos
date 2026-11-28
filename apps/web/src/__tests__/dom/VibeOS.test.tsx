@@ -2035,5 +2035,31 @@ describe('Vibe OS surface', () => {
     await user.click(quickActionBtn);
     expect(await screen.findByRole('dialog', { name: /4D DAV Tensor Hypercube Inspector/i })).toBeInTheDocument();
   });
+
+  it('activates 5-layer continuum telemetry via quick action button', async () => {
+    installFetch({
+      '/api/v1/continuum/activation': () =>
+        json({
+          success: true,
+          status: 'VERIFIED',
+          activationDigest: 'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789',
+          davInvariants: { n4: 1536, n6: 12960, n8: 57344 },
+          ledger: { status: 'VERIFIED', count: 121 },
+          layers: [
+            { layer: 1, symbol: 'Δ', status: 'HUMAN_GOVERNED' },
+            { layer: 2, symbol: 'Σ', status: 'VERIFIED' },
+            { layer: 3, symbol: 'Θ', status: 'VERIFIED' },
+            { layer: 4, symbol: 'Ψ', status: 'VERIFIED' },
+            { layer: 5, symbol: 'Ω', status: 'VERIFIED' },
+          ],
+        }),
+    });
+    const user = userEvent.setup();
+    render(<VibeOS />);
+
+    await user.click(screen.getByRole('button', { name: /⚡ Continuum Activation/i }));
+    expect(await screen.findByText(/Continuum Activation \[VERIFIED\]: L1\(Δ\):HUMAN_GOVERNED/i)).toBeInTheDocument();
+    expect(screen.getByText(/DAV N=4\/6\/8: 1536\/12960\/57344/i)).toBeInTheDocument();
+  });
 });
 

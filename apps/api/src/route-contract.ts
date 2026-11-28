@@ -23,6 +23,8 @@ export const API_ROUTE_INVENTORY = [
   'GET /v1/evals/status',
   'GET /v1/edge/status',
   'GET /v1/continuum/audit',
+  'GET /v1/continuum/activation',
+  'GET /api/v1/continuum/activation',
   'GET /v1/ecosystem/release',
   'GET /v1/ecosystem/century',
   'GET /v1/saos/flow',
