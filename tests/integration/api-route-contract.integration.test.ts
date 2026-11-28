@@ -127,3 +127,31 @@ test('notion schema-sync binds observation store and fails closed on checksum mi
     rmSync(directory, { recursive: true, force: true });
   }
 });
+
+test('DAV tensor export endpoint returns verified JSON/CSV slices and fails closed for unknown size', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'omega-api-tensor-export-'));
+  const app = createApp(join(directory, 'ledger.db'), false, { allowUnsignedCycle: true });
+  try {
+    await app.ready();
+    const jsonRes = await app.inject({ method: 'GET', url: '/api/tensor/4/export?format=json' });
+    assert.equal(jsonRes.statusCode, 200);
+    assert.match(jsonRes.headers['content-disposition'] ?? '', /dav-tensor-n4\.json/);
+    const jsonBody = jsonRes.json();
+    assert.equal(jsonBody.success, true);
+    assert.equal(jsonBody.status, 'VERIFIED');
+    assert.equal(jsonBody.invariants.checksum, 1536);
+
+    const csvRes = await app.inject({ method: 'GET', url: '/tensor/6/export?format=csv' });
+    assert.equal(csvRes.statusCode, 200);
+    assert.match(csvRes.headers['content-type'] ?? '', /text\/csv/);
+    assert.match(csvRes.headers['content-disposition'] ?? '', /dav-tensor-n6\.csv/);
+    assert.match(csvRes.body, /# DAV Tensor N=6 \| Checksum=12960 \| SHA256=/);
+
+    const errRes = await app.inject({ method: 'GET', url: '/api/tensor/5/export' });
+    assert.equal(errRes.statusCode, 400);
+    assert.equal(errRes.json().status, 'UNKNOWN');
+  } finally {
+    await app.close();
+    rmSync(directory, { recursive: true, force: true });
+  }
+});

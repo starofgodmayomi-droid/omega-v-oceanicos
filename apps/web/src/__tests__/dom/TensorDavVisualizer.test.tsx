@@ -38,6 +38,8 @@ describe('TensorDavVisualizer', () => {
     expect(await screen.findByLabelText('Selected tensor coordinate')).toBeInTheDocument();
     expect(screen.getByText('T[0, 0, 0, 0]')).toBeInTheDocument();
     expect(screen.getByText('432 Hz')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Export DAV Tensor N=4 JSON' })).toHaveAttribute('href', '/api/tensor/4/export?format=json');
+    expect(screen.getByRole('link', { name: 'Export DAV Tensor N=4 CSV' })).toHaveAttribute('href', '/api/tensor/4/export?format=csv');
 
     await userEvent.click(screen.getByRole('button', { name: '6×6×6×6' }));
     await waitFor(() => expect(fetchMock.mock.calls.at(-1)?.[0]).toBe('/api/tensor/6'));

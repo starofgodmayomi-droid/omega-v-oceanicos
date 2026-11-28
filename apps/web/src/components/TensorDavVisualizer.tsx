@@ -116,6 +116,28 @@ export function TensorDavVisualizer({ onCellSelect, enableHarmonicResonance = tr
           </button>
         ))}
         <span className="tensor-dav__projection">{size ** 2} × {size ** 2} projection</span>
+        {!loading && receipt && (
+          <div className="tensor-dav__exports" style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem' }}>
+            <a
+              href={`${API_BASE_URL}/tensor/${size}/export?format=json`}
+              download={`dav-tensor-n${size}.json`}
+              className="tensor-dav__export-link"
+              aria-label={`Export DAV Tensor N=${size} JSON`}
+              title="Download verified JSON slice with SHA-256 receipt"
+            >
+              Export JSON
+            </a>
+            <a
+              href={`${API_BASE_URL}/tensor/${size}/export?format=csv`}
+              download={`dav-tensor-n${size}.csv`}
+              className="tensor-dav__export-link"
+              aria-label={`Export DAV Tensor N=${size} CSV`}
+              title="Download verified CSV matrix slice"
+            >
+              Export CSV
+            </a>
+          </div>
+        )}
       </div>
 
       {loading && <p className="tensor-dav__state" role="status">Computing and verifying tensor…</p>}
