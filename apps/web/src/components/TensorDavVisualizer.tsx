@@ -16,7 +16,34 @@ type ErrorReceipt = { success: false; status: 'UNKNOWN' | 'DIVERGENT'; error?: s
 const sizes: TensorSize[] = [4, 6, 8];
 const API_BASE_URL = (import.meta.env?.VITE_API_URL || '/api').replace(/\/$/, '');
 
-export function TensorDavVisualizer() {
+function playHarmonicCellTone(frequencyHz = 432, durationSeconds = 0.35) {
+  try {
+    if (typeof window === 'undefined') return;
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(frequencyHz, ctx.currentTime);
+    gain.gain.setValueAtTime(0.001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.05, ctx.currentTime + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + durationSeconds);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + durationSeconds);
+  } catch {
+    // Non-blocking harmonic audio synthesis
+  }
+}
+
+export interface TensorDavVisualizerProps {
+  onCellSelect?: (cell: { row: number; column: number; i: number; j: number; k: number; l: number; value: number }) => void;
+  enableHarmonicResonance?: boolean;
+}
+
+export function TensorDavVisualizer({ onCellSelect, enableHarmonicResonance = true }: TensorDavVisualizerProps = {}) {
   const [size, setSize] = useState<TensorSize>(4);
   const [receipt, setReceipt] = useState<TensorReceipt | null>(null);
   const [failure, setFailure] = useState<ErrorReceipt | null>(null);
@@ -30,6 +57,16 @@ export function TensorDavVisualizer() {
     l: number;
     value: number;
   } | null>(null);
+
+  const handleCellSelect = (cell: { row: number; column: number; i: number; j: number; k: number; l: number; value: number }) => {
+    setSelectedCell(cell);
+    if (enableHarmonicResonance) {
+      const maxVal = receipt?.invariants.max || 1;
+      const freq = Math.round(432 * (1 + cell.value / (2 * maxVal)));
+      playHarmonicCellTone(freq, 0.35);
+    }
+    onCellSelect?.(cell);
+  };
 
   useEffect(() => {
     const controller = new AbortController();
@@ -101,6 +138,7 @@ export function TensorDavVisualizer() {
               <span>COORDINATE: <strong>T[{selectedCell.i}, {selectedCell.j}, {selectedCell.k}, {selectedCell.l}]</strong></span>
               <span>PROJECTION: <strong>row {selectedCell.row}, col {selectedCell.column}</strong></span>
               <span>VALUE: <strong>{selectedCell.value}</strong></span>
+              <span>RESONANCE: <strong>{Math.round(432 * (1 + selectedCell.value / (2 * (receipt.invariants.max || 1))))} Hz</strong></span>
               <button
                 type="button"
                 className="tensor-dav__inspector-close"
@@ -128,11 +166,11 @@ export function TensorDavVisualizer() {
                     title={`row ${row}, column ${column} · T[${i},${j},${k},${l}] = ${i}+${j}+${k}+${l} = ${cellValue}`}
                     aria-label={`row ${row}, column ${column}, value ${i} plus ${j} plus ${k} plus ${l} equals ${cellValue}`}
                     tabIndex={0}
-                    onClick={() => setSelectedCell({ row, column, i, j, k, l, value: cellValue })}
+                    onClick={() => handleCellSelect({ row, column, i, j, k, l, value: cellValue })}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
-                        setSelectedCell({ row, column, i, j, k, l, value: cellValue });
+                        handleCellSelect({ row, column, i, j, k, l, value: cellValue });
                       }
                     }}
                   >
