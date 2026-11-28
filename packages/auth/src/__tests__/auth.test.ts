@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { beforeEach, describe, it } from 'node:test';
-import { OceanicosAuthEngine } from '../index.ts';
+import { OceanicosAuthEngine, type DIDCapability } from '../index.ts';
 
 describe('@omega-v/auth — OceanicosAuthEngine', () => {
   let auth: OceanicosAuthEngine;
@@ -33,6 +33,27 @@ describe('@omega-v/auth — OceanicosAuthEngine', () => {
       assert.equal(created.document.revoked, false);
     });
 
+    it('should not let the caller mutate stored capabilities through the input array', () => {
+      const capabilities: DIDCapability[] = ['observe:write'];
+      const { did, secret } = auth.createIdentity('HUMAN', capabilities);
+      const token = auth.issueToken(did, secret);
+
+      capabilities.push('admin:all');
+
+      assert.equal(auth.verifyToken(token, 'admin:all').valid, false);
+    });
+
+    it('should return detached documents from create, get, and list operations', () => {
+      const { did, secret, document } = auth.createIdentity('AGENT', ['observe:write']);
+      const token = auth.issueToken(did, secret);
+
+      document.capabilities.push('admin:all');
+      auth.getIdentity(did)?.capabilities.push('admin:all');
+      auth.listIdentities().find(identity => identity.did === did)?.capabilities.push('admin:all');
+
+      assert.equal(auth.verifyToken(token, 'admin:all').valid, false);
+    });
+
     it('should list all identities', () => {
       auth.createIdentity('HUMAN', ['governance:vote']);
       const all = auth.listIdentities();
@@ -60,6 +81,15 @@ describe('@omega-v/auth — OceanicosAuthEngine', () => {
       assert.equal(verification.valid, true);
     });
 
+    it('should return a detached subject from token verification', () => {
+      const { did, secret } = auth.createIdentity('AGENT', ['observe:write']);
+      const token = auth.issueToken(did, secret);
+
+      auth.verifyToken(token).subject?.capabilities.push('admin:all');
+
+      assert.equal(auth.verifyToken(token, 'admin:all').valid, false);
+    });
+
     it('should reject token with insufficient capability', () => {
       const { did, secret } = auth.createIdentity('HUMAN', ['governance:vote']);
       const token = auth.issueToken(did, secret);
@@ -79,6 +109,18 @@ describe('@omega-v/auth — OceanicosAuthEngine', () => {
       const verification = auth.verifyToken(tampered);
       assert.equal(verification.valid, false);
       assert.equal(verification.error, 'Invalid token signature');
+    });
+
+    it('should reject malformed signature encodings without throwing', () => {
+      const { did, secret } = auth.createIdentity('SERVICE', ['observe:write']);
+      const token = auth.issueToken(did, secret);
+      const signaturePrefix = token.slice(0, token.lastIndexOf('.') + 1);
+
+      for (const malformedSignature of ['abc', 'z'.repeat(64)]) {
+        const verification = auth.verifyToken(signaturePrefix + malformedSignature);
+        assert.equal(verification.valid, false);
+        assert.equal(verification.error, 'Invalid token signature');
+      }
     });
 
     it('should reject expired tokens', () => {

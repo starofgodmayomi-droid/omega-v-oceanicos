@@ -126,7 +126,7 @@ async function handleStatus() {
 
   // Query live API tip if running
   try {
-    const res = await fetch('http://localhost:5000/v1/block/tip', { signal: AbortSignal.timeout(600) });
+    const res = await fetch(`${apiBase}/v1/block/tip`, { signal: AbortSignal.timeout(600) });
     if (res.ok) {
       const data = await res.json();
       console.log(`\n${ANSI.bold}=== LIVE API SERVICE ===${ANSI.reset}`);
@@ -136,7 +136,7 @@ async function handleStatus() {
       console.log(`  ${integrityValid ? ANSI.green : ANSI.red}Ledger Integrity${ANSI.reset}      : ${data.integrity ? (data.integrity.valid ? `VALID height=${data.integrity.height}` : `DEGRADED ${data.integrity.reason ?? ''}`) : 'NOT_REPORTED'}`);
     }
   } catch {
-    console.log(`\n${ANSI.dim}[Note: Local Fastify API on :5000 is not running or unreachable]${ANSI.reset}`);
+    console.log(`\n${ANSI.dim}[Note: API at ${apiBase} is not running or unreachable]${ANSI.reset}`);
   }
   console.log('');
 }
@@ -208,11 +208,12 @@ async function handleKeys() {
 
 async function handleStream() {
   printBanner();
-  console.log(`\n${ANSI.cyan}Listening for real-time SSE cryptographic blocks on http://localhost:5000/v1/stream...${ANSI.reset}`);
+  const streamUrl = `${apiBase}/v1/stream`;
+  console.log(`\n${ANSI.cyan}Listening for real-time SSE cryptographic blocks on ${streamUrl}...${ANSI.reset}`);
   console.log(`${ANSI.dim}Press Ctrl+C to disconnect.${ANSI.reset}\n`);
 
   try {
-    const response = await fetch('http://localhost:5000/v1/stream', {
+    const response = await fetch(streamUrl, {
       headers: { Accept: 'text/event-stream' },
     });
 
